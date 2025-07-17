@@ -1,0 +1,42 @@
+﻿### 🔐 Login como Administrador
+POST https://localhost:7181/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@starkaid.com",
+  "password": "StarkAdmin2024@"
+}
+
+###
+
+### 🔄 Refresh Token (substitua o valor depois de obter um refresh token válido)
+POST https://localhost:7181/api/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "COLE_SEU_REFRESH_TOKEN_AQUI"
+}
+
+###
+
+### 🔒 Acesso exclusivo Administrador
+GET https://localhost:7181/api/admin/admin-only
+Authorization: Bearer COLE_SEU_TOKEN_JWT_AQUI
+
+###
+
+### 📥 Criar novo usuário (exemplo)
+POST https://localhost:7181/api/users
+Content-Type: application/json
+
+{
+  "name": "João Tester",
+  "email": "joao@tester.com",
+  "password": "SenhaF0rte!"
+}
+
+###
+
+### 📜 Listar todos os usuários (se implementado)
+GET https://localhost:7181/api/users
+Authorization: Bearer COLE_SEU_TOKEN_JWT_AQUI

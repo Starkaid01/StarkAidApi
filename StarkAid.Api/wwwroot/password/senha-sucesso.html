@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senha Alterada com Sucesso | StarkAid</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style/senhasucesso.css">
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">
+            <i class="fas fa-check"></i>
+        </div>
+        <h1>Senha Alterada com Sucesso!</h1>
+        <p>Sua senha foi atualizada com segurança. Agora você pode fazer login no aplicativo StarkAid com suas novas credenciais.</p>
+        
+        <div class="steps">
+            <div class="step active">
+                1
+                <div class="step-label">Alteração</div>
+            </div>
+            <div class="step">
+                2
+                <div class="step-label">Login</div>
+            </div>
+            <div class="step">
+                3
+                <div class="step-label">Acesso</div>
+            </div>
+        </div>
+        
+        <div class="app-logo">
+            <i class="fas fa-heartbeat"></i>
+        </div>
+        
+        <button id="openAppBtn" class="app-button">
+            <i class="fas fa-mobile-alt"></i> Voltar ao StarkAid
+        </button>
+        
+        <div class="platform-info">
+            <p><i class="fas fa-info-circle"></i> Se o aplicativo não abrir automaticamente, verifique se você tem o StarkAid instalado.</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('openAppBtn').addEventListener('click', function() {
+            // Adiciona efeito visual de clique
+            this.classList.add('clicked');
+            setTimeout(() => this.classList.remove('clicked'), 300);            
+            
+            // Para Android: intent com o pacote
+            const androidIntent = "intent://qualquercoisa#Intent;scheme=starkaidapp;package=com.starkaid.starkaidapp;end;";
+            
+            setTimeout(function() {
+                    window.location.href = androidIntent;
+            }, 500);
+        });
+        
+        // Adiciona efeito de pulso ao ícone de sucesso a cada 5 segundos
+        const successIcon = document.querySelector('.success-icon');
+        setInterval(() => {
+            successIcon.style.animation = 'pulse 1.5s';
+            setTimeout(() => {
+                successIcon.style.animation = '';
+            }, 1500);
+        }, 5000);
+    </script>
+</body>
+</html>
