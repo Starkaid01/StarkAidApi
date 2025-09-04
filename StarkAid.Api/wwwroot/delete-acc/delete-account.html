@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deletar Conta - StarkAid</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: #e74c3c;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+            .header h1 {
+                font-size: 24px;
+                margin-bottom: 5px;
+            }
+
+        .content {
+            padding: 30px;
+        }
+
+        .warning-box {
+            background-color: #fff8e6;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+
+            .warning-box h3 {
+                color: #e74c3c;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+        .warning-icon {
+            font-size: 20px;
+        }
+
+        .warning-box ul {
+            padding-left: 20px;
+            margin: 15px 0;
+            color: #555;
+        }
+
+        .warning-box li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-delete {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+            .btn-delete:hover {
+                background-color: #c0392b;
+            }
+
+        .btn-cancel {
+            background-color: #ecf0f1;
+            color: #34495e;
+        }
+
+            .btn-cancel:hover {
+                background-color: #d5dbdb;
+            }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 25px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Deletar Conta Permanentemente</h1>
+            <p>Esta ação não pode ser desfeita</p>
+        </div>
+
+        <div class="content">
+            <div class="warning-box">
+                <h3>
+                    <span class="warning-icon">⚠️</span>
+                    ATENÇÃO IMPORTANTE
+                </h3>
+                <p>Antes de deletar sua conta, por favor note:</p>
+
+                <ul>
+                    <li>Todos os seus dados serão permanentemente apagados</li>
+                    <li>Dispositivos vinculados serão desassociados</li>
+                    <li>Comandos personalizados serão perdidos</li>
+                    <li><strong>Se você tem planos de assinatura ativos:</strong></li>
+                </ul>
+
+                <p>
+                    <strong>Você DEVE cancelar quaisquer assinaturas ativas diretamente no aplicativo antes de deletar sua conta.</strong>
+                    Caso contrário, você continuará sendo cobrado mesmo após a exclusão da conta.
+                </p>
+            </div>
+
+            <p>
+                Tem certeza absoluta que deseja deletar permanentemente sua conta StarkAid e todos os dados associados?
+            </p>
+
+            <div class="actions">
+                <button class="btn btn-cancel" id="cancelBtn">Cancelar</button>
+                <button class="btn btn-delete" id="deleteBtn">Sim, Deletar Minha Conta</button>
+            </div>
+
+            <div class="footer-note">
+                Esta ação é irreversível. Ao confirmar, todos os seus dados serão apagados de nossos sistemas.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('deleteBtn').addEventListener('click', async function () {
+            const confirmation = confirm('ATENÇÃO FINAL: Você cancelou todas as suas assinaturas ativas? Esta ação não pode ser desfeita.');
+
+            if (confirmation) {
+                try {
+                    const response = await fetch('/api/users/has-active-subscriptions', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('authToken'),
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Falha ao verificar assinaturas');
+                    }
+
+                    const result = await response.json();
+
+                    if (result.hasActiveSubscriptions) {
+                        alert('Você ainda tem assinaturas ativas! Por favor, cancele-as primeiro.');
+                        return;
+                    }
+
+                } catch (error) {
+                    console.error('Erro ao verificar assinaturas:', error);
+                    alert('Erro ao verificar assinaturas. Tente novamente.');
+                    return;
+                }
+            }
+        });
+
+        document.getElementById('cancelBtn').addEventListener('click', function() {
+            window.history.back();
+        });
+    </script>
+</body>
+</html>

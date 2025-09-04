@@ -1,9 +1,11 @@
 ﻿namespace StarkAid.Api.Services;
 
-public interface IMqttClientService
+public interface IMqttClientService : IAsyncDisposable
 {
     Task PublishAsync(string topic, string payload);
     Task SubscribeAsync(string topic);
     Task<string?> GetStatusAsync(string topic);
     bool IsConnected { get; }
+
+    Task StartAsync();
 }

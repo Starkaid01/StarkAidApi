@@ -1,14 +1,28 @@
-﻿namespace StarkAid.Api.Entities
-{
-    public class Device
-    {
-        public Guid Id { get; set; }               // Identificador único
-        public string Name { get; set; }           // Nome do dispositivo (ex: Luz Sala)
-        public string ApiKey { get; set; }         // 🔐 API-Key única desse dispositivo
-        public Guid UserId { get; set; }           // Relacionamento com o usuário dono do device
-        public User User { get; set; }             // Navegação para entidade User
+﻿using System.ComponentModel.DataAnnotations;
 
-        // Adicione esta propriedade para armazenar o tópico MQTT do dispositivo
-        public string MqttTopic { get; set; } = string.Empty;
-    }
+namespace StarkAid.Api.Entities;
+
+public class Device
+{
+    [Key]
+    public Guid Id { get; set; }
+
+    [Required, MaxLength(150)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required, MaxLength(100)]
+    public string ApiKey { get; set; } = string.Empty;
+
+    [Required]
+    public Guid UserId { get; set; }
+
+    [Required, MaxLength(200)]
+    public string MqttTopic { get; set; } = string.Empty;
+
+    [MaxLength(200)]
+    public string? Comando { get; set; } = null;
+
+    public User User { get; set; } = null!;
+
+    public ICollection<Agendamento> Agendamentos { get; set; } = new List<Agendamento>();
 }

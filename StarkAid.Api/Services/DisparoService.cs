@@ -2,13 +2,13 @@
 using StarkAid.Api.Data;
 using StarkAid.Api.Dtos;
 using StarkAid.Api.Entities;
+using System.Text.Json;
 
 namespace StarkAid.Api.Services
 {
     public class DisparoService
     {
         private readonly AppDbContext _context;
-
         private readonly IMqttClientService _mqttService;
 
         public DisparoService(AppDbContext context, IMqttClientService mqttService)
@@ -17,39 +17,44 @@ namespace StarkAid.Api.Services
             _mqttService = mqttService;
         }
 
-        public async Task<Disparo> RegistrarDisparoAsync(Guid userId, Guid dispositivoId, string mensagem)
+        public async Task<DisparoResponse> RegistrarDisparoAsync(Guid userId, Guid dispositivoId, string mensagem)
         {
+            // Obter nome do dispositivo
+            var dispositivoNome = await _context.DispositivosDisparo
+                .Where(d => d.Id == dispositivoId)
+                .Select(d => d.Nome)
+                .FirstOrDefaultAsync() ?? "Desconhecido";
+
             var disparo = new Disparo
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 DispositivoId = dispositivoId,
-                DisparadoEm = DateTime.UtcNow,
+                DisparadoEm = DateTimeOffset.UtcNow,
                 Mensagem = mensagem
             };
 
             _context.Disparos.Add(disparo);
             await _context.SaveChangesAsync();
 
-            // Obtém o dispositivo para pegar o tópico MQTT
-            var dispositivo = await _context.DispositivosDisparo
-                .FirstOrDefaultAsync(d => d.Id == dispositivoId && d.UserId == userId);
-
+            // Publicar no MQTT
+            var dispositivo = await _context.DispositivosDisparo.FindAsync(dispositivoId);
             if (dispositivo != null)
             {
-                var payload = new
-                {
-                    dispositivo = dispositivo.Nome,
-                    mensagem,
-                    data = disparo.DisparadoEm.ToString("O") // ISO 8601
-                };
-
-                var payloadJson = System.Text.Json.JsonSerializer.Serialize(payload);
-
-                await _mqttService.PublishAsync(dispositivo.StatusTopic, payloadJson);
+                var payload = new { dispositivo = dispositivo.Nome, mensagem, data = disparo.DisparadoEm.ToString("O") };
+                await _mqttService.PublishAsync(dispositivo.StatusTopic, JsonSerializer.Serialize(payload));
             }
 
-            return disparo;
+            // Retornar DTO
+            return new DisparoResponse
+            {
+                Id = disparo.Id,
+                DispositivoId = dispositivoId,
+                DispositivoNome = dispositivoNome,
+                DisparadoEm = disparo.DisparadoEm,
+                Mensagem = mensagem,
+                Confirmado = false
+            };
         }
 
         public async Task<List<Disparo>> ListarPorUsuarioAsync(Guid userId)
@@ -62,27 +67,20 @@ namespace StarkAid.Api.Services
 
         public async Task<List<DisparoResponse>> ListarDisparosComNomePorUsuarioAsync(Guid userId)
         {
-            var disparos = await _context.Disparos
+            return await _context.Disparos
                 .Where(d => d.UserId == userId)
                 .OrderByDescending(d => d.DisparadoEm)
-                .Join(
-                    _context.DispositivosDisparo,
-                    disparo => disparo.DispositivoId,
-                    dispositivo => dispositivo.Id,
-                    (disparo, dispositivo) => new DisparoResponse
-                    {
-                        Id = disparo.Id,
-                        DispositivoId = disparo.DispositivoId,
-                        DispositivoNome = dispositivo.Nome,
-                        DisparadoEm = disparo.DisparadoEm,
-                        Mensagem = disparo.Mensagem,
-                        Confirmado = disparo.Confirmado,
-                        ConfirmadoEm = disparo.ConfirmadoEm
-                    }
-                )
+                .Select(d => new DisparoResponse // Projeção direta para DTO
+                {
+                    Id = d.Id,
+                    DispositivoId = d.DispositivoId,
+                    DispositivoNome = d.Dispositivo.Nome, // Garanta que está carregando
+                    DisparadoEm = d.DisparadoEm,
+                    Mensagem = d.Mensagem,
+                    Confirmado = d.Confirmado,
+                    ConfirmadoEm = d.ConfirmadoEm
+                })
                 .ToListAsync();
-
-            return disparos;
         }
 
         public async Task<bool> ConfirmarDisparoAsync(Guid id, Guid userId)
@@ -93,7 +91,7 @@ namespace StarkAid.Api.Services
             if (disparo == null) return false;
 
             disparo.Confirmado = true;
-            disparo.ConfirmadoEm = DateTime.UtcNow;
+            disparo.ConfirmadoEm = DateTimeOffset.UtcNow; // ✅ Corrigido para DateTimeOffset
 
             await _context.SaveChangesAsync();
             return true;

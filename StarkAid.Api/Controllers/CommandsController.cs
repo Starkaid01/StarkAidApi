@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using StarkAid.Api.DTOs;
 using StarkAid.Api.Services;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace StarkAid.Api.Controllers
 {
@@ -24,9 +25,19 @@ namespace StarkAid.Api.Controllers
         [HttpPost("publish")]
         public async Task<IActionResult> PublishCommand([FromBody] PublishCommandRequest request)
         {
-            if (request.DeviceId == Guid.Empty)
-                return BadRequest("DeviceId obrigatório.");
+            // Validação manual das regras de negócio
+            bool hasEnumCommand = request.Command.HasValue;
+            bool hasCustomCommand = !string.IsNullOrWhiteSpace(request.CustomCommand);
 
+            if (!hasEnumCommand && !hasCustomCommand)
+            {
+                return BadRequest("Nenhum comando especificado.");
+            }
+
+            if (hasEnumCommand && hasCustomCommand)
+            {
+                return BadRequest("Use apenas um tipo de comando por vez (enum ou customizado).");
+            }
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!Guid.TryParse(userIdStr, out var userId))
                 return Unauthorized("Token inválido.");
@@ -41,11 +52,41 @@ namespace StarkAid.Api.Controllers
             if (!_mqttClient.IsConnected)
                 return StatusCode(503, "Serviço MQTT indisponível.");
 
-            // Publica o comando usando o enum diretamente
-            var payload = request.Command.ToString().ToLower();
+            // Prioridade: Comando personalizado do banco > Comando personalizado da requisição > Comando enum
+            string payload;
+
+            if (!string.IsNullOrWhiteSpace(device.Comando))
+            {
+                // Usa o comando personalizado salvo no banco
+                payload = device.Comando.Trim();
+            }
+            else if (hasCustomCommand)
+            {
+                // Usa o comando personalizado da requisição
+                payload = request.CustomCommand.Trim();
+            }
+            else
+            {
+                // Usa o comando enum
+                payload = request.Command.Value.ToString().ToLower();
+            }
+
             await _mqttClient.PublishAsync(device.MqttTopic, payload);
 
-            return Ok(new { message = $"Comando '{payload}' enviado via MQTT.", topic = device.MqttTopic });
+            await WebsocketController.SendToUser(device.UserId.ToString(),
+            JsonSerializer.Serialize(new
+            {
+                deviceId = device.Id,
+                status = payload // ou traduzir "ligar" -> "ligado", "desligar" -> "desligado"
+            }));
+
+            return Ok(new
+            {
+                message = $"Comando '{payload}' enviado via MQTT.",
+                topic = device.MqttTopic,
+                source = !string.IsNullOrWhiteSpace(device.Comando) ? "database" :
+                         hasCustomCommand ? "request" : "enum"
+            });
         }
     }
 }

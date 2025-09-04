@@ -37,7 +37,8 @@ namespace StarkAid.Api.Services
             return await _context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
         }
 
-        public async Task<Device> CreateDeviceAsync(string name, Guid userId)
+
+        public async Task<Device> CreateDeviceAsync(string name, Guid userId, string comando)
         {
             var deviceId = Guid.NewGuid();
             var topic = $"starkaid/{userId}/{deviceId}/commands";
@@ -48,7 +49,8 @@ namespace StarkAid.Api.Services
                 Name = name,
                 UserId = userId,
                 ApiKey = Guid.NewGuid().ToString(),
-                MqttTopic = topic
+                MqttTopic = topic,
+                Comando = comando
             };
 
             _context.Devices.Add(device);
@@ -57,7 +59,7 @@ namespace StarkAid.Api.Services
             return device;
         }
 
-        public async Task<bool> RenameDeviceAsync(Guid deviceId, Guid userId, string newName)
+        public async Task<bool> RenameDeviceAsync(Guid deviceId, Guid userId, string newName, string newComando)
         {
             var device = await _context.Devices
                 .FirstOrDefaultAsync(d => d.Id == deviceId && d.UserId == userId);
@@ -66,6 +68,7 @@ namespace StarkAid.Api.Services
                 return false;
 
             device.Name = newName;
+            device.Comando = newComando; // Atualiza o comando também, se necessário
             await _context.SaveChangesAsync();
 
             return true;

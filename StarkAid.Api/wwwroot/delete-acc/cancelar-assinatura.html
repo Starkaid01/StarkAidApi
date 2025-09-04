@@ -1,0 +1,315 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancelar Assinatura - StarkAid</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: #e74c3c;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+            .header h1 {
+                font-size: 24px;
+                margin-bottom: 5px;
+            }
+
+        .content {
+            padding: 30px;
+        }
+
+        .subscription-list {
+            margin: 20px 0;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .subscription-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .subscription-item:last-child {
+                border-bottom: none;
+            }
+
+        .subscription-info {
+            flex: 1;
+        }
+
+            .subscription-info h3 {
+                margin-bottom: 5px;
+                color: #2c3e50;
+            }
+
+        .subscription-status {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .warning-box {
+            background-color: #fff8e6;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+
+            .warning-box h3 {
+                color: #e74c3c;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+        .warning-icon {
+            font-size: 20px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-cancel {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+            .btn-cancel:hover {
+                background-color: #c0392b;
+            }
+
+        .btn-back {
+            background-color: #ecf0f1;
+            color: #34495e;
+        }
+
+            .btn-back:hover {
+                background-color: #d5dbdb;
+            }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #e74c3c;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Cancelar Assinatura</h1>
+            <p>Gerencie suas assinaturas ativas</p>
+        </div>
+
+        <div class="content">
+            <div class="warning-box">
+                <h3>
+                    <span class="warning-icon">⚠️</span>
+                    IMPORTANTE
+                </h3>
+                <p>
+                    Ao cancelar sua assinatura, você perderá acesso aos recursos premium imediatamente.
+                    Não haverá reembolso para o período atual já pago.
+                </p>
+            </div>
+
+            <h2>Suas Assinaturas Ativas</h2>
+            <div class="subscription-list" id="subscriptionList">
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Carregando suas assinaturas...</p>
+                </div>
+                <!-- As assinaturas serão inseridas aqui via JavaScript -->
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-back" id="backBtn">Voltar</button>
+                <button class="btn btn-cancel" id="cancelAllBtn">Cancelar Todas as Assinaturas</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const subscriptionList = document.getElementById('subscriptionList');
+            const loading = document.getElementById('loading');
+            const cancelAllBtn = document.getElementById('cancelAllBtn');
+
+            // Mostrar loading
+            loading.style.display = 'block';
+
+            try {
+                // Buscar assinaturas do usuário
+                const response = await fetch('https://starkaid.vbweb.com.b/api/assinaturas/status', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('authToken'),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Falha ao carregar assinaturas');
+                }
+
+                const data = await response.json();
+
+                // Esconder loading
+                loading.style.display = 'none';
+
+                if (!data || Object.keys(data).length === 0) {
+                    subscriptionList.innerHTML = `
+                        <div class="subscription-item">
+                            <div class="subscription-info">
+                                <p>Nenhuma assinatura ativa encontrada.</p>
+                            </div>
+                        </div>
+                    `;
+                    cancelAllBtn.disabled = true;
+                    return;
+                }
+
+                // Exibir assinaturas
+                const subscriptionItem = `
+                    <div class="subscription-item">
+                        <div class="subscription-info">
+                            <h3>Assinatura StarkAid Nível 2</h3>
+                            <p>Status: <span class="subscription-status status-active">${data.Status}</span></p>
+                            <p>Iniciada em: ${new Date(data.IniciadaEm).toLocaleDateString()}</p>
+                            <p>Expira em: ${new Date(data.ExpiraEm).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                `;
+
+                subscriptionList.insertAdjacentHTML('beforeend', subscriptionItem);
+
+            } catch (error) {
+                console.error('Erro:', error);
+                loading.style.display = 'none';
+                subscriptionList.innerHTML = `
+                    <div class="subscription-item">
+                        <div class="subscription-info">
+                            <p>Erro ao carregar assinaturas. Tente novamente.</p>
+                        </div>
+                    </div>
+                `;
+                cancelAllBtn.disabled = true;
+            }
+
+            // Cancelar todas as assinaturas
+            cancelAllBtn.addEventListener('click', async () => {
+                const confirmation = confirm('Tem certeza que deseja cancelar TODAS as suas assinaturas ativas? Esta ação é irreversível.');
+
+                if (confirmation) {
+                    cancelAllBtn.disabled = true;
+                    cancelAllBtn.textContent = 'Cancelando...';
+
+                    try {
+                        const response = await fetch('https://starkaid.vbweb.com.b/api/assinaturas/cancelar', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + localStorage.getItem('authToken'),
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.text();
+                            throw new Error(error);
+                        }
+
+                        alert('Todas as assinaturas foram canceladas com sucesso!');
+                        window.location.reload();
+
+                    } catch (error) {
+                        console.error('Erro:', error);
+                        alert('Erro: ' + error.message);
+                        cancelAllBtn.disabled = false;
+                        cancelAllBtn.textContent = 'Cancelar Todas as Assinaturas';
+                    }
+                }
+            });
+
+            // Botão Voltar
+            document.getElementById('backBtn').addEventListener('click', () => {
+                window.history.back();
+            });
+        });
+    </script>
+</body>
+</html>

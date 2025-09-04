@@ -2,6 +2,7 @@
 {
     public class RenameDeviceRequest
     {
-        public string NewName { get; set; }
+        public string NewName { get; set; } = string.Empty;
+        public string NewComando { get; set; } = string.Empty;
     }
 }

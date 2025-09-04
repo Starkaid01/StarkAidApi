@@ -1,10 +1,19 @@
-﻿namespace StarkAid.Api.Entities
+﻿using StarkAid.Api.Entities;
+using System.ComponentModel.DataAnnotations;
+
+public class PasswordResetToken
 {
-    public class PasswordResetToken
-    {
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public Guid UserId { get; set; }
-        public string Token { get; set; } = null!;
-        public DateTime Expiration { get; set; }
-    }
+    [Key]
+    public Guid Id { get; set; } = Guid.NewGuid();
+
+    [Required]
+    public Guid UserId { get; set; }
+
+    [Required]
+    public string Token { get; set; } = null!;
+
+    [Required]
+    public DateTimeOffset Expiration { get; set; } // datetimeoffset no DbContext
+
+    public User User { get; set; } = null!;
 }

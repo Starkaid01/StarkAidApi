@@ -1,40 +1,56 @@
-﻿namespace StarkAid.Api.Services;
-using StarkAid.Api.Data;
+﻿using StarkAid.Api.Data;
 
-public class PasswordResetCleanupService : IHostedService, IDisposable
+public class PasswordResetCleanupService : BackgroundService
 {
-    private readonly IServiceScopeFactory _scopeFactory;
-    private Timer _timer;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<PasswordResetCleanupService> _logger;
 
-    public PasswordResetCleanupService(IServiceScopeFactory scopeFactory)
+    public PasswordResetCleanupService(IServiceProvider serviceProvider, ILogger<PasswordResetCleanupService> logger)
     {
-        _scopeFactory = scopeFactory;
+        _serviceProvider = serviceProvider;
+        _logger = logger;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _timer = new Timer(Cleanup, null, TimeSpan.Zero, TimeSpan.FromHours(1));
-        return Task.CompletedTask;
-    }
+        _logger.LogInformation("PasswordResetCleanupService iniciado.");
 
-    private void Cleanup(object? state)
-    {
-        using var scope = _scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var expiredTokens = context.PasswordResetTokens.Where(t => t.Expiration < DateTime.UtcNow);
-        if (expiredTokens.Any())
+        while (!stoppingToken.IsCancellationRequested)
         {
-            context.PasswordResetTokens.RemoveRange(expiredTokens);
-            context.SaveChanges();
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var expirados = context.PasswordResetTokens
+                    .Where(t => t.Expiration < DateTime.UtcNow)
+                    .ToList();
+
+                if (expirados.Any())
+                {
+                    context.PasswordResetTokens.RemoveRange(expirados);
+                    await context.SaveChangesAsync(stoppingToken);
+                    _logger.LogInformation("Removidos {Count} tokens expirados", expirados.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao limpar tokens expirados");
+            }
+
+            try
+            {
+                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+            }
+            catch (TaskCanceledException) { break; }
         }
+
+        _logger.LogInformation("PasswordResetCleanupService finalizado.");
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        _timer?.Change(Timeout.Infinite, 0);
-        return Task.CompletedTask;
+        _logger.LogInformation("PasswordResetCleanupService está sendo finalizado...");
+        await base.StopAsync(cancellationToken);
     }
-
-    public void Dispose() => _timer?.Dispose();
 }

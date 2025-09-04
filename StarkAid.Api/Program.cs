@@ -1,195 +1,252 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using StarkAid.Api.Converters;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
 using StarkAid.Api.Data;
+using StarkAid.Api.EntityConfigurations;
 using StarkAid.Api.Middlewares;
 using StarkAid.Api.Services;
+using Stripe;
+using System.Diagnostics;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2;
 
-var builder = WebApplication.CreateBuilder(args);
-
-var firebaseConfigPath = builder.Configuration["Firebase:CredentialsPath"];
-if (string.IsNullOrEmpty(firebaseConfigPath))
-    throw new InvalidOperationException("Caminho para credenciais Firebase não configurado.");
-
-FirebaseApp.Create(new AppOptions
+try
 {
-    Credential = GoogleCredential.FromFile(firebaseConfigPath)
-});
+    // 1. Configuração de logs
+    var logPath = Path.Combine(Directory.GetCurrentDirectory(), "logs");
+    Directory.CreateDirectory(logPath);
 
-// 🔍 Carregar configs na ordem correta
-builder.Configuration
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
-    .AddEnvironmentVariables();
+    Log.Logger = new LoggerConfiguration()
+        .MinimumLevel.Debug()
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Error)
+        .Enrich.FromLogContext()
+        .WriteTo.Console(new RenderedCompactJsonFormatter())
+        .WriteTo.File(new CompactJsonFormatter(), Path.Combine(logPath, "log-.json"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
+        .CreateLogger();
 
-// 🔐 Validação da chave JWT obrigatória
-var jwtKey = builder.Configuration["Jwt:Key"];
-if (string.IsNullOrEmpty(jwtKey))
-    throw new InvalidOperationException("Chave JWT não configurada.");
+    var builder = WebApplication.CreateBuilder(args);
+    builder.Host.UseSerilog();
 
-var keyBytes = Encoding.ASCII.GetBytes(jwtKey);
-var isProduction = true;
+    Log.Information("Iniciando StarkAid.Api...");
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("UserNivel1Only", policy =>
-        policy.RequireRole("UserNivel1", "UserNivel2", "UserNivel3", "Administrador"));
+    // 2. Configuração do AppSettings e connection string
+    builder.Configuration
+        .SetBasePath(Directory.GetCurrentDirectory())
+        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+        .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+        .AddEnvironmentVariables();
 
-    options.AddPolicy("UserNivel2Only", policy =>
-        policy.RequireRole("UserNivel2", "UserNivel3", "Administrador"));
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("DefaultConnection não configurada.");
 
-    options.AddPolicy("UserNivel3Only", policy =>
-        policy.RequireRole("UserNivel3", "Administrador"));
+    // 3. Firebase
+    var firebasePath = builder.Configuration["Firebase:CredentialsPath"]
+        ?? throw new InvalidOperationException("Firebase credentials path não configurado.");
+    FirebaseApp.Create(new AppOptions { Credential = GoogleCredential.FromFile(firebasePath) });
 
-    options.AddPolicy("AdministradorOnly", policy =>
-        policy.RequireRole("Administrador"));
+    // 4. JWT
+    var jwtKey = builder.Configuration["Jwt:Key"]
+        ?? throw new InvalidOperationException("JWT Key não configurada.");
+    var keyBytes = Encoding.ASCII.GetBytes(jwtKey);
+    var isProd = builder.Environment.IsProduction();
 
-    options.AddPolicy("PagAtrasadoOnly", policy =>
-        policy.RequireRole("PagAtrasado"));
-});
-
-// 📦 Configura banco PostgreSQL
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// 📑 Serviços
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<RefreshTokenService>();
-builder.Services.AddTransient<SeedService>();
-builder.Services.AddScoped<DeviceService>();
-builder.Services.AddScoped<ComandoSocialService>();
-builder.Services.AddScoped<AgendamentoService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<DisparoService>();
-builder.Services.AddScoped<FcmNotificationService>();
-builder.Services.AddScoped<FirebaseTokenService>();
-builder.Services.AddHostedService<AgendamentoWorker>();
-builder.Services.AddHostedService<PasswordResetCleanupService>();
-builder.Services.AddSingleton<IMqttClientService, MqttClientService>();
-builder.Services.AddSingleton<MercadoPagoService>();
-builder.Services.AddScoped<DispositivoDisparoService>();
-builder.Services.AddMemoryCache();
-
-// 🔐 JWT Authentication
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = isProduction;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
-        ValidateIssuer = isProduction,
-        ValidateAudience = isProduction,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"]
-    };
-});
-
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-Console.WriteLine($"Connection string carregada: {connectionString}");
-// 📝 Swagger com JWT e API Key
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Digite 'Bearer ' + token JWT"
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
         {
-            new OpenApiSecurityScheme
+            options.RequireHttpsMetadata = isProd;
+            options.SaveToken = true;
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-            },
-            new string[] {}
-        }
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+                ValidateIssuer = isProd,
+                ValidateAudience = isProd,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidAudience = builder.Configuration["Jwt:Audience"]
+            };
+
+            // JWT via query param para WebSocket
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    if (!string.IsNullOrEmpty(accessToken) && context.HttpContext.WebSockets.IsWebSocketRequest)
+                        context.Token = accessToken;
+                    return Task.CompletedTask;
+                }
+            };
+        });
+
+    // 5. CORS
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowAll", policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
     });
 
-    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+
+    builder.Services.AddSignalR();
+
+    // 6. Policies
+    builder.Services.AddAuthorization(options =>
     {
-        Description = "Chave de API do usuário",
-        Name = "Api-Key",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "ApiKeyScheme"
+        options.AddPolicy("UserNivel1Only", policy => policy.RequireRole("UserNivel1", "UserNivel2", "UserNivel3", "Administrador")); 
+        options.AddPolicy("UserNivel2Only", policy => policy.RequireRole("UserNivel2", "UserNivel3", "Administrador")); 
+        options.AddPolicy("UserNivel3Only", policy => policy.RequireRole("UserNivel3", "Administrador")); 
+        options.AddPolicy("AdministradorOnly", policy => policy.RequireRole("Administrador")); 
+        options.AddPolicy("PagAtrasadoOnly", policy => policy.RequireRole("PagAtrasado"));
     });
 
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    // 7. DbContext
+    builder.Services.AddDbContext<AppDbContext>(opt =>
     {
+        opt.UseSqlServer(connectionString, o =>
         {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "ApiKey" }
-            },
-            new string[] {}
-        }
+            o.EnableRetryOnFailure();
+            o.CommandTimeout(15);
+        });
     });
-});
 
-// 🎛 Controllers e Serialização
-builder.Services.AddControllers().AddJsonOptions(options =>
-{
-    options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
-    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
-});
+    builder.Services.AddControllers()
+        .AddJsonOptions(opt =>
+        {
+            opt.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+            opt.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
+        });
 
+    // 8. Serviços e Hosted Services
+    builder.Services.AddHttpClient();
+    builder.Services.AddScoped<AuthService>();
+    builder.Services.AddScoped<RefreshTokenService>();
+    builder.Services.AddScoped<DeviceService>();
+    builder.Services.AddScoped<ComandoSocialService>();
+    builder.Services.AddScoped<AgendamentoService>();
+    builder.Services.AddScoped<IEmailService, EmailService>();
+    builder.Services.AddScoped<DisparoService>();
+    builder.Services.AddScoped<FcmNotificationService>();
+    builder.Services.AddScoped<FirebaseTokenService>();
+    builder.Services.AddScoped<StripeWebhookService>();
+    builder.Services.AddScoped<DispositivoDisparoService>();
+    builder.Services.AddScoped<StripeService>();
 
+    builder.Services.AddHostedService<AgendamentoWorker>();
+    builder.Services.AddHostedService<PasswordResetCleanupService>();
+    builder.Services.AddHostedService<MqttHostedService>();
+    builder.Services.AddHostedService<AssinaturaStatusChecker>();
+    builder.Services.AddSingleton<IMqttClientService, MqttClientService>();
+    builder.Services.AddMemoryCache();
 
-// 🔈 URL para ouvir conexões externas
-builder.WebHost.UseUrls("http://0.0.0.0:5238");
+    builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+    builder.Services.AddSingleton<StripeClient>(sp =>
+    {
+        var options = sp.GetRequiredService<IOptions<StripeSettings>>().Value;
+        return new StripeClient(options.SecretKey);
+    });
 
+    // 9. Swagger
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(opt =>
+    {
+        opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "Bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Digite 'Bearer {token}'"
+        });
+        // Novo esquema para API Key
+        opt.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+        {
+            Name = "Api-Key", // Nome do header usado pela API Key
+            Type = SecuritySchemeType.ApiKey,
+            In = ParameterLocation.Header,
+            Description = "Insira a API Key"
+        });
+        // Requerimentos de segurança
+        opt.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            },
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "ApiKey"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
+    });
 
-var app = builder.Build();
+    var app = builder.Build();
 
-// 🚀 Inicia MQTT Service
-var mqttService = app.Services.GetRequiredService<IMqttClientService>();
-await (mqttService as MqttClientService)!.StartAsync();
+    // 10. Pipeline
+    app.UseHttpsRedirection();
+    app.UseStaticFiles();
+    app.UseRouting();
+    app.UseCors("AllowAll");
+    app.UseAuthentication();
+    app.UseAuthorization();
 
-// 🌱 Seed inicial de admin
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var seedService = services.GetRequiredService<SeedService>();
-    seedService.SeedAdminUser();
+    // WebSockets
+    app.UseWebSockets(new WebSocketOptions
+    {
+        KeepAliveInterval = TimeSpan.FromSeconds(30),
+        ReceiveBufferSize = 4 * 1024
+    });
+
+    // Middlewares custom
+    app.UseMiddleware<DeviceApiKeyMiddleware>();
+    app.UseMiddleware<CommandRateLimiterMiddleware>();
+
+    app.MapControllers();
+    app.MapHub<StarkAid.Api.Hubs.DeviceHub>("/hubs/device"); // endpoint do hub
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
+
+    // Dispose MQTT on shutdown
+    app.Lifetime.ApplicationStopping.Register(() =>
+    {
+        Task.Run(async () =>
+        {
+            using var scope = app.Services.CreateScope();
+            var mqttService = scope.ServiceProvider.GetService<IMqttClientService>();
+            if (mqttService is IAsyncDisposable asyncDisposable) await asyncDisposable.DisposeAsync();
+        }).Wait();
+    });
+
+    app.Run();
 }
-
-// 📑 Middlewares padrão
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-app.UseRouting();
-
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseMiddleware<DeviceApiKeyMiddleware>();
-app.UseMiddleware<CommandRateLimiterMiddleware>();
-
-if (app.Environment.IsDevelopment())
+catch (Exception ex)
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    Log.Fatal(ex, "Falha ao iniciar a aplicação");
 }
-
-app.MapControllers();
-
-app.Run();
+finally
+{
+    Log.CloseAndFlush();
+}

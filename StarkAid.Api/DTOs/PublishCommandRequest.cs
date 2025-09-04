@@ -1,15 +1,22 @@
-﻿namespace StarkAid.Api.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace StarkAid.Api.DTOs
 {
     public enum CommandType
     {
         ligar,
-        desligar
+        desligar,
+        reiniciar,
+        resetar
     }
 
     public class PublishCommandRequest
     {
+        [Required]
         public Guid DeviceId { get; set; }
-        public CommandType Command { get; set; }
-    }
 
+        public CommandType? Command { get; set; }
+
+        public string? CustomCommand { get; set; } // Tornado nullable
+    }
 }

@@ -25,13 +25,13 @@ namespace StarkAid.Api.Controllers
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            // Registrar disparo no banco
-            var disparo = await _disparoService.RegistrarDisparoAsync(userId, request.DispositivoId, request.Mensagem);
+            // Registrar disparo no banco (agora retorna DTO)
+            var disparoResponse = await _disparoService.RegistrarDisparoAsync(userId, request.DispositivoId, request.Mensagem);
 
-            // Disparar notificação FCM para todos os devices do usuário
-            await _fcmService.EnviarParaUsuarioAsync(userId, "Alerta de Disparo", request.Mensagem, disparo.Id);
+            // Disparar notificação FCM
+            await _fcmService.EnviarParaUsuarioAsync(userId, "Alerta de Disparo", request.Mensagem, disparoResponse.Id);
 
-            return Created("", disparo);
+            return Created("", disparoResponse); // Retorna o DTO
         }
 
         [HttpGet]
@@ -39,7 +39,7 @@ namespace StarkAid.Api.Controllers
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var disparos = await _disparoService.ListarDisparosComNomePorUsuarioAsync(userId);
-            return Ok(disparos);
+            return Ok(disparos); // Já retorna List<DisparoResponse>
         }
 
         [HttpPut("{id}/confirmar")]

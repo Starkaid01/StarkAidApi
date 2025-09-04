@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StarkAid.Api.DTOs;
 using StarkAid.Api.Entities;
 using StarkAid.Api.Services;
 using System.Security.Claims;
@@ -30,7 +31,7 @@ public class ComandosSociaisController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] ComandoSocial request)
+    public async Task<IActionResult> Post([FromBody] ComandoSocialDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Comando) || string.IsNullOrWhiteSpace(request.Resposta))
             return BadRequest("Comando e resposta são obrigatórios.");
@@ -44,7 +45,7 @@ public class ComandosSociaisController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Put(Guid id, [FromBody] ComandoSocial request)
+    public async Task<IActionResult> Put(Guid id, [FromBody] ComandoSocialDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Comando) || string.IsNullOrWhiteSpace(request.Resposta))
             return BadRequest("Comando e resposta são obrigatórios.");

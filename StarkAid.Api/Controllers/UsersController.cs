@@ -2,10 +2,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using StarkAid.Api.Data;
 using StarkAid.Api.DTOs;
 using StarkAid.Api.Entities;
 using StarkAid.Api.Services;
+using Stripe;
 using System.Security.Claims;
 
 namespace StarkAid.Api.Controllers;
@@ -17,12 +19,18 @@ public class UsersController : ControllerBase
     private readonly AppDbContext _context;
     private readonly AuthService _authService;
     private readonly IEmailService _emailService;
+    private readonly StripeService _stripeService;
+    private readonly EntityConfigurations.StripeSettings _stripeSettings;
+    private readonly ILogger<StripeWebhookService> _logger;
 
-    public UsersController(AppDbContext context, AuthService authService, IEmailService emailService)
+    public UsersController(AppDbContext context, AuthService authService, IEmailService emailService, StripeService stripeService, IOptions<EntityConfigurations.StripeSettings> stripeOptions, ILogger<StripeWebhookService> logger)
     {
         _context = context;
         _authService = authService;
         _emailService = emailService;
+        _stripeService = stripeService;
+        _stripeSettings = stripeOptions.Value;
+        _logger = logger;
     }
 
     // POST: api/Users
@@ -101,7 +109,7 @@ public class UsersController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        var resetLink = $"http://starkaid.com/password/reset-password.html?token={Uri.EscapeDataString(token)}";
+        var resetLink = $"http://starkaid.vbweb.com.br/password/reset-password.html?token={Uri.EscapeDataString(token)}";
 
         await _emailService.SendAsync(user.Email, "Redefinição de senha", $"Use o link para redefinir sua senha: {resetLink}");
 
@@ -168,6 +176,26 @@ public class UsersController : ControllerBase
         return Ok("Acesso exclusivo para UserNivel2.");
     }
 
+    [HttpGet("nivel")]
+    public async Task<IActionResult> GetNivelUsuario()
+    {
+        // Obtém o ID do usuário a partir do token JWT
+        var userIdFromToken = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdFromToken))
+            return Unauthorized("Token inválido ou ausente.");
+
+        // Busca apenas o campo Role no banco para evitar carregar dados desnecessários
+        var role = await _context.Users
+            .Where(u => u.Id.ToString() == userIdFromToken)
+            .Select(u => u.Role)
+            .FirstOrDefaultAsync();
+
+        if (role == null)
+            return NotFound("Usuário não encontrado.");
+
+        return Ok(new { Nivel = role });
+    }
+
     [Authorize(Policy = "UserNivel3Only")]
     [HttpGet("nivel3-only")]
     public IActionResult Nivel3Only()
@@ -175,7 +203,6 @@ public class UsersController : ControllerBase
         return Ok("Acesso exclusivo para UserNivel3.");
     }
 
-    [Authorize(Policy = "AdministradorOnly")]
     [HttpPatch("{id}/upgrade-to-nivel2")]
     public async Task<IActionResult> UpgradeToNivel2(Guid id)
     {
@@ -201,5 +228,128 @@ public class UsersController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok($"Usuário {user.Name} promovido para UserNivel3.");
+    }
+
+    [Authorize]
+    [HttpDelete("delete-account")]
+    public async Task<IActionResult> DeleteAccount()
+    {
+        var userIdFromToken = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdFromToken, out Guid userId))
+            return BadRequest("Token inválido");
+
+        // Buscar o usuário e suas assinaturas com tracking
+        var user = await _context.Users
+            .Include(u => u.Assinaturas)
+            .AsTracking() // IMPORTANTE: Permite atualizações
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user == null)
+            return NotFound("Usuário não encontrado");
+
+        var canceledSubscriptions = new List<Guid>();
+        var stripeErrors = new List<string>();
+
+        /////////////////////////////////////////////
+        _logger.LogInformation($"usuário id encontrado: {userId}");
+
+        // Buscar todas as assinaturas ativas do usuário
+        var assinaturasAtivas = await _context.Assinaturas
+            .Where(a => a.UserId == userId &&
+                       a.Status == "Ativa")
+            .ToListAsync();
+
+        if (!assinaturasAtivas.Any())
+        {
+            _logger.LogInformation("Nenhuma assinatura ativa encontrada para cancelar.");
+            return BadRequest("Nenhuma assinatura ativa encontrada para cancelar.");
+        }
+
+        var results = new List<SubscriptionCancelResult>();
+
+        foreach (var assinatura in assinaturasAtivas)
+        {
+            // Tentar cancelar no Stripe
+            var stripeResult = await _stripeService.CancelSubscriptionAsync(assinatura.StripeSubscriptionId!);
+            _logger.LogInformation($"Cancelando assinatura no Stripe: {assinatura.StripeSubscriptionId}");
+
+            // Atualizar status localmente
+            assinatura.Status = "Cancelada";
+            _logger.LogInformation($"Cancelada {assinatura.Id} ");
+            assinatura.CanceladaEm = DateTimeOffset.UtcNow;
+            _context.Assinaturas.Update(assinatura);
+
+            results.Add(new SubscriptionCancelResult(
+                assinatura.Id,
+                stripeResult != null ? "Cancelada" : "Falha no cancelamento",
+                stripeResult?.Status ?? "Erro"
+
+            ));
+            _logger.LogInformation($"Resultado do cancelamento: {stripeResult?.Status}");
+        }
+
+        // Rebaixar usuário para nível 1        
+        if (user != null)
+        {
+            user.Role = "UserNivel1";
+            _context.Users.Update(user);
+        }
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation($"Total de assinaturas canceladas: {results.Count}");
+
+        // Deletar o usuário e dependências
+        await DeleteUserAndDependencies(userId);
+
+        string message = "Conta deletada com sucesso.";
+
+        if (canceledSubscriptions.Any())
+        {
+            message += $"\n{canceledSubscriptions.Count} assinatura(s) cancelada(s).";
+            Console.WriteLine($"{canceledSubscriptions.Count} assinatura(s) cancelada(s).");
+        }
+
+        if (stripeErrors.Any())
+        {
+            message += $"\nErros: {string.Join(", ", stripeErrors)}";
+            Console.WriteLine("Erros ao cancelar assinaturas: ", string.Join(", ", stripeErrors));
+        }
+
+        return Ok(new { Message = message });
+    }
+
+    private async Task DeleteUserAndDependencies(Guid userId)
+    {
+        // 1. Deletar dispositivos vinculados
+        var dispositivos = await _context.Devices
+            .Where(d => d.UserId == userId)
+            .ToListAsync();
+
+        _context.Devices.RemoveRange(dispositivos);
+
+        // 2. Deletar comandos sociais
+        var comandos = await _context.ComandosSociais
+            .Where(c => c.UserId == userId)
+            .ToListAsync();
+
+        _context.ComandosSociais.RemoveRange(comandos);
+
+        // 3. Deletar tokens de reset
+        var resetTokens = await _context.PasswordResetTokens
+            .Where(t => t.UserId == userId)
+            .ToListAsync();
+
+        _context.PasswordResetTokens.RemoveRange(resetTokens);
+
+        
+        // 5. Finalmente deletar o usuário
+        var user = await _context.Users.FindAsync(userId);
+        if (user != null)
+        {
+            _context.Users.Remove(user);
+        }
+
+        await _context.SaveChangesAsync();
     }
 }

@@ -30,9 +30,7 @@ namespace StarkAid.Api.Controllers
             var apiKeyFromHeader = Request.Headers["Api-Key"].FirstOrDefault();
 
             var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-            Console.WriteLine($"AuthHeader: {authHeader}, ApiKey: {apiKeyFromHeader}");
-
-
+            
             if (string.IsNullOrEmpty(apiKeyFromHeader))
                 return Unauthorized("ApiKey obrigatória.");
 
@@ -55,7 +53,8 @@ namespace StarkAid.Api.Controllers
             {
                 d.Id,
                 d.Name,
-                d.MqttTopic
+                d.MqttTopic,
+                d.Comando
             });
 
             return Ok(result);
@@ -84,7 +83,7 @@ namespace StarkAid.Api.Controllers
             if (user.ApiKey != apiKeyFromHeader)
                 return Unauthorized("ApiKey inválida.");
 
-            var updated = await _deviceService.RenameDeviceAsync(deviceId, userId, request.NewName);
+            var updated = await _deviceService.RenameDeviceAsync(deviceId, userId, request.NewName, request.NewComando);
             if (!updated)
                 return NotFound("Dispositivo não encontrado ou não pertence ao usuário.");
 
@@ -107,7 +106,8 @@ namespace StarkAid.Api.Controllers
                 {
                     deviceId = device.Id,
                     userId = device.UserId,
-                    mqttTopic = device.MqttTopic
+                    mqttTopic = device.MqttTopic,
+                    comando = device.Comando
                 })
                 : Created("", new
                 {
@@ -129,14 +129,15 @@ namespace StarkAid.Api.Controllers
                 return Unauthorized("Claim nameidentifier não encontrada ou inválida no token.");
             }
 
-            var device = await _deviceService.CreateDeviceAsync(request.Name, userId);
+            var device = await _deviceService.CreateDeviceAsync(request.Name, userId, request.Comando);
 
             var response = new DeviceResponseDto
             {
                 Id = device.Id,
                 Name = device.Name,
                 ApiKey = device.ApiKey,
-                MqttTopic = device.MqttTopic
+                MqttTopic = device.MqttTopic,
+                Comando = device.Comando
             };
 
             return Ok(response);
@@ -168,5 +169,6 @@ namespace StarkAid.Api.Controllers
 
             return Ok("Dispositivo removido com sucesso.");
         }
+
     }
 }
