@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 using StarkAid.Api.Data;
 using StarkAid.Api.Entities;
 using StarkAid.Api.EntityConfigurations;
-using StarkAid.Api.Services;
+using StarkAid.Api.Services.Assinatura;
 using Stripe;
 
 namespace StarkAid.Api.Controllers;

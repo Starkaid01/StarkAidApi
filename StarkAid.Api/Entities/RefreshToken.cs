@@ -19,4 +19,7 @@ public class RefreshToken
     public Guid UserId { get; set; }
 
     public User User { get; set; } = null!;
+
+    // 🔥 Novo campo
+    public string Origem { get; set; } = "web"; // default "web"
 }

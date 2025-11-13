@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using StarkAid.Api.DTOs;
-using StarkAid.Api.Services;
+using StarkAid.Api.DTOs.Devices;
+using StarkAid.Api.Services.Devices;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -23,7 +23,6 @@ namespace StarkAid.Api.Controllers
 
         // GET: /api/Devices
         [Authorize]
-        [Authorize(Policy = "UserNivel2Only")]
         [HttpGet]
         public async Task<IActionResult> GetDevices()
         {
@@ -61,7 +60,6 @@ namespace StarkAid.Api.Controllers
         }
 
         [Authorize]
-        [Authorize(Policy = "UserNivel2Only")]
         [HttpPut("{deviceId}/Rename")]
         public async Task<IActionResult> RenameDevice(Guid deviceId, [FromBody] RenameDeviceRequest request)
         {
@@ -118,7 +116,6 @@ namespace StarkAid.Api.Controllers
         }
 
         [Authorize]
-        [Authorize(Policy = "UserNivel2Only")]
         [HttpPost]
         public async Task<IActionResult> CreateDevice([FromBody] CreateDeviceRequest request)
         {
@@ -144,7 +141,6 @@ namespace StarkAid.Api.Controllers
         }
 
         [Authorize]
-        [Authorize(Policy = "UserNivel2Only")]
         [HttpDelete("{deviceId}")]
         public async Task<IActionResult> DeleteDevice(Guid deviceId)
         {

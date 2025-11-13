@@ -20,6 +20,11 @@ public class Assinatura
     [MaxLength(100)]
     public string? StripeSubscriptionId { get; set; }
 
+    // 🔹 Novo campo para identificar o plano comprado
+    public string? StripePriceId { get; set; }
+
+    public string? TipoPlano { get; set; }
+
     [MaxLength(50)]
     public string Status { get; set; } = "pendente"; // ativa, cancelada, trial, vencida, etc.
 

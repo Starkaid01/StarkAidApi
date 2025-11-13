@@ -14,7 +14,7 @@ public class RefreshTokenService
         _context = context;
     }
 
-    public async Task<string> GenerateAndStoreRefreshToken(User user)
+    public async Task<string> GenerateAndStoreRefreshToken(User user, string origem = "web")
     {
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         var expiration = DateTime.UtcNow.AddDays(7);
@@ -24,7 +24,8 @@ public class RefreshTokenService
             Token = token,
             UserId = user.Id,
             Expiration = expiration,
-            IsRevoked = false
+            IsRevoked = false,
+            Origem = origem.ToLower() // salva "app" ou "web"
         };
 
         _context.RefreshTokens.Add(refreshToken);

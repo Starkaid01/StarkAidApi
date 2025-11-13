@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using StarkAid.Api.DTOs;
-using StarkAid.Api.Services;
+using StarkAid.Api.DTOs.Devices;
+using StarkAid.Api.Services.Devices;
 using System.Security.Claims;
 
 namespace StarkAid.Api.Controllers

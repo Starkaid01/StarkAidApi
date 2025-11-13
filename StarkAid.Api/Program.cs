@@ -1,4 +1,6 @@
-﻿using FirebaseAdmin;
+﻿using Amazon;
+using Amazon.TranscribeStreaming;
+using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -9,9 +11,17 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
 using StarkAid.Api.Data;
+using StarkAid.Api.DTOs.SuperIA;
 using StarkAid.Api.EntityConfigurations;
 using StarkAid.Api.Middlewares;
+using StarkAid.Api.Options;
 using StarkAid.Api.Services;
+using StarkAid.Api.Services.Assinatura;
+using StarkAid.Api.Services.Auth;
+using StarkAid.Api.Services.Devices;
+using StarkAid.Api.Services.SocialCommand;
+using StarkAid.Api.Services.SuperIA;
+using StarkAid.Api.Services.Users;
 using Stripe;
 using System.Diagnostics;
 using System.Text;
@@ -32,6 +42,8 @@ try
         .CreateLogger();
 
     var builder = WebApplication.CreateBuilder(args);
+
+
     builder.Host.UseSerilog();
 
     Log.Information("Iniciando StarkAid.Api...");
@@ -121,6 +133,9 @@ try
             opt.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
         });
 
+
+
+
     // 8. Serviços e Hosted Services
     builder.Services.AddHttpClient();
     builder.Services.AddScoped<AuthService>();
@@ -136,14 +151,72 @@ try
     builder.Services.AddScoped<DispositivoDisparoService>();
     builder.Services.AddScoped<StripeService>();
 
+
+    // 🧩 Lê o domínio Cloudflare atual do banco e injeta na configuração
+    using (var scope = builder.Services.BuildServiceProvider().CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var config = db.ConfiguracoesSistema.FirstOrDefault();
+
+        if (config != null && !string.IsNullOrWhiteSpace(config.DominioCloudflare))
+        {
+            builder.Configuration["WppConnectOptions:BaseUrl"] = config.DominioCloudflare;
+            Console.WriteLine($"🌐 Dominio Cloudflare carregado do banco: {config.DominioCloudflare}");
+        }
+        else
+        {
+            Console.WriteLine("⚠️ Nenhum domínio Cloudflare encontrado no banco, usando valor padrão do appsettings.json.");
+        }
+    }
+
+
     builder.Services.AddHostedService<AgendamentoWorker>();
     builder.Services.AddHostedService<PasswordResetCleanupService>();
     builder.Services.AddHostedService<MqttHostedService>();
     builder.Services.AddHostedService<AssinaturaStatusChecker>();
+
     builder.Services.AddSingleton<IMqttClientService, MqttClientService>();
+
+    // ⚙️ WPPConnect - Corrigido para a seção certa
+    builder.Services.Configure<WppConnectOptions>(builder.Configuration.GetSection("WppConnectOptions"));
+
+    builder.Services.Configure<NlpConnectOptions>(builder.Configuration.GetSection("NlpConnectOptions"));
+
+
+    builder.Services.Configure<IaApiKeys>(builder.Configuration.GetSection("IaApiKeys"));
+    builder.Services.AddSingleton<IaService>();
+
+
+    builder.Services.AddSingleton<AmazonTranscribeStreamingClient>(sp =>
+    {
+        var accessKey = builder.Configuration["AWS:AccessKey"];
+        var secretKey = builder.Configuration["AWS:SecretKey"];
+        var region = builder.Configuration["AWS:Region"];
+
+        var config = new AmazonTranscribeStreamingConfig
+        {
+            RegionEndpoint = RegionEndpoint.GetBySystemName(region)
+        };
+
+        return new AmazonTranscribeStreamingClient(accessKey, secretKey, config);
+    });
+
+
+    builder.Services.AddSingleton<TranscribeProxyService>(sp =>
+    {
+        var transcribeClient = sp.GetRequiredService<AmazonTranscribeStreamingClient>();
+        var logger = sp.GetRequiredService<ILogger<TranscribeProxyService>>();
+        return new TranscribeProxyService(transcribeClient, sp, logger);
+    });
+
+
     builder.Services.AddMemoryCache();
 
-    builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+    builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("StripeSettings"));
+    builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IOptions<StripeSettings>>().Value);
+
+    // ✅ StripeClient configurado corretamente
     builder.Services.AddSingleton<StripeClient>(sp =>
     {
         var options = sp.GetRequiredService<IOptions<StripeSettings>>().Value;

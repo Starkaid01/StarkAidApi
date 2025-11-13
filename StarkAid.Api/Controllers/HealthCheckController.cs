@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using StarkAid.Api.Services;
+using StarkAid.Api.Services.Devices;
 
 namespace StarkAid.Api.Controllers;
 

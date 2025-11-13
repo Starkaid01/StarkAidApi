@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using FirebaseAdmin.Messaging;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using StarkAid.Api.DTOs;
+using StarkAid.Api.DTOs.SocialCommand;
 using StarkAid.Api.Entities;
-using StarkAid.Api.Services;
+using StarkAid.Api.Services.SocialCommand;
 using System.Security.Claims;
 
 namespace StarkAid.Api.Controllers;
@@ -40,8 +41,39 @@ public class ComandosSociaisController : ControllerBase
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
             return Unauthorized("Token inválido.");
 
-        var novo = await _service.AddAsync(userId, request.Comando, request.Resposta);
-        return Created("", novo);
+        try
+        {
+            
+            var novo = await _service.AddAsync(userId, request.Comando, request.Resposta, request.Estilo);
+            if (novo == null)
+                return StatusCode(500, "Erro ao gerar variações com a IA.");
+
+            return Created("", novo);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("Saldo insuficiente"))
+        {
+            return BadRequest("Saldo insuficiente para criar o comando.");
+        }
+    }
+
+    //RespsrandomAnswers(Guid userId, string resposta)
+    [HttpGet("random-answers")]
+    public async Task<IActionResult> GetRandomAnswers([FromQuery] string resposta)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+            return Unauthorized("Token inválido.");
+        try
+        {
+            var respostasAleatorias = await _service.RespsrandomAnswers(userId, resposta);
+            if (respostasAleatorias == null)
+                return StatusCode(500, "Erro ao gerar variações com a IA.");
+            return Ok(respostasAleatorias);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("Saldo insuficiente"))
+        {
+            return BadRequest("Saldo insuficiente para gerar variações.");
+        }
     }
 
     [HttpPut("{id}")]
@@ -54,12 +86,21 @@ public class ComandosSociaisController : ControllerBase
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
             return Unauthorized("Token inválido.");
 
-        var atualizado = await _service.EditAsync(id, userId, request.Comando, request.Resposta);
-        if (!atualizado)
-            return NotFound("Comando não encontrado ou pertence a outro usuário.");
+        try
+        {
+            var atualizado = await _service.EditAsync(id, userId, request.Comando, request.Resposta, request.Estilo);
+            if (!atualizado)
+                return NotFound("Comando não encontrado ou saldo insuficiente.");
 
-        return NoContent();
+            return NoContent();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("Saldo insuficiente"))
+        {
+            return BadRequest("Saldo insuficiente para atualizar comando.");
+        }
     }
+
+
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)

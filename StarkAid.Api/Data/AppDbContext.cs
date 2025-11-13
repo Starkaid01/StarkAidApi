@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using StarkAid.Api.DTOs.WPPconnect;
 using StarkAid.Api.Entities;
 
 namespace StarkAid.Api.Data;
@@ -19,10 +20,33 @@ public class AppDbContext : DbContext
     public DbSet<Disparo> Disparos => Set<Disparo>();
     public DbSet<WebhookLog> WebhookLogs => Set<WebhookLog>();
     public DbSet<Assinatura> Assinaturas => Set<Assinatura>();
+    public DbSet<IaHistorico> IaHistoricos => Set<IaHistorico>();
+
+    public DbSet<ConfiguracaoSistema> ConfiguracoesSistema { get; set; }
+
+    public DbSet<UserSession> UserSessions { get; set; }
+
+    public DbSet<PagamentoAvulso> PagamentosAvulsos { get; set; }
+
+    public DbSet<ConfiguracaoStarkNlp> ConfiguracoesStarkNlp { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<IaHistorico>(entity =>
+        {
+            entity.HasKey(h => h.Id);
+            entity.Property(h => h.TextoUsuario).IsRequired();
+            entity.Property(h => h.TextoIa).IsRequired();
+            entity.Property(h => h.CriadoEm).HasColumnType("datetimeoffset").IsRequired();
+
+            entity.HasOne(h => h.User)
+                  .WithMany()
+                  .HasForeignKey(h => h.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
 
         // Assinatura
         modelBuilder.Entity<Assinatura>(entity =>
@@ -66,6 +90,9 @@ public class AppDbContext : DbContext
             entity.Property(u => u.SpotifyRefreshToken).HasMaxLength(500);
             entity.Property(u => u.SpotifyTokenExpiresAt).HasColumnType("datetimeoffset");
 
+
+            
+
             entity.HasMany(u => u.RefreshTokens)
                 .WithOne(t => t.User)
                 .HasForeignKey(t => t.UserId)
@@ -105,6 +132,11 @@ public class AppDbContext : DbContext
                 .WithOne(d => d.User)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(u => u.MinutosReconhecidos)
+                  .HasColumnType("float")   // ou "decimal(18,2)" se preferir mais precisão
+                  .IsRequired()
+                  .HasDefaultValue(0);
         });
 
         // RefreshToken
@@ -191,6 +223,7 @@ public class AppDbContext : DbContext
             entity.HasKey(c => c.Id);
             entity.Property(c => c.Comando).IsRequired();
             entity.Property(c => c.Resposta).IsRequired();
+            entity.Property(c => c.RespostasAleatorias).HasColumnType("nvarchar(max)");
         });
     }
 }

@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StarkAid.Api.Data;
-using StarkAid.Api.DTOs;
+using StarkAid.Api.DTOs.Auth;
 using StarkAid.Api.Services;
+using StarkAid.Api.Services.Auth;
 
 namespace StarkAid.Api.Controllers;
 
@@ -33,15 +34,19 @@ public class AuthController : ControllerBase
         if (user == null || !_authService.VerifyPasswordHash(request.Password, user.PasswordHash))
             return Unauthorized("Usuário ou senha inválidos.");
 
-        var token = _authService.GenerateJwtToken(user);
-        var refreshToken = await _refreshTokenService.GenerateAndStoreRefreshToken(user);
+        // 🔑 Define se é login do App
+        bool isFromApp = request.Origem?.ToLower() == "app";
+
+        // Passa essa info para geração do token
+        var token = _authService.GenerateJwtToken(user, isFromApp);
+        var refreshToken = await _refreshTokenService.GenerateAndStoreRefreshToken(user, request.Origem);
 
         return Ok(new
         {
             token,
             refreshToken,
-            id = user.Id,               // 👉 inclui aqui
-            apiKey = user.ApiKey        // 👉 e aqui
+            id = user.Id,
+            apiKey = user.ApiKey
         });
     }
 
@@ -68,8 +73,9 @@ public class AuthController : ControllerBase
 
         await _refreshTokenService.RevokeToken(storedToken);
 
-        var newJwtToken = _authService.GenerateJwtToken(storedToken.User);
-        var newRefreshToken = await _refreshTokenService.GenerateAndStoreRefreshToken(storedToken.User);
+        bool isFromApp = storedToken.Origem == "app";
+        var newJwtToken = _authService.GenerateJwtToken(storedToken.User, isFromApp);
+        var newRefreshToken = await _refreshTokenService.GenerateAndStoreRefreshToken(storedToken.User, storedToken.Origem);
 
         return Ok(new { token = newJwtToken, refreshToken = newRefreshToken });
     }

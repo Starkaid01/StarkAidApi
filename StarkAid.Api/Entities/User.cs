@@ -34,8 +34,13 @@ namespace StarkAid.Api.Entities
         [Required, MaxLength(50)]
         public string Role { get; set; } = "UserNivel1";
 
+        [Required, MaxLength(50)]
+        public string? RemovalAds { get; set; }
+
         [MaxLength(100)]
         public string? PreapprovalId { get; set; }
+
+        public DateTimeOffset? LastUpdatedAt { get; set; } // nova coluna opcional
 
         public DateTimeOffset? UltimoPagamentoConfirmadoEm { get; set; } // datetimeoffset no DbContext
 
@@ -60,5 +65,16 @@ namespace StarkAid.Api.Entities
         public ICollection<Agendamento> Agendamentos { get; set; } = new List<Agendamento>();
 
         public virtual ICollection<Assinatura> Assinaturas { get; set; } = new List<Assinatura>();
+
+        /// <summary>
+        /// Total de minutos de áudio já reconhecidos pelo usuário.
+        /// </summary>
+        public double MinutosReconhecidos { get; set; } = 0;
+
+        public string? WhatsAppSessionData { get; set; }
+
+
+
+
     }
 }

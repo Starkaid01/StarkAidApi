@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using StarkAid.Api.Services;
+using StarkAid.Api.Services.Devices;
 using System.Security.Claims;
 
 [ApiController]

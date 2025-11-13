@@ -1,4 +1,0 @@
-﻿namespace StarkAid.Api.DTOs
-{
-   
-}

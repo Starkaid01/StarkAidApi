@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using StarkAid.Api.Data;
-using StarkAid.Api.DTOs;
+using StarkAid.Api.DTOs.Spotify;
 using System.Net.Http.Headers;
 using System.Text;
 using static System.Net.WebRequestMethods;
@@ -28,6 +28,173 @@ namespace StarkAid.Api.Controllers
             return _httpClientFactory.CreateClient();
         }
 
+
+        [HttpGet("me/token/{userId}")]
+        public async Task<IActionResult> GetValidToken(Guid userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound("Usuário não encontrado");
+
+            if (user.SpotifyTokenExpiresAt <= DateTime.UtcNow)
+            {
+                // Faz refresh
+                return await RefreshToken(userId, user.SpotifyRefreshToken);
+            }
+
+            return Ok(new { accessToken = user.SpotifyAccessToken });
+        }
+
+        [HttpGet("token")]
+        public async Task<IActionResult> GetAccessToken(Guid userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound("Usuário não encontrado");
+
+            // se expirado, faz refresh automático
+            if (user.SpotifyTokenExpiresAt <= DateTime.UtcNow)
+            {
+                var clientId = _config["Spotify:ClientId"];
+                var clientSecret = _config["Spotify:ClientSecret"];
+                var basic = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
+
+                using var httpClient = _httpClientFactory.CreateClient();
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://accounts.spotify.com/api/token");
+                request.Headers.Authorization = new AuthenticationHeaderValue("Basic", basic);
+                request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    {"grant_type", "refresh_token"},
+                    {"refresh_token", user.SpotifyRefreshToken}
+                });
+
+                var response = await httpClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    return BadRequest($"Erro ao renovar token: {error}");
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                var tokenResponse = JsonConvert.DeserializeObject<SpotifyTokenResponse>(json);
+
+                user.SpotifyAccessToken = tokenResponse.AccessToken;
+                if (!string.IsNullOrEmpty(tokenResponse.RefreshToken))
+                    user.SpotifyRefreshToken = tokenResponse.RefreshToken;
+                user.SpotifyTokenExpiresAt = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
+
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new { accessToken = user.SpotifyAccessToken });
+        }
+
+        [HttpPost("play-by-name")]
+        public async Task<IActionResult> PlayByName([FromBody] PlayByNameRequest request)
+        {
+            var user = await _context.Users.FindAsync(request.UserId);
+            if (user == null || string.IsNullOrEmpty(user.SpotifyAccessToken))
+                return NotFound("Usuário não encontrado ou não autenticado no Spotify");
+
+            // 🔹 1. Se token expirado → refresh
+            if (user.SpotifyTokenExpiresAt <= DateTime.UtcNow)
+            {
+                var clientId = _config["Spotify:ClientId"];
+                var clientSecret = _config["Spotify:ClientSecret"];
+                var basic = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
+
+                using var httpClient = _httpClientFactory.CreateClient();
+                var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "https://accounts.spotify.com/api/token");
+                tokenRequest.Headers.Authorization = new AuthenticationHeaderValue("Basic", basic);
+                tokenRequest.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            {"grant_type", "refresh_token"},
+            {"refresh_token", user.SpotifyRefreshToken}
+        });
+
+                var tokenResponse = await httpClient.SendAsync(tokenRequest);
+                if (!tokenResponse.IsSuccessStatusCode)
+                {
+                    var error = await tokenResponse.Content.ReadAsStringAsync();
+                    return BadRequest($"Erro ao renovar token: {error}");
+                }
+
+                var json = await tokenResponse.Content.ReadAsStringAsync();
+                var spotifyToken = JsonConvert.DeserializeObject<SpotifyTokenResponse>(json);
+
+                user.SpotifyAccessToken = spotifyToken.AccessToken;
+                if (!string.IsNullOrEmpty(spotifyToken.RefreshToken))
+                    user.SpotifyRefreshToken = spotifyToken.RefreshToken;
+                user.SpotifyTokenExpiresAt = DateTime.UtcNow.AddSeconds(spotifyToken.ExpiresIn);
+
+                await _context.SaveChangesAsync();
+            }
+
+            using var client = _httpClientFactory.CreateClient();
+
+            // 🔹 2. Descobrir o deviceId do Web Player ativo
+            var devicesReq = new HttpRequestMessage(HttpMethod.Get, "https://api.spotify.com/v1/me/player/devices");
+            devicesReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.SpotifyAccessToken);
+            var devicesRes = await client.SendAsync(devicesReq);
+            if (!devicesRes.IsSuccessStatusCode)
+            {
+                var err = await devicesRes.Content.ReadAsStringAsync();
+                return BadRequest($"Erro ao listar devices: {err}");
+            }
+
+            var devicesJson = await devicesRes.Content.ReadAsStringAsync();
+            dynamic devices = JsonConvert.DeserializeObject(devicesJson);
+            string deviceId = null;
+
+            foreach (var d in devices.devices)
+            {
+                if (d.type == "Computer" || d.name == "StarkAid Web Player")
+                {
+                    deviceId = d.id;
+                    break;
+                }
+            }
+
+            if (string.IsNullOrEmpty(deviceId))
+                return BadRequest("Nenhum Web Player ativo encontrado");
+
+            // 🔹 3. Buscar track pelo nome
+            var searchReq = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"https://api.spotify.com/v1/search?q={Uri.EscapeDataString(request.TrackName)}&type=track&limit=1"
+            );
+            searchReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.SpotifyAccessToken);
+
+            var searchRes = await client.SendAsync(searchReq);
+            if (!searchRes.IsSuccessStatusCode)
+                return BadRequest("Erro ao buscar música");
+
+            var searchJson = await searchRes.Content.ReadAsStringAsync();
+            dynamic searchData = JsonConvert.DeserializeObject(searchJson);
+            if (searchData.tracks.items.Count == 0)
+                return NotFound("Música não encontrada");
+
+            string trackUri = searchData.tracks.items[0].uri;
+
+            // 🔹 4. Tocar música
+            var playReq = new HttpRequestMessage(
+                HttpMethod.Put,
+                $"https://api.spotify.com/v1/me/player/play?device_id={deviceId}"
+            );
+            playReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.SpotifyAccessToken);
+            playReq.Content = new StringContent(
+                JsonConvert.SerializeObject(new { uris = new[] { trackUri } }),
+                Encoding.UTF8,
+                "application/json"
+            );
+
+            var playRes = await client.SendAsync(playReq);
+            if (!playRes.IsSuccessStatusCode)
+            {
+                var err = await playRes.Content.ReadAsStringAsync();
+                return BadRequest($"Erro ao tocar música: {playRes.StatusCode} - {err}");
+            }
+
+            return Ok(new { success = true, playedTrack = trackUri });
+        }
 
         [HttpPost("exchange")]
         public async Task<IActionResult> ExchangeCode([FromBody] SpotifyCodeDto dto)

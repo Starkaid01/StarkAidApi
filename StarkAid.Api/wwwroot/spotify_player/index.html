@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>StarkAid Spotify Player</title>
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
+</head>
+<body>
+  <h1>🎵 StarkAid Spotify Player</h1>
+  <p id="status">Carregando...</p>
+
+  <script>
+    const userId = new URLSearchParams(window.location.search).get("userId");
+    if (!userId) {
+      document.getElementById("status").innerText = "Erro: userId não informado!";
+      throw new Error("userId ausente");
+    }
+
+    async function getAccessToken() {
+      const res = await fetch(`/api/spotifyauth/token?userId=${userId}`);
+      if (!res.ok) throw new Error("Falha ao buscar token");
+      const data = await res.json();
+      return data.accessToken;
+    }
+
+    window.onSpotifyWebPlaybackSDKReady = async () => {
+      try {
+        const token = await getAccessToken();
+
+        const player = new Spotify.Player({
+          name: 'StarkAid Web Player',
+          getOAuthToken: async cb => {
+            const t = await getAccessToken(); // sempre renovando
+            cb(t);
+          },
+          volume: 0.8
+        });
+
+        player.addListener('ready', ({ device_id }) => {
+          document.getElementById("status").innerText =
+            "Player pronto! DeviceId: " + device_id;
+          window.deviceId = device_id;
+        });
+
+        player.addListener('not_ready', ({ device_id }) => {
+          console.log('Player offline', device_id);
+        });
+
+        player.connect();
+      } catch (err) {
+        document.getElementById("status").innerText = "Erro: " + err.message;
+      }
+    };
+
+    // API pública para tocar música no player atual
+    window.playTrack = async function(trackUri) {
+      const token = await getAccessToken();
+      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${window.deviceId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ uris: [trackUri] })
+      });
+    };
+  </script>
+</body>
+</html>

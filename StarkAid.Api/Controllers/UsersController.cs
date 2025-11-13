@@ -4,10 +4,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using StarkAid.Api.Data;
-using StarkAid.Api.DTOs;
+using StarkAid.Api.DTOs.Assinatura;
+using StarkAid.Api.DTOs.Spotify;
+using StarkAid.Api.DTOs.SuperIA;
+using StarkAid.Api.DTOs.Users;
 using StarkAid.Api.Entities;
-using StarkAid.Api.Services;
+using StarkAid.Api.Services.Assinatura;
+using StarkAid.Api.Services.Auth;
+using StarkAid.Api.Services.SuperIA;
+using StarkAid.Api.Services.Users;
 using Stripe;
+using System.IO.Compression;
 using System.Security.Claims;
 
 namespace StarkAid.Api.Controllers;
@@ -22,8 +29,12 @@ public class UsersController : ControllerBase
     private readonly StripeService _stripeService;
     private readonly EntityConfigurations.StripeSettings _stripeSettings;
     private readonly ILogger<StripeWebhookService> _logger;
+    private readonly IaService _iaService; // <-- adiciona isso
+    private readonly IWebHostEnvironment _env;
 
-    public UsersController(AppDbContext context, AuthService authService, IEmailService emailService, StripeService stripeService, IOptions<EntityConfigurations.StripeSettings> stripeOptions, ILogger<StripeWebhookService> logger)
+    private const string ValidKey = "ad5478r45t785g468t41df561254r4e785s654s1t54t54g5h";
+
+    public UsersController(AppDbContext context, AuthService authService, IEmailService emailService, StripeService stripeService, IOptions<EntityConfigurations.StripeSettings> stripeOptions, ILogger<StripeWebhookService> logger, IaService iaService, IWebHostEnvironment env)
     {
         _context = context;
         _authService = authService;
@@ -31,6 +42,8 @@ public class UsersController : ControllerBase
         _stripeService = stripeService;
         _stripeSettings = stripeOptions.Value;
         _logger = logger;
+        _iaService = iaService;
+        _env = env;
     }
 
     // POST: api/Users
@@ -54,7 +67,11 @@ public class UsersController : ControllerBase
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        var token = _authService.GenerateJwtToken(user);
+        var isFromApp = dto.Origem?.ToLower() == "app";
+
+        var token = _authService.GenerateJwtToken(user, isFromApp);
+
+
 
         return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, new
         {
@@ -141,7 +158,66 @@ public class UsersController : ControllerBase
         return Ok("Senha redefinida com sucesso.");
     }
 
+    [HttpGet("{id}/starkcoins")]
+    public async Task<ActionResult<User>> GetStarkCoins(Guid id)
+    {
+        var user = await _context.Users.FindAsync(id);
 
+        if (user == null)
+            return NotFound();
+
+        return Ok(new
+        {
+            user.StarkCoins,
+        });
+    }
+
+    [Authorize]
+    [HttpPatch("{id}/update-starkcoins-ia")]
+    public async Task<IActionResult> UpdateStarkCoinsIa(Guid id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null)
+            return NotFound("Usuário não encontrado.");
+
+        const decimal valorDebito = 0.1m;
+
+        if (user.StarkCoins < valorDebito)
+            return BadRequest("Saldo insuficiente para essa operação.");
+
+        user.StarkCoins -= valorDebito;
+
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            Message = $"Foram debitados {valorDebito} StarkCoins.",
+            SaldoAtual = user.StarkCoins
+        });
+    }
+
+    [Authorize]
+    [HttpPatch("{id}/update-starkcoins-ads")]
+    public async Task<IActionResult> UpdateStarkCoinsAds(Guid id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null)
+            return NotFound("Usuário não encontrado.");
+
+        const decimal valorCredito = 0.01m;
+
+        user.StarkCoins += valorCredito;
+
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            Message = $"Foram creditados {valorCredito} StarkCoins.",
+            SaldoAtual = user.StarkCoins
+        });
+    }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<User>> GetUserById(Guid id)
@@ -342,7 +418,7 @@ public class UsersController : ControllerBase
 
         _context.PasswordResetTokens.RemoveRange(resetTokens);
 
-        
+
         // 5. Finalmente deletar o usuário
         var user = await _context.Users.FindAsync(userId);
         if (user != null)
@@ -351,5 +427,219 @@ public class UsersController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
+    }
+
+    [Authorize]
+    [HttpGet("ads")]
+    public async Task<IActionResult> GetAds()
+    {
+       
+        var userIdFromToken = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdFromToken, out Guid userId))
+            return BadRequest("Token inválido");
+
+        var result = new { adsAtiv = "Desativado" };
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return Unauthorized();
+        if (user.RemovalAds == "Ativo")
+            result = new { adsAtiv = "Ativo" };
+
+        
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpPost("musica/tocar")]
+    public async Task<IActionResult> TocarMusica([FromBody] MusicaDto dto)
+    {
+        var userIdFromToken = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdFromToken, out Guid userId))
+            return BadRequest("Token inválido");
+
+        if (string.IsNullOrWhiteSpace(dto.NomeMusica))
+            return BadRequest(new { autorizado = false, message = "Nome da música não informado" });
+
+        var user = await _context.Users.FindAsync(userId);
+
+        if (user == null) return Unauthorized();
+
+        if (user.StarkCoins < 0.2m)
+            return BadRequest(new { autorizado = false, message = "Saldo insuficiente" });
+
+
+        return Ok(new { autorizado = true, saldoAtual = user.StarkCoins });
+    }
+
+    // aceita GET (AdMob envia callback com query params). Mantive POST como fallback.
+    [HttpGet("starkcoins/earning")]
+    public async Task<IActionResult> StarkCoinsAdsEarning([FromQuery] string key, string userId)
+    {
+        try
+        {
+            Console.WriteLine($"[ADMOB-SSV] Callback recebido - Method: {Request.Method} Query: {Request.QueryString}");
+
+            // 1) valida chave
+            const string validKey = "ad5478r45t785g468t41df561254r4e785s654s1t54t54g5h";
+            if (string.IsNullOrEmpty(key) || key != validKey)
+            {
+                Console.WriteLine("[ADMOB-SSV] Key inválida");
+                return BadRequest("Invalid key");
+            }
+
+            // 2) lê user_id da query string (prioridade)
+            string customData = Request.Query["custom_data"].FirstOrDefault();
+
+            // fallback: POST form-data (caso algum teste envie assim)
+            if (string.IsNullOrEmpty(userId) && Request.HasFormContentType)
+            {
+                userId = Request.Form["user_id"].FirstOrDefault();
+                customData = Request.Form["custom_data"].FirstOrDefault();
+            }
+
+            Console.WriteLine($"[ADMOB-SSV] user_id={userId}, custom_data={customData}");
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                Console.WriteLine("[ADMOB-SSV] UserId não fornecido");
+                return BadRequest("User ID required");
+            }
+
+            // 3) Processa recompensa em background
+            _ = Task.Run(async () => await ProcessarRecompensaAsync(userId));
+
+            // 4) Resposta 200 OK sem corpo (o AdMob aceita assim)
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ADMOB-SSV] Erro: {ex}");
+            return StatusCode(500);
+        }
+    }
+
+    private async Task ProcessarRecompensaAsync(string userId)
+    {
+        try
+        {
+            await Task.Delay(300); // pequeno buffer
+
+            if (Guid.TryParse(userId, out Guid userGuid))
+            {
+                var user = await _context.Users.FindAsync(userGuid);
+                if (user != null)
+                {
+                    user.StarkCoins += 0.01m;
+                    await _context.SaveChangesAsync();
+                    Console.WriteLine($"[ADMOB-SSV] ✅ StarkCoins creditados para: {userId}");
+                }
+                else
+                {
+                    Console.WriteLine($"[ADMOB-SSV] ❌ Usuário não encontrado: {userId}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"[ADMOB-SSV] ❌ UserId em formato inválido: {userId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ADMOB-SSV] ❌ Erro no processamento: {ex}");
+        }
+    }
+
+
+    [Authorize]
+    [HttpPost("ia/super")]
+    public async Task<IActionResult> SuperIA([FromBody] SuperIaDto dto)
+    {
+        var userIdFromToken = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdFromToken, out Guid userId))
+            return BadRequest("Token inválido");
+
+        if (string.IsNullOrWhiteSpace(dto.Texto))
+            return BadRequest("Texto não informado");
+
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return Unauthorized();
+
+        // 🔹 Busca últimas 3 interações do usuário
+        var historico = await _context.IaHistoricos
+            .Where(h => h.UserId == userId)
+            .OrderByDescending(h => h.CriadoEm)
+            .Take(3)
+            .ToListAsync();
+
+        // 🔹 Prepara contexto para IA (mais antigo -> mais recente)
+        var contextoUser = string.Join("\n", historico.OrderBy(h => h.CriadoEm).Select(h => h.TextoUsuario));
+        var contextoIA = string.Join("\n", historico.OrderBy(h => h.CriadoEm).Select(h => h.TextoIa));
+
+        // 🔹 Estimativa de tokens (1 token ≈ 4 caracteres)
+        int estimativaTokens = (contextoUser.Length + contextoIA.Length) / 4;
+        const int maxTokens = 500; // limite de tokens do histórico
+
+        if (estimativaTokens > maxTokens)
+        {
+            contextoUser = await _iaService.ResumirTexto(contextoUser, dto.Estilo);
+            contextoIA = await _iaService.ResumirTexto(contextoIA, dto.Estilo);
+        }
+
+        var resultado = await _iaService.ProcessarMensagem(contextoUser, contextoIA, dto.Texto, dto.Estilo);
+        if (resultado == null || string.IsNullOrWhiteSpace(resultado.Texto))
+            return Ok("Não foi possível gerar resposta no momento.");
+
+        // 🔹 Calcula custo
+        var custoUsd = _iaService.CalcularCustoUSD(resultado);
+        var custoSc1 = custoUsd / 0.02m;
+        var custoSC = custoSc1 + 0.01m;
+        if (user.StarkCoins < custoSC)
+            return Ok("Saldo insuficiente");
+
+        user.StarkCoins -= custoSC;
+
+        // 🔹 Cria nova interação
+        var novaInteracao = new IaHistorico
+        {
+            UserId = userId,
+            TextoUsuario = dto.Texto,
+            TextoIa = resultado.Texto,
+            CriadoEm = DateTimeOffset.UtcNow
+        };
+
+        _context.IaHistoricos.Add(novaInteracao);
+
+        // 🔹 Remove interações antigas caso já existam 3
+        if (historico.Count >= 3)
+        {
+            var paraRemover = historico.OrderBy(h => h.CriadoEm).First();
+            _context.IaHistoricos.Remove(paraRemover);
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            Resposta = resultado.Texto,
+            NovoSaldo = user.StarkCoins
+        });
+    }
+
+        
+    // Adicione este endpoint na sua API
+    [HttpGet("test-connection")]
+    public IActionResult TestConnection()
+    {
+        return Ok(new
+        {
+            status = "online",
+            message = "API funcionando",
+            timestamp = DateTime.UtcNow
+        });
+    }
+
+    private bool IsValidPhoneNumber(string numero)
+    {
+        // Checa se começa com "+" e contém apenas dígitos depois
+        return !string.IsNullOrEmpty(numero) && System.Text.RegularExpressions.Regex.IsMatch(numero, @"^\+\d{10,15}$");
     }
 }

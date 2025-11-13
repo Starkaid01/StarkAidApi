@@ -17,4 +17,7 @@ public class ComandoSocial
     public string Resposta { get; set; } = string.Empty;
 
     public User User { get; set; } = null!;
+
+    // 🔹 JSON com 4 respostas alternativas geradas pela IA
+    public string? RespostasAleatorias { get; set; }
 }
