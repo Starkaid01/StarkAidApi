@@ -401,8 +401,6 @@ firebase_path_debug.txt
 # Sensitive config files
 **/appsettings.*.json
 !appsettings.json
-!appsettings.Development.json
-!appsettings.Production.json
 **/web.config
 **/local.properties
 
