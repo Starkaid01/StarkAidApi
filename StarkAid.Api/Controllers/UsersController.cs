@@ -1,645 +1,736 @@
-﻿using BCrypt.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StarkAid.Api.Data;
-using StarkAid.Api.DTOs.Assinatura;
-using StarkAid.Api.DTOs.Spotify;
 using StarkAid.Api.DTOs.SuperIA;
 using StarkAid.Api.DTOs.Users;
 using StarkAid.Api.Entities;
-using StarkAid.Api.Services.Assinatura;
 using StarkAid.Api.Services.Auth;
+using StarkAid.Api.Services.Email;
 using StarkAid.Api.Services.SuperIA;
-using StarkAid.Api.Services.Users;
-using Stripe;
-using System.IO.Compression;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Linq;
+using System;
 
-namespace StarkAid.Api.Controllers;
-
-[Route("api/[controller]")]
-[ApiController]
-public class UsersController : ControllerBase
+namespace StarkAid.Api.Controllers
 {
-    private readonly AppDbContext _context;
-    private readonly AuthService _authService;
-    private readonly IEmailService _emailService;
-    private readonly StripeService _stripeService;
-    private readonly EntityConfigurations.StripeSettings _stripeSettings;
-    private readonly ILogger<StripeWebhookService> _logger;
-    private readonly IaService _iaService; // <-- adiciona isso
-    private readonly IWebHostEnvironment _env;
-
-    private const string ValidKey = "ad5478r45t785g468t41df561254r4e785s654s1t54t54g5h";
-
-    public UsersController(AppDbContext context, AuthService authService, IEmailService emailService, StripeService stripeService, IOptions<EntityConfigurations.StripeSettings> stripeOptions, ILogger<StripeWebhookService> logger, IaService iaService, IWebHostEnvironment env)
-    {
-        _context = context;
-        _authService = authService;
-        _emailService = emailService;
-        _stripeService = stripeService;
-        _stripeSettings = stripeOptions.Value;
-        _logger = logger;
-        _iaService = iaService;
-        _env = env;
-    }
-
-    // POST: api/Users
-    [HttpPost]
-    public async Task<IActionResult> CreateUser(UserCreateDto dto)
-    {
-        var apiKey = Guid.NewGuid().ToString("N");
-
-        var user = new User
-        {
-            Name = dto.Name,
-            Email = dto.Email,
-            PasswordHash = _authService.HashPassword(dto.Password), // agora usando o AuthService
-            ApiKey = apiKey,
-            StarkCoins = 0,
-            CreatedAt = DateTime.UtcNow,
-            IsActive = true,
-            Role = "UserNivel1"
-        };
-
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        var isFromApp = dto.Origem?.ToLower() == "app";
-
-        var token = _authService.GenerateJwtToken(user, isFromApp);
-
-
-
-        return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, new
-        {
-            user.Id,
-            user.Name,
-            user.Email,
-            user.ApiKey,
-            user.StarkCoins,
-            user.CreatedAt,
-            Token = token
-        });
-    }
-
     [Authorize]
-    [HttpPost("{id}/change-password")]
-    public async Task<IActionResult> ChangePassword(Guid id, [FromBody] PasswordChangeDto dto)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class UsersController : ControllerBase
     {
-        var user = await _context.Users.FindAsync(id);
-        if (user == null)
-            return NotFound();
+        private readonly AppDbContext _context;
+        private readonly AuthService _authService;
+        private readonly IEmailService _emailService;
+        private readonly IaService _iaService;
+        private readonly ILogger<UsersController> _logger;
 
-        // Valida se o usuário logado é o mesmo do token
-        var userIdFromToken = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userIdFromToken != user.Id.ToString())
-            return Forbid();
-
-        if (!_authService.VerifyPasswordHash(dto.CurrentPassword, user.PasswordHash))
-            return BadRequest("Senha atual incorreta.");
-
-        user.PasswordHash = _authService.HashPassword(dto.NewPassword);
-        await _context.SaveChangesAsync();
-
-        return Ok("Senha alterada com sucesso.");
-    }
-
-    [HttpPost("request-password-reset")]
-    public async Task<IActionResult> RequestPasswordReset([FromBody] RequestPasswordResetDto dto)
-    {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
-        if (user == null)
-            return NotFound("Usuário não encontrado.");
-
-        var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-        var expiration = DateTime.UtcNow.AddMinutes(30);
-
-        _context.PasswordResetTokens.Add(new PasswordResetToken
+        public UsersController(AppDbContext context, AuthService authService, IEmailService emailService, IaService iaService, ILogger<UsersController> logger)
         {
-            UserId = user.Id,
-            Token = token,
-            Expiration = expiration
-        });
-
-        await _context.SaveChangesAsync();
-
-        var resetLink = $"http://starkaid.vbweb.com.br/password/reset-password.html?token={Uri.EscapeDataString(token)}";
-
-        await _emailService.SendAsync(user.Email, "Redefinição de senha", $"Use o link para redefinir sua senha: {resetLink}");
-
-        return Ok("Instruções enviadas para o e-mail.");
-    }
-
-
-    [HttpPost("reset-password")]
-    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
-    {
-        var resetToken = await _context.PasswordResetTokens
-            .FirstOrDefaultAsync(t => t.Token == dto.Token && t.Expiration > DateTime.UtcNow);
-
-        if (resetToken == null)
-            return BadRequest("Token inválido ou expirado.");
-
-        var user = await _context.Users.FindAsync(resetToken.UserId);
-        if (user == null)
-            return NotFound("Usuário não encontrado.");
-
-        if (dto.NewPassword != dto.RepeatNewPassword)
-            return BadRequest("As senhas não conferem.");
-
-        user.PasswordHash = _authService.HashPassword(dto.NewPassword);
-
-        _context.PasswordResetTokens.Remove(resetToken); // Consome o token
-        await _context.SaveChangesAsync();
-
-        return Ok("Senha redefinida com sucesso.");
-    }
-
-    [HttpGet("{id}/starkcoins")]
-    public async Task<ActionResult<User>> GetStarkCoins(Guid id)
-    {
-        var user = await _context.Users.FindAsync(id);
-
-        if (user == null)
-            return NotFound();
-
-        return Ok(new
-        {
-            user.StarkCoins,
-        });
-    }
-
-    [Authorize]
-    [HttpPatch("{id}/update-starkcoins-ia")]
-    public async Task<IActionResult> UpdateStarkCoinsIa(Guid id)
-    {
-        var user = await _context.Users.FindAsync(id);
-        if (user == null)
-            return NotFound("Usuário não encontrado.");
-
-        const decimal valorDebito = 0.1m;
-
-        if (user.StarkCoins < valorDebito)
-            return BadRequest("Saldo insuficiente para essa operação.");
-
-        user.StarkCoins -= valorDebito;
-
-        _context.Users.Update(user);
-        await _context.SaveChangesAsync();
-
-        return Ok(new
-        {
-            Message = $"Foram debitados {valorDebito} StarkCoins.",
-            SaldoAtual = user.StarkCoins
-        });
-    }
-
-    [Authorize]
-    [HttpPatch("{id}/update-starkcoins-ads")]
-    public async Task<IActionResult> UpdateStarkCoinsAds(Guid id)
-    {
-        var user = await _context.Users.FindAsync(id);
-        if (user == null)
-            return NotFound("Usuário não encontrado.");
-
-        const decimal valorCredito = 0.01m;
-
-        user.StarkCoins += valorCredito;
-
-        _context.Users.Update(user);
-        await _context.SaveChangesAsync();
-
-        return Ok(new
-        {
-            Message = $"Foram creditados {valorCredito} StarkCoins.",
-            SaldoAtual = user.StarkCoins
-        });
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<User>> GetUserById(Guid id)
-    {
-        var user = await _context.Users.FindAsync(id);
-
-        if (user == null)
-            return NotFound();
-
-        return Ok(new
-        {
-            user.Id,
-            user.Name,
-            user.Email,
-            user.StarkCoins,
-            user.CreatedAt,
-            user.IsActive
-        });
-    }
-
-    [Authorize(Policy = "UserNivel1Only")]
-    [HttpGet("nivel1-only")]
-    public IActionResult Nivel1Only()
-    {
-        return Ok("Acesso exclusivo para UserNivel1.");
-    }
-
-    [Authorize(Policy = "UserNivel2Only")]
-    [HttpGet("nivel2-only")]
-    public IActionResult Nivel2Only()
-    {
-        return Ok("Acesso exclusivo para UserNivel2.");
-    }
-
-    [HttpGet("nivel")]
-    public async Task<IActionResult> GetNivelUsuario()
-    {
-        // Obtém o ID do usuário a partir do token JWT
-        var userIdFromToken = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userIdFromToken))
-            return Unauthorized("Token inválido ou ausente.");
-
-        // Busca apenas o campo Role no banco para evitar carregar dados desnecessários
-        var role = await _context.Users
-            .Where(u => u.Id.ToString() == userIdFromToken)
-            .Select(u => u.Role)
-            .FirstOrDefaultAsync();
-
-        if (role == null)
-            return NotFound("Usuário não encontrado.");
-
-        return Ok(new { Nivel = role });
-    }
-
-    [Authorize(Policy = "UserNivel3Only")]
-    [HttpGet("nivel3-only")]
-    public IActionResult Nivel3Only()
-    {
-        return Ok("Acesso exclusivo para UserNivel3.");
-    }
-
-    [HttpPatch("{id}/upgrade-to-nivel2")]
-    public async Task<IActionResult> UpgradeToNivel2(Guid id)
-    {
-        var user = await _context.Users.FindAsync(id);
-        if (user == null)
-            return NotFound("Usuário não encontrado.");
-
-        user.Role = "UserNivel2";
-        await _context.SaveChangesAsync();
-
-        return Ok($"Usuário {user.Name} promovido para UserNivel2.");
-    }
-
-    [Authorize(Policy = "AdministradorOnly")]
-    [HttpPatch("{id}/upgrade-to-nivel3")]
-    public async Task<IActionResult> UpgradeToNivel3(Guid id)
-    {
-        var user = await _context.Users.FindAsync(id);
-        if (user == null)
-            return NotFound("Usuário não encontrado.");
-
-        user.Role = "UserNivel3";
-        await _context.SaveChangesAsync();
-
-        return Ok($"Usuário {user.Name} promovido para UserNivel3.");
-    }
-
-    [Authorize]
-    [HttpDelete("delete-account")]
-    public async Task<IActionResult> DeleteAccount()
-    {
-        var userIdFromToken = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdFromToken, out Guid userId))
-            return BadRequest("Token inválido");
-
-        // Buscar o usuário e suas assinaturas com tracking
-        var user = await _context.Users
-            .Include(u => u.Assinaturas)
-            .AsTracking() // IMPORTANTE: Permite atualizações
-            .FirstOrDefaultAsync(u => u.Id == userId);
-
-        if (user == null)
-            return NotFound("Usuário não encontrado");
-
-        var canceledSubscriptions = new List<Guid>();
-        var stripeErrors = new List<string>();
-
-        /////////////////////////////////////////////
-        _logger.LogInformation($"usuário id encontrado: {userId}");
-
-        // Buscar todas as assinaturas ativas do usuário
-        var assinaturasAtivas = await _context.Assinaturas
-            .Where(a => a.UserId == userId &&
-                       a.Status == "Ativa")
-            .ToListAsync();
-
-        if (!assinaturasAtivas.Any())
-        {
-            _logger.LogInformation("Nenhuma assinatura ativa encontrada para cancelar.");
-            return BadRequest("Nenhuma assinatura ativa encontrada para cancelar.");
+            _context = context;
+            _authService = authService;
+            _emailService = emailService;
+            _iaService = iaService;
+            _logger = logger;
         }
 
-        var results = new List<SubscriptionCancelResult>();
-
-        foreach (var assinatura in assinaturasAtivas)
+        [HttpGet("nivel")]
+        public async Task<IActionResult> GetUserNivel()
         {
-            // Tentar cancelar no Stripe
-            var stripeResult = await _stripeService.CancelSubscriptionAsync(assinatura.StripeSubscriptionId!);
-            _logger.LogInformation($"Cancelando assinatura no Stripe: {assinatura.StripeSubscriptionId}");
+            try
+            {
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                var user = await _context.Users
+                    .Select(u => new { u.Id, u.Role }) // Substituí "Nivel" por "Role", assumindo que "Role" é o campo correto
+                    .FirstOrDefaultAsync(u => u.Id == userId);
 
-            // Atualizar status localmente
-            assinatura.Status = "Cancelada";
-            _logger.LogInformation($"Cancelada {assinatura.Id} ");
-            assinatura.CanceladaEm = DateTimeOffset.UtcNow;
-            _context.Assinaturas.Update(assinatura);
+                if (user == null)
+                    return NotFound("Usuário não encontrado");
 
-            results.Add(new SubscriptionCancelResult(
-                assinatura.Id,
-                stripeResult != null ? "Cancelada" : "Falha no cancelamento",
-                stripeResult?.Status ?? "Erro"
-
-            ));
-            _logger.LogInformation($"Resultado do cancelamento: {stripeResult?.Status}");
+                return Ok(new { userId = user.Id, nivel = user.Role }); // Substituí "Nivel" por "Role"
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Erro ao obter nível do usuário: {ex.Message}");
+            }
         }
 
-        // Rebaixar usuário para nível 1        
-        if (user != null)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetUser(Guid id)
         {
-            user.Role = "UserNivel1";
-            _context.Users.Update(user);
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+            return Ok(user);
         }
 
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation($"Total de assinaturas canceladas: {results.Count}");
-
-        // Deletar o usuário e dependências
-        await DeleteUserAndDependencies(userId);
-
-        string message = "Conta deletada com sucesso.";
-
-        if (canceledSubscriptions.Any())
+        [HttpGet("by-email/{email}")]
+        [Authorize(Policy = "AdministradorOnly")]
+        public async Task<IActionResult> GetUserByEmail(string email)
         {
-            message += $"\n{canceledSubscriptions.Count} assinatura(s) cancelada(s).";
-            Console.WriteLine($"{canceledSubscriptions.Count} assinatura(s) cancelada(s).");
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null) return NotFound();
+            return Ok(new { id = user.Id, userId = user.Id, email = user.Email, name = user.Name });
         }
 
-        if (stripeErrors.Any())
+        [HttpPost("ia/super")]
+        public async Task<IActionResult> SuperIA([FromBody] SuperIaDto request)
         {
-            message += $"\nErros: {string.Join(", ", stripeErrors)}";
-            Console.WriteLine("Erros ao cancelar assinaturas: ", string.Join(", ", stripeErrors));
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return Unauthorized();
+
+            var resultado = await _iaService.ProcessarMensagem(request.ContextoUser, request.ContextoIA, request.Texto, request.Estilo);
+            if (resultado == null) return StatusCode(500, "Erro ao processar mensagem.");
+
+            // Cálculo de custo
+            var custoUsd = _iaService.CalcularCustoUSD(resultado);
+            var custoSC = custoUsd / 0.03m;
+            if (user.StarkCoins < custoSC)
+                throw new InvalidOperationException("Saldo insuficiente para gerar variações.");
+
+            // Debita saldo e salva
+            user.StarkCoins -= custoSC;
+            await _context.SaveChangesAsync();
+
+            // Salvar no histórico
+            var historico = new IaHistorico
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                TextoUsuario = request.Texto,
+                TextoIa = resultado.Texto,
+                CriadoEm = DateTimeOffset.UtcNow
+            };
+            _context.IaHistoricos.Add(historico);
+            await _context.SaveChangesAsync();
+
+            return Ok(resultado);
         }
 
-        return Ok(new { Message = message });
-    }
-
-    private async Task DeleteUserAndDependencies(Guid userId)
-    {
-        // 1. Deletar dispositivos vinculados
-        var dispositivos = await _context.Devices
-            .Where(d => d.UserId == userId)
-            .ToListAsync();
-
-        _context.Devices.RemoveRange(dispositivos);
-
-        // 2. Deletar comandos sociais
-        var comandos = await _context.ComandosSociais
-            .Where(c => c.UserId == userId)
-            .ToListAsync();
-
-        _context.ComandosSociais.RemoveRange(comandos);
-
-        // 3. Deletar tokens de reset
-        var resetTokens = await _context.PasswordResetTokens
-            .Where(t => t.UserId == userId)
-            .ToListAsync();
-
-        _context.PasswordResetTokens.RemoveRange(resetTokens);
-
-
-        // 5. Finalmente deletar o usuário
-        var user = await _context.Users.FindAsync(userId);
-        if (user != null)
+        [HttpPost("request-password-reset")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RequestPasswordReset([FromBody] RequestPasswordResetDto request)
         {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null) return Ok("Instruções enviadas por e‑mail."); // Não revelar que o email não existe
+
+            var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+            var expiration = DateTime.UtcNow.AddHours(1);
+
+            var resetToken = new PasswordResetToken
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                Token = token,
+                Expiration = expiration
+            };
+
+            _context.PasswordResetTokens.Add(resetToken);
+            await _context.SaveChangesAsync();
+
+            var resetLink = $"https://starkaid.runasp.net/password/reset-password.html?token={Uri.EscapeDataString(token)}";
+            var emailBody = $"Clique para redefinir sua senha: {resetLink}";
+
+            await _emailService.SendAsync(user.Email, "Redefinição de Senha", emailBody);
+
+            return Ok("Instruções enviadas por e‑mail.");
+        }
+
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto request)
+        {
+            if (request.NewPassword != request.RepeatNewPassword)
+                return BadRequest("As senhas não coincidem.");
+
+            var resetToken = await _context.PasswordResetTokens
+                .Include(rt => rt.User)
+                .FirstOrDefaultAsync(rt => rt.Token == request.Token && rt.Expiration > DateTime.UtcNow);
+
+            if (resetToken == null) return BadRequest("Token inválido ou expirado.");
+
+            resetToken.User.PasswordHash = _authService.HashPassword(request.NewPassword);
+            _context.PasswordResetTokens.Remove(resetToken);
+            await _context.SaveChangesAsync();
+
+            return Ok("Senha redefinida com sucesso.");
+        }
+
+        [HttpPut("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] PasswordChangeDto request)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return Unauthorized();
+
+            if (!_authService.VerifyPasswordHash(request.CurrentPassword, user.PasswordHash))
+                return BadRequest("Senha atual incorreta.");
+
+            user.PasswordHash = _authService.HashPassword(request.NewPassword);
+            await _context.SaveChangesAsync();
+
+            return Ok("Senha alterada com sucesso.");
+        }
+
+        [HttpGet("ads")]
+        public async Task<IActionResult> GetAdsStatus()
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var user = await _context.Users
+                .Select(u => new { u.Id, u.RemovalAds })
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+                return NotFound("Usuário não encontrado.");
+
+            // Retorna "Ativo" se o usuário tem o plano Remove Ads ativo, "Desativado" caso contrário
+            // O app verifica: adsReturn.set(ads == "Desativado") - só carrega anúncios se for "Desativado"
+            return Ok(new { adsAtiv = user.RemovalAds ?? "Desativado" });
+        }
+
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var user = await _context.Users
+                .Select(u => new
+                {
+                    u.Id,
+                    u.Name,
+                    u.Email,
+                    u.Role,
+                    u.StarkCoins,
+                    u.ApiKey,
+                    u.RemovalAds,
+                    u.IsActive,
+                    u.CreatedAt,
+                    u.Estado,
+                    u.Cidade,
+                    u.Bairro
+                })
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null) return NotFound();
+
+            return Ok(user);
+        }
+
+        [HttpPut("me")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return Unauthorized();
+
+            if (!string.IsNullOrWhiteSpace(request.Name))
+                user.Name = request.Name;
+
+            if (!string.IsNullOrWhiteSpace(request.Email))
+            {
+                // Verificar se email já está em uso por outro usuário
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && u.Id != userId);
+                if (existingUser != null)
+                    return BadRequest("Email já está em uso por outro usuário.");
+
+                user.Email = request.Email;
+            }
+
+            if (request.Estado != null)
+                user.Estado = request.Estado;
+
+            if (request.Cidade != null)
+                user.Cidade = request.Cidade;
+
+            if (request.Bairro != null)
+                user.Bairro = request.Bairro;
+
+            user.LastUpdatedAt = DateTimeOffset.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Perfil atualizado com sucesso." });
+        }
+
+        [HttpDelete("me")]
+        public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest request)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return Unauthorized();
+
+            // Verificar senha antes de deletar
+            if (!_authService.VerifyPasswordHash(request.Password, user.PasswordHash))
+                return BadRequest("Senha incorreta.");
+
+            // Deletar usuário e dados relacionados (cascade)
             _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Conta deletada com sucesso." });
         }
 
-        await _context.SaveChangesAsync();
-    }
-
-    [Authorize]
-    [HttpGet("ads")]
-    public async Task<IActionResult> GetAds()
-    {
-       
-        var userIdFromToken = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdFromToken, out Guid userId))
-            return BadRequest("Token inválido");
-
-        var result = new { adsAtiv = "Desativado" };
-        var user = await _context.Users.FindAsync(userId);
-        if (user == null) return Unauthorized();
-        if (user.RemovalAds == "Ativo")
-            result = new { adsAtiv = "Ativo" };
-
-        
-        return Ok(result);
-    }
-
-    [Authorize]
-    [HttpPost("musica/tocar")]
-    public async Task<IActionResult> TocarMusica([FromBody] MusicaDto dto)
-    {
-        var userIdFromToken = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdFromToken, out Guid userId))
-            return BadRequest("Token inválido");
-
-        if (string.IsNullOrWhiteSpace(dto.NomeMusica))
-            return BadRequest(new { autorizado = false, message = "Nome da música não informado" });
-
-        var user = await _context.Users.FindAsync(userId);
-
-        if (user == null) return Unauthorized();
-
-        if (user.StarkCoins < 0.2m)
-            return BadRequest(new { autorizado = false, message = "Saldo insuficiente" });
-
-
-        return Ok(new { autorizado = true, saldoAtual = user.StarkCoins });
-    }
-
-    // aceita GET (AdMob envia callback com query params). Mantive POST como fallback.
-    [HttpGet("starkcoins/earning")]
-    public async Task<IActionResult> StarkCoinsAdsEarning([FromQuery] string key, string userId)
-    {
-        try
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetUserStats()
         {
-            Console.WriteLine($"[ADMOB-SSV] Callback recebido - Method: {Request.Method} Query: {Request.QueryString}");
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            // 1) valida chave
-            const string validKey = "ad5478r45t785g468t41df561254r4e785s654s1t54t54g5h";
-            if (string.IsNullOrEmpty(key) || key != validKey)
+            var totalDevicesStarkswitch = await _context.Devices.CountAsync(d => d.UserId == userId);
+            var totalDevicesEsp = await _context.DispositivosEsp.CountAsync(d => d.UserId == userId);
+            var totalDevices = totalDevicesStarkswitch + totalDevicesEsp;
+            
+            var totalComandosSociais = await _context.ComandosSociais.CountAsync(c => c.UserId == userId);
+            var totalAgendamentos = await _context.Agendamentos.CountAsync(a => a.UserId == userId);
+
+            // Status API e MQTT
+            var apiStatus = "OK";
+            var mqttStatus = "Desconectado";
+            var mqttConnected = false;
+
+            try
             {
-                Console.WriteLine("[ADMOB-SSV] Key inválida");
-                return BadRequest("Invalid key");
-            }
-
-            // 2) lê user_id da query string (prioridade)
-            string customData = Request.Query["custom_data"].FirstOrDefault();
-
-            // fallback: POST form-data (caso algum teste envie assim)
-            if (string.IsNullOrEmpty(userId) && Request.HasFormContentType)
-            {
-                userId = Request.Form["user_id"].FirstOrDefault();
-                customData = Request.Form["custom_data"].FirstOrDefault();
-            }
-
-            Console.WriteLine($"[ADMOB-SSV] user_id={userId}, custom_data={customData}");
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                Console.WriteLine("[ADMOB-SSV] UserId não fornecido");
-                return BadRequest("User ID required");
-            }
-
-            // 3) Processa recompensa em background
-            _ = Task.Run(async () => await ProcessarRecompensaAsync(userId));
-
-            // 4) Resposta 200 OK sem corpo (o AdMob aceita assim)
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[ADMOB-SSV] Erro: {ex}");
-            return StatusCode(500);
-        }
-    }
-
-    private async Task ProcessarRecompensaAsync(string userId)
-    {
-        try
-        {
-            await Task.Delay(300); // pequeno buffer
-
-            if (Guid.TryParse(userId, out Guid userGuid))
-            {
-                var user = await _context.Users.FindAsync(userGuid);
-                if (user != null)
+                var mqttService = HttpContext.RequestServices.GetService<Services.Devices.IMqttClientService>();
+                if (mqttService != null)
                 {
-                    user.StarkCoins += 0.01m;
-                    await _context.SaveChangesAsync();
-                    Console.WriteLine($"[ADMOB-SSV] ✅ StarkCoins creditados para: {userId}");
+                    mqttConnected = mqttService.IsConnected;
+                    mqttStatus = mqttConnected ? "Conectado" : "Desconectado";
                 }
-                else
-                {
-                    Console.WriteLine($"[ADMOB-SSV] ❌ Usuário não encontrado: {userId}");
-                }
+            }
+            catch
+            {
+                // Ignora erro se MQTT não estiver disponível
+            }
+
+            return Ok(new
+            {
+                totalDevices,
+                totalComandosSociais,
+                totalAgendamentos,
+                apiStatus,
+                mqttStatus,
+                mqttConnected
+            });
+        }
+
+        [HttpPost("add-funds")]
+        public async Task<IActionResult> CreateAddFundsSession([FromBody] AddFundsRequest request)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return Unauthorized();
+
+            if (request.Amount <= 0)
+                return BadRequest("Valor deve ser maior que zero.");
+
+            var stripeService = HttpContext.RequestServices.GetService<Services.Assinatura.StripeService>();
+            var stripeSettings = HttpContext.RequestServices.GetService<IOptions<Options.StripeSettings>>();
+
+            if (stripeService == null || stripeSettings == null)
+                return StatusCode(500, "Serviço de pagamento não disponível.");
+
+            // Detectar origem da requisição (app, software ou web)
+            var isFromAppClaim = User.FindFirstValue("IsFromApp");
+            var isFromApp = isFromAppClaim?.ToLower() == "true";
+            var isFromSoftware = false;
+            
+            // Verificar header X-From-Software (Windows Forms)
+            if (Request.Headers.ContainsKey("X-From-Software"))
+            {
+                var fromSoftwareHeader = Request.Headers["X-From-Software"].ToString();
+                isFromSoftware = fromSoftwareHeader?.ToLower() == "true";
+                _logger.LogInformation("💻 Detectado via header X-From-Software: {Header}", fromSoftwareHeader);
+            }
+            
+            // Fallback: verificar header X-From-App caso o claim não esteja presente
+            if (!isFromApp && !isFromSoftware && Request.Headers.ContainsKey("X-From-App"))
+            {
+                var fromAppHeader = Request.Headers["X-From-App"].ToString();
+                isFromApp = fromAppHeader?.ToLower() == "true";
+                _logger.LogInformation("📱 Detectado via header X-From-App: {Header}", fromAppHeader);
+            }
+            
+            // Log para debug
+            _logger.LogInformation("💰 Criando sessão de pagamento - IsFromApp: {IsFromApp}, IsFromSoftware: {IsFromSoftware}, User-Agent: {UserAgent}", 
+                isFromApp, isFromSoftware, Request.Headers["User-Agent"].ToString());
+            
+            string successUrl, cancelUrl;
+            if (isFromSoftware)
+            {
+                // Quando chamado do Windows Forms, usar SoftwareDeepLink
+                var softwareDeepLink = stripeSettings.Value.SoftwareDeepLink ?? "http://localhost:8765/payment";
+                successUrl = $"{softwareDeepLink}?funds=success";
+                cancelUrl = $"{softwareDeepLink}?funds=cancel";
+                _logger.LogInformation("💻 Usando deep link para software: {SuccessUrl}", successUrl);
+            }
+            else if (isFromApp)
+            {
+                // Quando chamado do app, usar deep link
+                var appDeepLink = stripeSettings.Value.AppDeepLink ?? "starkaid://payment";
+                successUrl = $"{appDeepLink}?funds=success";
+                cancelUrl = $"{appDeepLink}?funds=cancel";
+                _logger.LogInformation("📱 Usando deep link para app: {SuccessUrl}", successUrl);
             }
             else
             {
-                Console.WriteLine($"[ADMOB-SSV] ❌ UserId em formato inválido: {userId}");
+                // Quando chamado do HTML, usar URL da página
+                var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                successUrl = $"{baseUrl}/automacao.html?funds=success";
+                cancelUrl = $"{baseUrl}/automacao.html?funds=cancel";
+                _logger.LogInformation("🌐 Usando URL HTML: {SuccessUrl}", successUrl);
+            }
+
+            var paymentResult = await stripeService.CreateOneTimePaymentSessionAsync(
+                user,
+                request.Amount,
+                successUrl,
+                cancelUrl
+            );
+
+            var session = paymentResult.session;
+            var customer = paymentResult.customer;
+
+            // Salvar referência do pagamento
+            var pagamento = new PagamentoAvulso
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Valor = request.Amount,
+                StripeSessionId = session.Id,
+                StripeCustomerId = customer.Id,
+                Status = "pendente",
+                DataCriacao = DateTimeOffset.UtcNow
+            };
+
+            _context.PagamentosAvulsos.Add(pagamento);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                checkoutUrl = session.Url,
+                sessionId = session.Id
+            });
+        }
+
+        [HttpPost("online")]
+        public async Task<IActionResult> SetUserOnline([FromBody] SetUserOnlineRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("📱 [SetUserOnline] Endpoint chamado - Origem: {Origem}", request?.Origem);
+                
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    _logger.LogWarning("⚠️ [SetUserOnline] Usuário não encontrado - UserId: {UserId}", userId);
+                    return Unauthorized();
+                }
+
+                _logger.LogInformation("👤 [SetUserOnline] Usuário encontrado - Nome: {Name}, Email: {Email}", user.Name, user.Email);
+
+                // Validar origem
+                if (string.IsNullOrWhiteSpace(request?.Origem) || 
+                    !new[] { "web", "soft", "app" }.Contains(request.Origem.ToLower()))
+                {
+                    _logger.LogWarning("⚠️ [SetUserOnline] Origem inválida: {Origem}", request?.Origem);
+                    return BadRequest("Origem deve ser 'web', 'soft' ou 'app'.");
+                }
+
+                var origem = request.Origem.ToLower();
+                // Obter token do header Authorization
+                var authHeader = Request.Headers["Authorization"].ToString();
+                var token = authHeader.Replace("Bearer ", "").Trim();
+
+                _logger.LogInformation("🔑 [SetUserOnline] Token obtido - Primeiros 20 chars: {TokenPrefix}", 
+                    token.Length > 20 ? token.Substring(0, 20) + "..." : token);
+
+                // Verificar se já existe uma sessão ativa para este usuário e origem
+                var existingSession = await _context.UserSessions
+                    .FirstOrDefaultAsync(s => s.UserId == userId && 
+                                             s.Origem == origem && 
+                                             s.IsActive);
+
+                if (existingSession != null)
+                {
+                    _logger.LogInformation("🔄 [SetUserOnline] Atualizando sessão existente - SessionId: {SessionId}", existingSession.Id);
+                    // Atualizar sessão existente
+                    existingSession.LastActivityAt = DateTime.UtcNow;
+                    existingSession.Token = token;
+                }
+                else
+                {
+                    _logger.LogInformation("✨ [SetUserOnline] Criando nova sessão - UserId: {UserId}, Origem: {Origem}", userId, origem);
+                    // Criar nova sessão
+                    var session = new UserSession
+                    {
+                        Id = 0, // Será gerado pelo banco
+                        UserId = userId,
+                        SessionName = $"{user.Name} - {origem}",
+                        Token = token,
+                        Origem = origem,
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        LastActivityAt = DateTime.UtcNow
+                    };
+
+                    _context.UserSessions.Add(session);
+                }
+
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("✅ [SetUserOnline] Usuário marcado como online com sucesso - UserId: {UserId}, Origem: {Origem}", userId, origem);
+                return Ok(new { message = "Usuário marcado como online." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ [SetUserOnline] Erro ao processar requisição");
+                return StatusCode(500, new { message = "Erro ao processar requisição.", error = ex.Message });
             }
         }
-        catch (Exception ex)
+
+        [HttpPost("offline")]
+        public async Task<IActionResult> SetUserOffline([FromBody] SetUserOfflineRequest request)
         {
-            Console.WriteLine($"[ADMOB-SSV] ❌ Erro no processamento: {ex}");
+            try
+            {
+                _logger.LogInformation("📱 [SetUserOffline] Endpoint chamado - Origem: {Origem}", request?.Origem);
+                
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    _logger.LogWarning("⚠️ [SetUserOffline] Usuário não encontrado - UserId: {UserId}", userId);
+                    return Unauthorized();
+                }
+
+                _logger.LogInformation("👤 [SetUserOffline] Usuário encontrado - Nome: {Name}, Email: {Email}", user.Name, user.Email);
+
+                // Validar origem
+                if (string.IsNullOrWhiteSpace(request?.Origem) || 
+                    !new[] { "web", "soft", "app" }.Contains(request.Origem.ToLower()))
+                {
+                    _logger.LogWarning("⚠️ [SetUserOffline] Origem inválida: {Origem}", request?.Origem);
+                    return BadRequest("Origem deve ser 'web', 'soft' ou 'app'.");
+                }
+
+                var origem = request.Origem.ToLower();
+
+                // Desativar todas as sessões ativas para este usuário e origem
+                var activeSessions = await _context.UserSessions
+                    .Where(s => s.UserId == userId && 
+                               s.Origem == origem && 
+                               s.IsActive)
+                    .ToListAsync();
+
+                _logger.LogInformation("🔍 [SetUserOffline] Encontradas {Count} sessões ativas para desativar", activeSessions.Count);
+
+                foreach (var session in activeSessions)
+                {
+                    session.IsActive = false;
+                }
+
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("✅ [SetUserOffline] Usuário marcado como offline com sucesso - UserId: {UserId}, Origem: {Origem}", userId, origem);
+                return Ok(new { message = "Usuário marcado como offline." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ [SetUserOffline] Erro ao processar requisição");
+                return StatusCode(500, new { message = "Erro ao processar requisição.", error = ex.Message });
+            }
+        }
+
+        [HttpPost("error-logs/soft/sync")]
+        public async Task<IActionResult> SyncErrorLogsSoft([FromBody] SyncErrorLogsSoftRequest request)
+        {
+            try
+            {
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+                // Validar que o userId da requisição corresponde ao usuário autenticado
+                if (request.UserId != userId)
+                {
+                    return Forbid("Você só pode sincronizar seus próprios logs.");
+                }
+
+                // Deletar todos os logs existentes do usuário
+                var existingLogs = await _context.ErrorLogsSoft
+                    .Where(e => e.UserId == userId)
+                    .ToListAsync();
+                
+                _context.ErrorLogsSoft.RemoveRange(existingLogs);
+
+                // Adicionar os novos logs
+                var newLogs = request.Logs.Select(log => new ErrorLogSoft
+                {
+                    UserId = userId,
+                    UltimoComando = log.UltimoComando,
+                    UltimaResposta = log.UltimaResposta,
+                    UltimoDispositivoAcionado = log.UltimoDispositivoAcionado,
+                    ErroCompleto = log.ErroCompleto,
+                    CodigoDeErro = log.CodigoDeErro,
+                    DataErro = log.DataErro,
+                    HoraErro = log.HoraErro,
+                    AcaoErro = log.AcaoErro,
+                    CreatedAt = DateTimeOffset.UtcNow
+                }).ToList();
+
+                _context.ErrorLogsSoft.AddRange(newLogs);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("✅ Sincronizados {Count} logs de erro para usuário {UserId}", newLogs.Count, userId);
+                return Ok(new { message = $"Sincronizados {newLogs.Count} logs de erro.", count = newLogs.Count });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Erro ao sincronizar logs de erro");
+                return StatusCode(500, new { message = "Erro ao processar requisição.", error = ex.Message });
+            }
+        }
+
+        [HttpPost("error-logs/app/sync")]
+        public async Task<IActionResult> SyncErrorLogsApp([FromBody] SyncErrorLogsAppRequest request)
+        {
+            try
+            {
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+                // Validar que o userId da requisição corresponde ao usuário autenticado
+                if (request.UserId != userId)
+                {
+                    return Forbid("Você só pode sincronizar seus próprios logs.");
+                }
+
+                // Deletar todos os logs existentes do usuário
+                var existingLogs = await _context.ErrorLogsApp
+                    .Where(e => e.UserId == userId)
+                    .ToListAsync();
+                
+                _context.ErrorLogsApp.RemoveRange(existingLogs);
+
+                // Adicionar os novos logs
+                var newLogs = request.Logs.Select(log => new ErrorLogApp
+                {
+                    UserId = userId,
+                    UltimoComando = log.UltimoComando,
+                    UltimaResposta = log.UltimaResposta,
+                    UltimoDispositivoAcionado = log.UltimoDispositivoAcionado,
+                    ErroCompleto = log.ErroCompleto,
+                    CodigoDeErro = log.CodigoDeErro,
+                    DataErro = log.DataErro,
+                    HoraErro = log.HoraErro,
+                    AcaoErro = log.AcaoErro,
+                    CreatedAt = DateTimeOffset.UtcNow
+                }).ToList();
+
+                _context.ErrorLogsApp.AddRange(newLogs);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("✅ Sincronizados {Count} logs de erro do app para usuário {UserId}", newLogs.Count, userId);
+                return Ok(new { message = $"Sincronizados {newLogs.Count} logs de erro.", count = newLogs.Count });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Erro ao sincronizar logs de erro do app");
+                return StatusCode(500, new { message = "Erro ao processar requisição.", error = ex.Message });
+            }
+        }
+
+        [HttpGet("online")]
+        [Authorize(Roles = "Administrador,userAdmin")]
+        public async Task<IActionResult> GetOnlineUsers()
+        {
+            // Buscar todas as sessões ativas
+            var onlineSessions = await _context.UserSessions
+                .Include(s => s.User)
+                .Where(s => s.IsActive)
+                .GroupBy(s => s.UserId)
+                .Select(g => new
+                {
+                    UserId = g.Key,
+                    User = g.First().User,
+                    Origens = g.Select(s => s.Origem).ToList(),
+                    LastActivity = g.Max(s => s.LastActivityAt ?? s.CreatedAt)
+                })
+                .ToListAsync();
+
+            var result = onlineSessions.Select(s => new
+            {
+                id = s.User.Id,
+                name = s.User.Name,
+                email = s.User.Email,
+                role = s.User.Role,
+                starkCoins = s.User.StarkCoins,
+                origem = string.Join(", ", s.Origens.Distinct())
+            }).ToList();
+
+            return Ok(result);
         }
     }
 
-
-    [Authorize]
-    [HttpPost("ia/super")]
-    public async Task<IActionResult> SuperIA([FromBody] SuperIaDto dto)
+    public class UpdateProfileRequest
     {
-        var userIdFromToken = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdFromToken, out Guid userId))
-            return BadRequest("Token inválido");
-
-        if (string.IsNullOrWhiteSpace(dto.Texto))
-            return BadRequest("Texto não informado");
-
-        var user = await _context.Users.FindAsync(userId);
-        if (user == null) return Unauthorized();
-
-        // 🔹 Busca últimas 3 interações do usuário
-        var historico = await _context.IaHistoricos
-            .Where(h => h.UserId == userId)
-            .OrderByDescending(h => h.CriadoEm)
-            .Take(3)
-            .ToListAsync();
-
-        // 🔹 Prepara contexto para IA (mais antigo -> mais recente)
-        var contextoUser = string.Join("\n", historico.OrderBy(h => h.CriadoEm).Select(h => h.TextoUsuario));
-        var contextoIA = string.Join("\n", historico.OrderBy(h => h.CriadoEm).Select(h => h.TextoIa));
-
-        // 🔹 Estimativa de tokens (1 token ≈ 4 caracteres)
-        int estimativaTokens = (contextoUser.Length + contextoIA.Length) / 4;
-        const int maxTokens = 500; // limite de tokens do histórico
-
-        if (estimativaTokens > maxTokens)
-        {
-            contextoUser = await _iaService.ResumirTexto(contextoUser, dto.Estilo);
-            contextoIA = await _iaService.ResumirTexto(contextoIA, dto.Estilo);
-        }
-
-        var resultado = await _iaService.ProcessarMensagem(contextoUser, contextoIA, dto.Texto, dto.Estilo);
-        if (resultado == null || string.IsNullOrWhiteSpace(resultado.Texto))
-            return Ok("Não foi possível gerar resposta no momento.");
-
-        // 🔹 Calcula custo
-        var custoUsd = _iaService.CalcularCustoUSD(resultado);
-        var custoSc1 = custoUsd / 0.02m;
-        var custoSC = custoSc1 + 0.01m;
-        if (user.StarkCoins < custoSC)
-            return Ok("Saldo insuficiente");
-
-        user.StarkCoins -= custoSC;
-
-        // 🔹 Cria nova interação
-        var novaInteracao = new IaHistorico
-        {
-            UserId = userId,
-            TextoUsuario = dto.Texto,
-            TextoIa = resultado.Texto,
-            CriadoEm = DateTimeOffset.UtcNow
-        };
-
-        _context.IaHistoricos.Add(novaInteracao);
-
-        // 🔹 Remove interações antigas caso já existam 3
-        if (historico.Count >= 3)
-        {
-            var paraRemover = historico.OrderBy(h => h.CriadoEm).First();
-            _context.IaHistoricos.Remove(paraRemover);
-        }
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new
-        {
-            Resposta = resultado.Texto,
-            NovoSaldo = user.StarkCoins
-        });
+        public string? Name { get; set; }
+        public string? Email { get; set; }
+        public string? Estado { get; set; }
+        public string? Cidade { get; set; }
+        public string? Bairro { get; set; }
     }
 
-        
-    // Adicione este endpoint na sua API
-    [HttpGet("test-connection")]
-    public IActionResult TestConnection()
+    public class DeleteAccountRequest
     {
-        return Ok(new
-        {
-            status = "online",
-            message = "API funcionando",
-            timestamp = DateTime.UtcNow
-        });
+        public string Password { get; set; } = string.Empty;
     }
 
-    private bool IsValidPhoneNumber(string numero)
+    public class AddFundsRequest
     {
-        // Checa se começa com "+" e contém apenas dígitos depois
-        return !string.IsNullOrEmpty(numero) && System.Text.RegularExpressions.Regex.IsMatch(numero, @"^\+\d{10,15}$");
+        public decimal Amount { get; set; }
+    }
+
+    public class SetUserOnlineRequest
+    {
+        public string Origem { get; set; } = string.Empty; // web, soft, app
+    }
+
+    public class SetUserOfflineRequest
+    {
+        public string Origem { get; set; } = string.Empty; // web, soft, app
+    }
+
+    public class SyncErrorLogsSoftRequest
+    {
+        public Guid UserId { get; set; }
+        public List<ErrorLogSoftDto> Logs { get; set; } = new();
+    }
+
+    public class ErrorLogSoftDto
+    {
+        public string? UltimoComando { get; set; }
+        public string? UltimaResposta { get; set; }
+        public string? UltimoDispositivoAcionado { get; set; }
+        public string? ErroCompleto { get; set; }
+        public string? CodigoDeErro { get; set; }
+        public string DataErro { get; set; } = string.Empty;
+        public string HoraErro { get; set; } = string.Empty;
+        public string AcaoErro { get; set; } = string.Empty;
+    }
+
+    public class SyncErrorLogsAppRequest
+    {
+        public Guid UserId { get; set; }
+        public List<ErrorLogAppDto> Logs { get; set; } = new();
+    }
+
+    public class ErrorLogAppDto
+    {
+        public string? UltimoComando { get; set; }
+        public string? UltimaResposta { get; set; }
+        public string? UltimoDispositivoAcionado { get; set; }
+        public string? ErroCompleto { get; set; }
+        public string? CodigoDeErro { get; set; }
+        public string DataErro { get; set; } = string.Empty;
+        public string HoraErro { get; set; } = string.Empty;
+        public string AcaoErro { get; set; } = string.Empty;
     }
 }

@@ -1,0 +1,19 @@
+<resources>
+    <!-- Base application theme. -->
+    <style name="Theme.StarkAid" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Customize sua paleta -->
+        <item name="colorPrimary">@color/colormenu</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">@color/cardview_dark_background</item>
+    </style>
+
+
+
+    <!-- Tema específico para SplashScreen (Android 12+) -->
+    <style name="Theme.StarkAid.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/white</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/logo03</item>
+        <item name="windowSplashScreenAnimationDuration">500</item>
+        <item name="postSplashScreenTheme">@style/Theme.StarkAid</item>
+    </style>
+</resources>

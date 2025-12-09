@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:tools="http://schemas.android.com/tools">
+    <cache-path
+        name="images"
+        path="images/"
+        tools:ignore="UnusedResources" />
+</paths>

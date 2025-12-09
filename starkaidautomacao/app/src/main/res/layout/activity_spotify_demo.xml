@@ -1,0 +1,18 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Button android:id="@+id/btnSpotifyLogin" android:text="Login Spotify" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+    <Button android:id="@+id/btnCheckPremium" android:text="Checar Premium" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+    <TextView android:id="@+id/tvSpotifyStatus" android:text="Status: -" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" />
+
+    <EditText android:id="@+id/etTrack" android:hint="Nome da música" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:minHeight="48dp" />
+
+    <Button android:id="@+id/btnPlay" android:text="Play" android:layout_width="match_parent" android:layout_height="wrap_content" />
+    <Button android:id="@+id/btnPause" android:text="Pause" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+</LinearLayout>

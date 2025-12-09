@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StarkAid.Api.Data;
 using StarkAid.Api.DTOs.Auth;
-using StarkAid.Api.Services;
+using StarkAid.Api.Entities;
 using StarkAid.Api.Services.Auth;
+using StarkAid.Api.Services;
+using System.Security.Cryptography;
 
 namespace StarkAid.Api.Controllers;
 
@@ -13,7 +16,6 @@ public class AuthController : ControllerBase
 {
     private readonly AuthService _authService;
     private readonly RefreshTokenService _refreshTokenService;
-
     private readonly AppDbContext _context;
 
     public AuthController(AuthService authService, RefreshTokenService refreshTokenService, AppDbContext context)
@@ -24,59 +26,103 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
             return BadRequest("Email e senha são obrigatórios.");
 
         var user = await _authService.GetUserByEmailAsync(request.Email);
-
         if (user == null || !_authService.VerifyPasswordHash(request.Password, user.PasswordHash))
-            return Unauthorized("Usuário ou senha inválidos.");
+            return Unauthorized("Credenciais inválidas.");
 
-        // 🔑 Define se é login do App
-        bool isFromApp = request.Origem?.ToLower() == "app";
-
-        // Passa essa info para geração do token
+        var isFromApp = request.Origem?.ToLower() == "app";
         var token = _authService.GenerateJwtToken(user, isFromApp);
-        var refreshToken = await _refreshTokenService.GenerateAndStoreRefreshToken(user, request.Origem);
+        var refreshToken = await _refreshTokenService.GenerateAndStoreRefreshToken(user, request.Origem ?? "web");
 
         return Ok(new
         {
             token,
             refreshToken,
-            id = user.Id,
-            apiKey = user.ApiKey
+            user = new { user.Id, user.Name, user.Email, user.ApiKey, user.StarkCoins }
         });
     }
 
-    [HttpPost("test-password")]
-    public async Task<IActionResult> TestPassword([FromBody] LoginRequest request)
-    {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-        if (user == null) return NotFound("Usuário não encontrado");
-
-        var isValid = _authService.VerifyPasswordHash(request.Password, user.PasswordHash);
-        return Ok(new { isValid });
-    }
-
     [HttpPost("refresh-token")]
+    [AllowAnonymous]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.RefreshToken))
             return BadRequest("Refresh token é obrigatório.");
 
         var storedToken = await _refreshTokenService.GetValidRefreshToken(request.RefreshToken);
-
-        if (storedToken == null)
-            return Unauthorized("Refresh token inválido ou expirado.");
+        if (storedToken == null) return Unauthorized("Refresh token inválido ou expirado.");
 
         await _refreshTokenService.RevokeToken(storedToken);
 
-        bool isFromApp = storedToken.Origem == "app";
-        var newJwtToken = _authService.GenerateJwtToken(storedToken.User, isFromApp);
+        var newJwtToken = _authService.GenerateJwtToken(storedToken.User, storedToken.Origem == "app");
         var newRefreshToken = await _refreshTokenService.GenerateAndStoreRefreshToken(storedToken.User, storedToken.Origem);
 
         return Ok(new { token = newJwtToken, refreshToken = newRefreshToken });
     }
+
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.Email) || 
+            string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.Name))
+            return BadRequest("Nome, email e senha são obrigatórios.");
+
+        if (request.Password.Length < 6)
+            return BadRequest("A senha deve ter no mínimo 6 caracteres.");
+
+        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (existingUser != null)
+            return BadRequest("Email já cadastrado.");
+
+        var apiKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).Replace("+", "-").Replace("/", "_").Replace("=", "");
+
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Name = request.Name,
+            Email = request.Email,
+            PasswordHash = _authService.HashPassword(request.Password),
+            ApiKey = apiKey,
+            StarkCoins = 0,
+            CreatedAt = DateTimeOffset.UtcNow,
+            IsActive = true,
+            Role = "UserNivel1",
+            RemovalAds = "Desativado",
+            Estado = request.Estado,
+            Cidade = request.Cidade,
+            Bairro = request.Bairro
+        };
+
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        var isFromApp = request.Origem?.ToLower() == "app";
+        var token = _authService.GenerateJwtToken(user, isFromApp);
+        var refreshToken = await _refreshTokenService.GenerateAndStoreRefreshToken(user, request.Origem ?? "web");
+
+        return Ok(new
+        {
+            token,
+            refreshToken,
+            user = new { user.Id, user.Name, user.Email, user.ApiKey, user.StarkCoins }
+        });
+    }
+}
+
+public class RegisterRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string? Origem { get; set; }
+    public string? Estado { get; set; }
+    public string? Cidade { get; set; }
+    public string? Bairro { get; set; }
 }

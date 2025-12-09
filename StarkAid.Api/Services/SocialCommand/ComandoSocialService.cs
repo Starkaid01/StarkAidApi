@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using StarkAid.Api.Data;
 using StarkAid.Api.DTOs.SocialCommand;
 using StarkAid.Api.Entities;
+using StarkAid.Api.Services.IA;
 using StarkAid.Api.Services.SuperIA;
 using System.Text.Json;
 
@@ -13,6 +14,7 @@ public class ComandoSocialService
 {
     private readonly AppDbContext _context;
     private readonly IaService _iaService;
+
     public ComandoSocialService(AppDbContext context, IaService iaService)
     {
         _context = context;
@@ -29,7 +31,7 @@ public class ComandoSocialService
         var novo = new ComandoSocial
         {
             Id = Guid.NewGuid(),
-            Comando = comando.ToLower(),  // pra evitar case sensitive
+            Comando = comando.ToLower(),
             Resposta = resposta
         };
 
@@ -38,8 +40,6 @@ public class ComandoSocialService
 
         return novo;
     }
-
-
 
     public async Task<List<ComandoSocial>> GetByUserIdAsync(Guid userId)
     {
@@ -71,16 +71,9 @@ public class ComandoSocialService
         }
         else
         {
-            // 🔹 Prompt para gerar variações no formato JSON esperado
-            var mensagens = new[]
-            {
-                new { role = "system", content = "Você é uma IA que reescreve frases. Crie exatamente 4 variações diferentes e curtas que tenham o mesmo sentido da frase original. Nao use formalidades. Responda SOMENTE em JSON no formato: { \"alternativas\": [\"...\",\"...\",\"...\",\"...\"] }" },
-                new { role = "user", content = resposta }
-            };
-
-            // 🔹 Chama a IA diretamente com esse prompt
+            // 🔹 Gera variações com IA
             var resultado = await _iaService.ChamarStarkNlp(resposta);
-            if (!resultado.Sucesso || string.IsNullOrWhiteSpace(resultado.Texto))
+            if (string.IsNullOrWhiteSpace(resultado.Texto))
                 return null;
 
             // 🔹 Tenta validar o JSON
@@ -123,34 +116,6 @@ public class ComandoSocialService
         }
     }
 
-
-    private async Task<string?> GerarVariaçõesAsync(string resposta)
-    {
-        var mensagens = new[]
-        {
-            new { role = "system", content = "Você é uma IA que reescreve frases. Crie exatamente 4 variações diferentes e curtas que tenham o mesmo sentido da frase original. Nao use formalidades. Responda SOMENTE em JSON no formato: { \"alternativas\": [\"...\",\"...\",\"...\",\"...\"] }" },
-            new { role = "user", content = resposta }
-        };
-
-        var resultado = await _iaService.ChamarOpenRouter(mensagens);
-        if (resultado == null || string.IsNullOrWhiteSpace(resultado.Texto))
-            return null;
-
-        try
-        {
-            using var doc = JsonDocument.Parse(resultado.Texto);
-            return resultado.Texto;
-        }
-        catch
-        {
-            var partes = resultado.Texto.Split("||", StringSplitOptions.RemoveEmptyEntries)
-                .Select(p => p.Trim())
-                .ToArray();
-            return System.Text.Json.JsonSerializer.Serialize(new { alternativas = partes });
-        }
-    }
-
-
     public async Task<List<string>?> RespsrandomAnswers(Guid userId, string resposta)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
@@ -165,7 +130,6 @@ public class ComandoSocialService
             new { role = "user", content = resposta }
         };
 
-        // Usa o novo método do IaService
         var resultado = await _iaService.ProcessarMensagemJson(mensagens);
 
         if (resultado == null || string.IsNullOrWhiteSpace(resultado.Texto))
@@ -181,15 +145,13 @@ public class ComandoSocialService
         user.StarkCoins -= custoSC;
         await _context.SaveChangesAsync();
 
-        // Desserializa retorno JSON usando System.Text.Json (case-insensitive)
+        // Desserializa retorno JSON
         try
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var dto = System.Text.Json.JsonSerializer.Deserialize<AlternativasDto>(resultado.Texto, options);
             if (dto?.alternativas != null && dto.alternativas.Count > 0)
             {
-                // Se IA retornou mais ou menos que 4, você pode normalizar aqui:
-                // por enquanto, retorna o que veio
                 return dto.alternativas;
             }
         }
@@ -198,7 +160,6 @@ public class ComandoSocialService
             // fallthrough para fallback
         }
 
-        // fallback: retorna a resposta original (ou você pode tentar extrair linhas do texto)
         return new List<string> { resposta };
     }
 
@@ -207,12 +168,10 @@ public class ComandoSocialService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return null;
 
-        // Agora basta enviar diretamente o texto:
         var resultado = await _iaService.ProcessarMensagemWpp("", "", message, estilo);
         if (resultado == null || string.IsNullOrWhiteSpace(resultado.Texto))
             return null;
 
-        // Limpeza pós-processamento
         var mensagemLimpa = LimparRespostaIA(resultado.Texto);
 
         var custoUsd = _iaService.CalcularCustoUSD(resultado);
@@ -227,13 +186,11 @@ public class ComandoSocialService
         return mensagemLimpa;
     }
 
-    // 🔹 Método para limpar a resposta da IA
     private string LimparRespostaIA(string resposta)
     {
         if (string.IsNullOrWhiteSpace(resposta))
             return resposta;
 
-        // Remove prefixos comuns
         var prefixos = new[]
         {
             "Você pode dizer:",
@@ -252,17 +209,15 @@ public class ComandoSocialService
             }
         }
 
-        // Remove aspas se a mensagem estiver entre aspas
         if (resposta.StartsWith("\"") && resposta.EndsWith("\""))
         {
             resposta = resposta.Substring(1, resposta.Length - 2);
         }
 
-        // Remove placeholders
         resposta = resposta.Replace("[Seu nome]", "")
-                          .Replace("[seu nome]", "")
-                          .Replace("[nome]", "")
-                          .Trim();
+            .Replace("[seu nome]", "")
+            .Replace("[nome]", "")
+            .Trim();
 
         return resposta;
     }
@@ -278,14 +233,10 @@ public class ComandoSocialService
 
         if (user.StarkCoins > 0.04m)
         {
-            // 🔹 Gera novas variações (usando a mesma lógica do Add)
-
-            // 🔹 Chama a IA diretamente com esse prompt
             var resultado = await _iaService.ChamarStarkNlp(resposta);
-            if (!resultado.Sucesso || string.IsNullOrWhiteSpace(resultado.Texto))
-                return false; // Alterado de 'null' para 'false' para corrigir CS0037
+            if (string.IsNullOrWhiteSpace(resultado.Texto))
+                return false;
 
-            // 🔹 Tenta validar o JSON
             string jsonValido;
             try
             {
@@ -294,14 +245,12 @@ public class ComandoSocialService
             }
             catch
             {
-                // fallback: converte texto plano em JSON válido
                 var partes = resultado.Texto.Split("||", StringSplitOptions.RemoveEmptyEntries)
                     .Select(p => p.Trim())
                     .ToArray();
                 jsonValido = System.Text.Json.JsonSerializer.Serialize(new { alternativas = partes });
             }
 
-            // 🔹 Calcula custo e debita saldo
             var custoSC = 0.04m;
 
             if (user.StarkCoins < custoSC)
@@ -309,7 +258,6 @@ public class ComandoSocialService
 
             user.StarkCoins -= custoSC;
 
-            // 🔹 Atualiza comando mantendo estrutura padronizada
             comandoSocial.Comando = comando;
             comandoSocial.Resposta = resposta;
             comandoSocial.RespostasAleatorias = jsonValido;
@@ -317,7 +265,6 @@ public class ComandoSocialService
 
         if (user.StarkCoins < 0.04m)
         {
-            // 🔹 Atualiza comando mantendo estrutura padronizada
             comandoSocial.Comando = comando;
             comandoSocial.Resposta = resposta;
             comandoSocial.RespostasAleatorias = "";

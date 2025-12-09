@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.starkaid.starkaidapp">
+
+
+    <!-- Permissive padre do Android -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+    <uses-permission android:name="android.permission.CLEAR_APP_CACHE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+    <!-- Permission para Advertising ID (Android 13+) -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="text/plain" />
+        </intent>
+        <package android:name="com.whatsapp.w4b" />
+        <package android:name="com.whatsapp" />
+        <package android:name="com.spotify.music" />
+    </queries>
+
+    <application
+        android:name="com.starkaid.starkaidapp.StarkAidApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@drawable/logo02"
+        android:label="@string/app_name_description"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.StarkAid"
+        tools:targetApi="35"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:requestLegacyExternalStorage="true"
+        android:useEmbeddedDex="true"
+        android:largeHeap="true"
+        android:hardwareAccelerated="true"
+        tools:replace="android:label">
+
+
+
+        <property
+            android:name="android.adservices.AD_SERVICES_CONFIG"
+            android:resource="@xml/ad_services_config"
+            tools:replace="android:resource" />
+
+        <!-- Reconfigures do AdMob -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-8791322668156076~4427534782"/>
+
+        <meta-data
+            android:name="unityads.appid"
+            android:value="5968464"/>
+
+        <!-- Habilitate coleta de Advertising ID para Analytics -->
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="true"/>
+
+        <!-- Configurações adicionais para Google Play Services -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.LoginActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:alwaysRetainTaskState="true"
+            android:hardwareAccelerated="true"
+            android:clearTaskOnLaunch="false"
+            >
+
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="starkaid" android:host="spotifycallback"/>
+            </intent-filter>
+
+            <!-- Custom URL scheme SEM autoVerify -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="starkaidapp" />
+            </intent-filter>
+
+            <!-- Deep link para retorno de pagamento -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="starkaid" android:host="payment" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <activity android:name="com.starkaid.starkaidapp.ui.QrActivityWppConnect" />
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.DeleteAccountActivity"
+            android:theme="@style/Theme.StarkAid"/>
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ewelink.EwelinkLoginActivity"
+            android:theme="@style/Theme.StarkAid"
+            android:launchMode="singleTask"
+            android:exported="true">
+
+            <!-- INTENT FILTER PARA DEEP LINK -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="starkaid"
+                    android:host="ewelink" />
+            </intent-filter>
+
+            <!-- INTENT FILTER PARA HTTP (backup) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="starkaid.runasp.net"
+                    android:pathPrefix="/auth/ewelink/calback/" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ewelink.EwelinkDevicesActivity"
+            android:theme="@style/Theme.StarkAid"
+            android:exported="false" />
+
+        <activity android:name="com.starkaid.starkaidapp.ui.DisparoAlertActivity"
+            android:exported="false"/>
+
+        <activity android:name="com.starkaid.starkaidapp.ui.ConfigStarkEagleActivity"
+            android:exported="false"/>
+
+        <activity android:name="com.starkaid.starkaidapp.ui.ConfigUsuarioActivity"
+            android:exported="false"/>
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.ConfigStarkSwitchActivity"
+            android:exported="false"/>
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.ConfiguracoesGeraisActivity"
+            android:exported="false" />
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.ChatSuporteActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StarkAid" />
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.DispositivosEspActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StarkAid" />
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.ConfigAppActivity"
+            android:label="Configurações do App"
+            android:windowSoftInputMode="adjustPan"
+            android:theme="@style/Theme.Material3.Light.NoActionBar" />
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.SetupAssistantNameActivity"
+            android:label="Configurar Assistente"
+            android:windowSoftInputMode="adjustPan"
+            android:theme="@style/Theme.StarkAid"
+            android:exported="false" />
+
+        <activity android:name="com.starkaid.starkaidapp.ui.RegisterActivity"
+            android:exported="false"/>
+
+
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.ComandosSociaisActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StarkAid"/>
+
+        <activity android:name="com.starkaid.starkaidapp.ui.PlanosActivity" />
+
+        <activity android:name="com.starkaid.starkaidapp.ui.ContratarPlanosActivity"
+            android:exported="false" />
+
+        <activity android:name="com.starkaid.starkaidapp.ui.AgendamentosActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StarkAid" />
+
+        <activity android:name="com.starkaid.starkaidapp.ui.AddStarkcoinsActivity" />
+
+        <service
+            android:name="com.starkaid.starkaidapp.services.FullDuplexAssistantAdvancedService"
+            android:exported="false"
+            android:foregroundServiceType="microphone"/>
+
+
+
+
+        <service
+            android:name="com.starkaid.starkaidapp.services.StarkAidMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name="com.starkaid.starkaidapp.services.FloatingButtonService"
+            android:exported="false"/>
+
+        <service
+            android:name="com.starkaid.starkaidapp.services.DeviceOptimizationService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <receiver android:name="com.starkaid.starkaidapp.services.NetworkChangeReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"
+                    tools:ignore="BatteryLife" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

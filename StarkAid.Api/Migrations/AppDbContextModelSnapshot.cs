@@ -22,92 +22,6 @@ namespace StarkAid.Api.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("PasswordResetToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("Expiration")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("PasswordResetTokens", (string)null);
-                });
-
-            modelBuilder.Entity("RefreshToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("Expiration")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Origem")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("RefreshTokens", (string)null);
-                });
-
-            modelBuilder.Entity("StarkAid.Api.DTOs.WPPconnect.UserSession", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("SessionName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UserSessions", (string)null);
-                });
-
             modelBuilder.Entity("StarkAid.Api.Entities.Agendamento", b =>
                 {
                     b.Property<Guid>("Id")
@@ -121,14 +35,23 @@ namespace StarkAid.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("DeviceId")
+                    b.Property<Guid?>("DeviceId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("DispositivoEspId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EwelinkDeviceId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("Executado")
                         .HasColumnType("bit");
 
                     b.Property<string>("Recorrencia")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TipoAgendamento")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -137,9 +60,11 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("DeviceId");
 
+                    b.HasIndex("DispositivoEspId");
+
                     b.HasIndex("UserId");
 
-                    b.ToTable("Agendamentos", (string)null);
+                    b.ToTable("Agendamentos");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Assinatura", b =>
@@ -173,7 +98,8 @@ namespace StarkAid.Api.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("StripePriceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("StripeSubscriptionId")
                         .HasMaxLength(100)
@@ -192,7 +118,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Assinaturas", (string)null);
+                    b.ToTable("Assinaturas");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ComandoSocial", b =>
@@ -219,7 +145,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ComandosSociais", (string)null);
+                    b.ToTable("ComandosSociais");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ConfiguracaoSistema", b =>
@@ -243,7 +169,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ConfiguracoesSistema", (string)null);
+                    b.ToTable("ConfiguracoesSistema");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ConfiguracaoStarkNlp", b =>
@@ -262,7 +188,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ConfiguracoesStarkNlp", (string)null);
+                    b.ToTable("ConfiguracoesStarkNlp");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Device", b =>
@@ -297,7 +223,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Devices", (string)null);
+                    b.ToTable("Devices");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Disparo", b =>
@@ -331,7 +257,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Disparos", (string)null);
+                    b.ToTable("Disparos");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.DispositivoDisparo", b =>
@@ -365,7 +291,293 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("DispositivosDisparo", (string)null);
+                    b.ToTable("DispositivosDisparo");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.DispositivoEsp", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ComandToEsp")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Comando")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Ip")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
+
+                    b.Property<DateTimeOffset?>("LastPingAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("LastUpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("LigadoDesligado")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("Porta")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("DispositivosEsp");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.ErrorCodeDescription", b =>
+                {
+                    b.Property<string>("CodigoDeErro")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CamposRelevantes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Contexto")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Origem")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Solucoes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("CodigoDeErro");
+
+                    b.ToTable("ErrorCodeDescriptions");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.ErrorLogApp", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AcaoErro")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CodigoDeErro")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DataErro")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ErroCompleto")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HoraErro")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UltimaResposta")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UltimoComando")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UltimoDispositivoAcionado")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ErrorLogsApp");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.ErrorLogSoft", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AcaoErro")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CodigoDeErro")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DataErro")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ErroCompleto")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HoraErro")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UltimaResposta")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UltimoComando")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UltimoDispositivoAcionado")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ErrorLogsSoft");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.EwelinkAccount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccessToken")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<long>("AccessTokenExpiry")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LastUpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<long>("RefreshTokenExpiry")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Region")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("EwelinkAccounts");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.EwelinkDevice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DeviceId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FamilyId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset?>("LastUpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("Online")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Params")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RoomId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Uiid")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("EwelinkDevices");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.FirebaseToken", b =>
@@ -388,7 +600,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("FirebaseTokens", (string)null);
+                    b.ToTable("FirebaseTokens");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.IaHistorico", b =>
@@ -415,7 +627,92 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("IaHistoricos", (string)null);
+                    b.ToTable("IaHistoricos");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.License", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LicenseKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("MaxMachines")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("PaymentConfirmedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("StripePaymentIntentId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("StripeSessionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Licenses");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.LicenseActivation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("ActivatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("DeactivatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("LicenseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("MachineId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("MachineName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LicenseId");
+
+                    b.ToTable("LicenseActivations");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.PagamentoAvulso", b =>
@@ -452,7 +749,60 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PagamentosAvulsos", (string)null);
+                    b.ToTable("PagamentosAvulsos");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("Expiration")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResetTokens");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("Expiration")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Origem")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.User", b =>
@@ -466,6 +816,14 @@ namespace StarkAid.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("Bairro")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Cidade")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -473,6 +831,10 @@ namespace StarkAid.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Estado")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -530,7 +892,48 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.UserSession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastActivityAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Origem")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SessionName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserSessions");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.WebhookLog", b =>
@@ -562,57 +965,30 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("WebhookLogs", (string)null);
-                });
-
-            modelBuilder.Entity("PasswordResetToken", b =>
-                {
-                    b.HasOne("StarkAid.Api.Entities.User", "User")
-                        .WithMany("PasswordResetTokens")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("RefreshToken", b =>
-                {
-                    b.HasOne("StarkAid.Api.Entities.User", "User")
-                        .WithMany("RefreshTokens")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("StarkAid.Api.DTOs.WPPconnect.UserSession", b =>
-                {
-                    b.HasOne("StarkAid.Api.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
+                    b.ToTable("WebhookLogs");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Agendamento", b =>
                 {
                     b.HasOne("StarkAid.Api.Entities.Device", "Device")
-                        .WithMany("Agendamentos")
+                        .WithMany()
                         .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("StarkAid.Api.Entities.DispositivoEsp", "DispositivoEsp")
+                        .WithMany()
+                        .HasForeignKey("DispositivoEspId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("StarkAid.Api.Entities.User", "User")
                         .WithMany("Agendamentos")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Device");
+
+                    b.Navigation("DispositivoEsp");
 
                     b.Navigation("User");
                 });
@@ -680,6 +1056,60 @@ namespace StarkAid.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StarkAid.Api.Entities.DispositivoEsp", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.ErrorLogApp", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.ErrorLogSoft", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.EwelinkAccount", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.EwelinkDevice", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("StarkAid.Api.Entities.FirebaseToken", b =>
                 {
                     b.HasOne("StarkAid.Api.Entities.User", "User")
@@ -702,6 +1132,28 @@ namespace StarkAid.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StarkAid.Api.Entities.License", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.LicenseActivation", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.License", "License")
+                        .WithMany("Activations")
+                        .HasForeignKey("LicenseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("License");
+                });
+
             modelBuilder.Entity("StarkAid.Api.Entities.PagamentoAvulso", b =>
                 {
                     b.HasOne("StarkAid.Api.Entities.User", "User")
@@ -713,14 +1165,47 @@ namespace StarkAid.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("StarkAid.Api.Entities.Device", b =>
+            modelBuilder.Entity("StarkAid.Api.Entities.PasswordResetToken", b =>
                 {
-                    b.Navigation("Agendamentos");
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany("PasswordResetTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.UserSession", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.DispositivoDisparo", b =>
                 {
                     b.Navigation("Disparos");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.License", b =>
+                {
+                    b.Navigation("Activations");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.User", b =>

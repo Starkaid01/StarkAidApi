@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="colorPrimary">#4a6fc1</color>
+    <color name="cardview_dark_background">#0c1e3e</color>
+    <color name="lista">#253657</color>
+
+    <color name="cardsMain">#186bf0</color>
+
+    <color name="green_active">#4CAF50</color>
+    <color name="red_inactive">#F44336</color>
+    <color name="colormenu">#05199e</color>
+
+    <color name="purple_500">#5a0966</color>
+
+    <color name="verde_escuro">#006400</color>
+
+    <color name="gray_600">#757575</color>
+    <color name="gray_700">#616161</color>
+    <color name="red_600">#E53935</color>
+    <color name="teal_700">#00796B</color>
+
+    <!-- Novas cores para status -->
+    <color name="status_online">#4CAF50</color>
+    <color name="status_offline">#F44336</color>
+    <color name="status_connected">#2196F3</color>
+
+    <!-- Cores dos botões -->
+    <color name="btn_toggle_on">#4CAF50</color>
+    <color name="btn_toggle_off">#F44336</color>
+
+    <color name="background">#F5F5F5</color>
+    <color name="online_green">#4CAF50</color>
+    <color name="offline_red">#F44336</color>
+
+    <!-- Cores estilo Jarvis -->
+    <color name="jarvis_blue">#00D9FF</color>
+    <color name="jarvis_cyan">#00FFFF</color>
+    <color name="jarvis_dark_blue">#001F3F</color>
+    <color name="jarvis_darker_blue">#000A1A</color>
+    <color name="jarvis_light_blue">#33CCFF</color>
+    <color name="jarvis_glow">#66E5FF</color>
+    <color name="jarvis_card_bg">#1A3A5C</color>
+    <color name="jarvis_card_bg_transparent">#1A2A4A</color>
+    <color name="jarvis_text_primary">#E0F7FF</color>
+    <color name="jarvis_text_secondary">#B3E5FF</color>
+    <color name="jarvis_accent">#00CCFF</color>
+    <color name="jarvis_gradient_start">#000A1A</color>
+    <color name="jarvis_gradient_mid">#001F3F</color>
+    <color name="jarvis_gradient_end">#003366</color>
+</resources>

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using StarkAid.Api.DTOs.Devices;
 using StarkAid.Api.Services.Devices;
+using StarkAid.Api.Services.Disparo;
 using System.Security.Claims;
 
 namespace StarkAid.Api.Controllers
@@ -62,5 +63,4 @@ namespace StarkAid.Api.Controllers
             return Ok("Dispositivo removido.");
         }
     }
-
 }

@@ -2,24 +2,20 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StarkAid.Api.Entities;
 
-namespace StarkAid.Api.EntityConfigurations
+namespace StarkAid.Api.EntityConfigurations;
+
+public class FirebaseTokenConfiguration : IEntityTypeConfiguration<FirebaseToken>
 {
-    public class FirebaseTokenConfiguration : IEntityTypeConfiguration<FirebaseToken>
+    public void Configure(EntityTypeBuilder<FirebaseToken> builder)
     {
-        public void Configure(EntityTypeBuilder<FirebaseToken> builder)
-        {
-            builder.HasKey(x => x.Id);
+        builder.HasKey(ft => ft.Id);
 
-            builder.Property(x => x.Token)
-                .IsRequired();
+        builder.Property(ft => ft.Token).IsRequired();
+        builder.Property(ft => ft.DataCadastro).IsRequired();
 
-            builder.Property(x => x.DataCadastro)
-                .IsRequired();
-
-            builder.HasOne(x => x.User)
-                .WithMany(u => u.FirebaseTokens)
-                .HasForeignKey(x => x.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-        }
+        builder.HasOne(ft => ft.User)
+               .WithMany(u => u.FirebaseTokens)
+               .HasForeignKey(ft => ft.UserId)
+               .OnDelete(DeleteBehavior.Cascade);
     }
 }

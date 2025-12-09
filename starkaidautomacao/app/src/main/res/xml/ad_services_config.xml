@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ad-services-config>
+    <custom-audience allowed="true" />
+    <ad-id allowed="true" />
+    <topics allowed="true" />
+    <fledge allowed="true" />
+    <attribution allowed="true" />
+    <measurement allowed="true" />
+</ad-services-config>

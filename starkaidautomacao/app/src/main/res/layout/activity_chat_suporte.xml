@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#1A1A1A"
+    android:padding="16dp">
+
+    <!-- Status da conexão -->
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Desconectado"
+        android:textColor="#FFA500"
+        android:textSize="14sp"
+        android:padding="16dp" />
+
+    <!-- Status da fila -->
+    <TextView
+        android:id="@+id/queueStatusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:padding="16dp"
+        android:background="#2A2A2A"
+        android:visibility="gone" />
+
+    <!-- ScrollView para mensagens -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:id="@+id/chatMessagesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp" />
+    </ScrollView>
+
+    <!-- Controles de conexão -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="#2A2A2A">
+
+        <Button
+            android:id="@+id/btnConnect"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Conectar"
+            android:backgroundTint="#009688"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/btnDisconnect"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Desconectar"
+            android:backgroundTint="#960000"
+            android:textColor="#FFFFFF"
+            android:enabled="false" />
+    </LinearLayout>
+
+    <!-- Painel de mensagem -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="#2A2A2A">
+
+        <EditText
+            android:id="@+id/messageInput"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:hint="Digite sua mensagem..."
+            android:textColor="#FFFFFF"
+            android:textColorHint="#888888"
+            android:background="#3A3A3A"
+            android:padding="12dp" />
+
+        <Button
+            android:id="@+id/btnSend"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Enviar"
+            android:backgroundTint="#009688"
+            android:textColor="#FFFFFF"
+            android:enabled="false" />
+    </LinearLayout>
+
+    <!-- Formulário de Limite -->
+    <LinearLayout
+        android:id="@+id/formulario_limite_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="#2A2A2A"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Formulário de Suporte"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:paddingBottom="16dp" />
+
+        <EditText
+            android:id="@+id/formulario_mensagem"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:hint="Descreva detalhadamente os erros que está enfrentando..."
+            android:textColor="#FFFFFF"
+            android:textColorHint="#888888"
+            android:background="#3A3A3A"
+            android:padding="12dp"
+            android:gravity="top"
+            android:inputType="textMultiLine" />
+
+        <Button
+            android:id="@+id/btnEnviarFormulario"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enviar para Suporte"
+            android:backgroundTint="#009688"
+            android:textColor="#FFFFFF"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
+
+</LinearLayout>

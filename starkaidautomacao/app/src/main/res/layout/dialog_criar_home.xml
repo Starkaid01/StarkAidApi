@@ -1,0 +1,19 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp" android:layout_height="wrap_content" android:layout_width="match_parent">
+    <EditText
+        android:id="@+id/edtNomeHome"
+        android:hint="Nome da Casa"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:minHeight="48dp"
+        />
+    <EditText
+        android:id="@+id/edtCidade"
+        android:hint="Cidade"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:minHeight="48dp"
+        android:inputType="textPassword"
+        />
+</LinearLayout>

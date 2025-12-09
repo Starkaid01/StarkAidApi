@@ -1,0 +1,8 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menuRenomear"
+        android:title="Renomear" />
+    <item
+        android:id="@+id/menuExcluir"
+        android:title="Excluir" />
+</menu>

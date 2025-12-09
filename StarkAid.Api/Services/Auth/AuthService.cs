@@ -29,13 +29,13 @@ public class AuthService
         var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
 
         var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-        new Claim(ClaimTypes.Email, user.Email),
-        new Claim("ApiKey", user.ApiKey),
-        new Claim(ClaimTypes.Role, user.Role),
-        new Claim("IsFromApp", isFromApp.ToString().ToLower()) // 🔥 nova claim
-    };
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim("ApiKey", user.ApiKey),
+            new Claim(ClaimTypes.Role, user.Role),
+            new Claim("IsFromApp", isFromApp.ToString().ToLower())
+        };
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
@@ -62,7 +62,7 @@ public class AuthService
     {
         return BCrypt.Net.BCrypt.HashPassword(password);
     }
-      
+
     public async Task<User?> GetUserByEmailAsync(string email)
     {
         return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);

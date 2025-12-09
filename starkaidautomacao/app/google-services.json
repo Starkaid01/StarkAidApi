@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "156036048026",
+    "project_id": "starkaid-automation",
+    "storage_bucket": "starkaid-automation.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:156036048026:android:ba5a1bb2b846f03ca2ab23",
+        "android_client_info": {
+          "package_name": "com.starkaid.starkaidapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwPsjsASMSQtn6J289AAWH5JM6X4yx4OI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

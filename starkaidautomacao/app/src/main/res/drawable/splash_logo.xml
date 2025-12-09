@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Fundo da tela -->
+    <item android:drawable="@color/white" />
+    <!-- Sua nova logo no centro -->
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/logo03"
+            />
+    </item>
+</layer-list>

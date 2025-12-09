@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <target android:name="wave">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="1000"
+                android:propertyName="pathData"
+                android:valueFrom="M 0,50 Q 25,30 50,50 T 100,50"
+                android:valueTo="M 0,50 Q 25,70 50,50 T 100,50"
+                android:valueType="pathType"
+                android:repeatCount="infinite"
+                android:repeatMode="reverse" />
+        </aapt:attr>
+    </target>
+</animated-vector>
+

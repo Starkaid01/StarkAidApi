@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>StarkAid - eWeLink Auth</title>
+    <script>
+        function redirectToApp() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const region = urlParams.get('region') || 'as';
+            
+            console.log('OAuth Callback:', { code, region });
+            
+            if (code) {
+                // Tentativa 1: Custom Scheme
+                const appDeepLink = `starkaid://ewelink?code=${encodeURIComponent(code)}&region=${region}`;
+                console.log('Trying deep link:', appDeepLink);
+                window.location.href = appDeepLink;
+                
+                // Fallback após 2 segundos
+                setTimeout(() => {
+                    console.log('Fallback: opening Play Store or website');
+                    // Aqui você pode redirecionar para Play Store ou site
+                    document.body.innerHTML = '<h2>Redirecionamento falhou. Volte ao app manualmente.</h2>';
+                }, 2000);
+            } else {
+                document.body.innerHTML = '<h2>Erro: Código de autorização não recebido</h2>';
+            }
+        }
+        
+        // Executa quando a página carrega
+        window.onload = redirectToApp;
+    </script>
+</head>
+<body>
+    <h2>Processando login...</h2>
+    <p>Por favor, aguarde enquanto redirecionamos para o app.</p>
+</body>
+</html>

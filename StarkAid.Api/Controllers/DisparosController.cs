@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using StarkAid.Api.Services.Devices;
+﻿using System;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using StarkAid.Api.DTOs.Devices;
+using StarkAid.Api.Services.Devices;
 
 namespace StarkAid.Api.Controllers
 {
-    [Authorize]        
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class DisparosController : ControllerBase
@@ -24,13 +26,13 @@ namespace StarkAid.Api.Controllers
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            // Registrar disparo no banco (agora retorna DTO)
-            var disparoResponse = await _disparoService.RegistrarDisparoAsync(userId, request.DispositivoId, request.Mensagem);
+            var disparoResponse = await _disparoService
+                .RegistrarDisparoAsync(userId, request.DispositivoId, request.Mensagem);
 
-            // Disparar notificação FCM
-            await _fcmService.EnviarParaUsuarioAsync(userId, "Alerta de Disparo", request.Mensagem, disparoResponse.Id);
+            await _fcmService
+                .EnviarParaUsuarioAsync(userId, "Alerta de Disparo", request.Mensagem, disparoResponse.Id);
 
-            return Created("", disparoResponse); // Retorna o DTO
+            return Created(string.Empty, disparoResponse);
         }
 
         [HttpGet]
@@ -38,7 +40,7 @@ namespace StarkAid.Api.Controllers
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var disparos = await _disparoService.ListarDisparosComNomePorUsuarioAsync(userId);
-            return Ok(disparos); // Já retorna List<DisparoResponse>
+            return Ok(disparos);
         }
 
         [HttpPut("{id}/confirmar")]
@@ -46,7 +48,10 @@ namespace StarkAid.Api.Controllers
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var sucesso = await _disparoService.ConfirmarDisparoAsync(id, userId);
-            if (!sucesso) return NotFound("Disparo não encontrado ou não pertence a você.");
+
+            if (!sucesso)
+                return NotFound("Disparo não encontrado ou não pertence a você.");
+
             return Ok("Disparo confirmado.");
         }
 
@@ -55,6 +60,7 @@ namespace StarkAid.Api.Controllers
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var removido = await _disparoService.ExcluirAsync(id, userId);
+
             if (!removido)
                 return NotFound("Disparo não encontrado ou não pertence a você.");
 

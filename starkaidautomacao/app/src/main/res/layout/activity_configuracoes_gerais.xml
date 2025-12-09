@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawerLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Toolbar (caso queira no topo também) -->
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/topAppBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colormenu"
+            app:title="Cnfigurações"
+            app:titleTextColor="@color/white"
+            app:titleCentered="true"
+            app:navigationIcon="@drawable/ic_arrow_left" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="?attr/actionBarSize"
+            android:padding="16dp"
+            android:background="@color/cardview_dark_background"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <!-- Card Configurações do App -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/privacy"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="#bab709"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/privacy"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Privacidade"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+
+
+                <!-- Card Configurações de Usuário -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardConfigUser"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="#1E88E5"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_person"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Config. Usuário"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Card Meus Planos -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardMeusPlanos"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="#8E24AA"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_payment"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Meus Planos"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Card Configurações Comandos -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardConfigComandos"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="#FB8C00"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_command"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text=".           Comandos                 ."
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+
+                <!-- Card Ewelink -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardEwelink"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="#05ACB4"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_iot"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Dispositivos Ewelink"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+
+                <!-- Card Configurações StarkSwitch -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardConfigStarkSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="#5E35B1"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_switch"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Dispositivos StarkSwitch"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Card Dispositivos ESP -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardDispositivosEsp"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="#9C27B0"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_iot"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Dispositivos ESP"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Card Configurações StarkEagle -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardConfigStarkEagle"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="#E53935"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_security"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Dispositivos StarkEagle"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Card Configurações do App -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardConfigApp"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="#43A047"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_device"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Config. Assistent"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Card Bot-Whatsapp -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardBotWhatsapp"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="#00ACC1"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_whatsapp"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Bot-Whatsapp"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Card Agendamentos -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardAgendamentos"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="#FF6F00"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_command"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Agendamentos"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+
+                <!-- Card Contato -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardContato"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="#546E7A"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_contact"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Entre em Contato"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+
+                <!-- Deletar Conta -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/deleteAcount"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    app:cardBackgroundColor="@color/red_inactive"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/delete_forever_24"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Deletar conta"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:layout_marginStart="16dp"/>
+
+
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+
+                <!-- Deletar Conta -->
+
+            </LinearLayout>
+        </ScrollView>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+    <!-- MENU LATERAL -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navView"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:menu="@menu/drawer_menu"
+        app:headerLayout="@layout/drawer_header"
+        android:background="@android:color/white" />
+</androidx.drawerlayout.widget.DrawerLayout>

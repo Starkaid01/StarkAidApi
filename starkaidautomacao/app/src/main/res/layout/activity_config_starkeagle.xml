@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@drawable/bg_gradient_dark"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- Nova Toolbar com botão de voltar -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/colormenu"
+        app:navigationIcon="@drawable/ic_arrow_left"
+        app:title="Configurações StarkEagle"
+        app:titleTextColor="@android:color/white" />
+
+    <!-- 1. Card da Siren (Topo) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardSirene"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/toolbar"
+        app:cardBackgroundColor="#1E2B47"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_siren"
+                android:layout_marginEnd="12dp"
+                app:tint="@color/white" />
+
+            <TextView
+                android:text="Desativar Sirene"
+                android:textSize="16sp"
+                android:textColor="@color/white"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"/>
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/checkDesativarSirene"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:minWidth="48dp"
+                android:padding="12dp"
+                app:thumbTint="@color/white"
+                app:trackTint="@color/switch_track"
+                app:useMaterialThemeColors="false"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- 2. Cabeçalho Dispositivos (Abaixo da Sirene) -->
+    <LinearLayout
+        android:id="@+id/headerDispositivos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_below="@id/cardSirene"
+        android:layout_marginBottom="16dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonExpandir"
+            android:text="Dispositivos cadastrados"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            app:icon="@drawable/ic_devices"
+            app:iconTint="@color/white"
+            app:strokeColor="@color/white"
+            android:textColor="@color/white"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/buttonAdicionar"
+            android:src="@drawable/ic_add"
+            app:backgroundTint="@color/colorPrimary"
+            app:tint="@color/white"
+            android:layout_width="wrap_content"
+            android:contentDescription="Adicionar novo dispositivo"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"/>
+    </LinearLayout>
+
+    <!-- 3. Botão Histórico (Rodapé) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonHistoricoDisparos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Histórico de Disparos"
+        app:icon="@drawable/ic_history"
+        app:iconTint="@color/white"
+        style="@style/Widget.MaterialComponents.Button"
+        app:backgroundTint="@color/colorPrimary"
+        android:textColor="@color/white"
+        android:layout_alignParentBottom="true"/>
+
+    <!-- 4. Overlay para o menu de dispositivos -->
+    <View
+        android:id="@+id/overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"/>
+
+    <!-- 5. Menu de dispositivos (sobreposto) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/menuDispositivos"
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:layout_alignParentEnd="true"
+        android:visibility="gone"
+        app:cardBackgroundColor="#253657"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="24dp"
+        android:layout_margin="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Dispositivos"
+                android:textSize="20sp"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingBottom="16dp"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerDispositivos"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:padding="4dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonFecharMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Fechar"
+                app:icon="@drawable/ic_close"
+                app:iconTint="@color/white"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                app:strokeColor="@color/colorPrimary"
+                android:textColor="@color/colorPrimary"
+                android:layout_marginTop="16dp"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</RelativeLayout>

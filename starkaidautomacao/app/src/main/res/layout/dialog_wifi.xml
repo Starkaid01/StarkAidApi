@@ -1,0 +1,15 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp" android:layout_height="wrap_content" android:layout_width="match_parent">
+    <EditText
+        android:id="@+id/edtSsid"
+        android:hint="SSID do Wi-Fi"
+        android:minHeight="48dp" android:layout_height="wrap_content" android:layout_width="match_parent"/>
+    <EditText
+        android:id="@+id/edtSenha"
+        android:hint="Senha do Wi-Fi"
+        android:inputType="textPassword"
+        android:minHeight="48dp"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"/>
+</LinearLayout>

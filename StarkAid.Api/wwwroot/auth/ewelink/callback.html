@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ewelink Login - Callback</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h2>Processando login...</h2>
+        <p>Aguarde enquanto finalizamos sua autenticação.</p>
+    </div>
+
+    <script>
+        (function() {
+            // Função para extrair parâmetros da URL (incluindo hash)
+            function getUrlParams() {
+                const params = new URLSearchParams(window.location.search);
+                const hash = window.location.hash.substring(1);
+                const hashParams = new URLSearchParams(hash);
+                
+                // Combinar parâmetros da query string e do hash
+                const allParams = {};
+                for (const [key, value] of params) {
+                    allParams[key] = value;
+                }
+                for (const [key, value] of hashParams) {
+                    allParams[key] = value;
+                }
+                
+                return allParams;
+            }
+            
+            const params = getUrlParams();
+            const code = params.code || params.authorization_code;
+            const error = params.error;
+            const state = params.state;
+            const region = params.region; // O Ewelink também retorna o region
+            
+            console.log('Ewelink OAuth Callback:', { code, error, state, region, fullUrl: window.location.href });
+            
+            if (error) {
+                document.querySelector('.container').innerHTML = `
+                    <h2 style="color: #ff4444;">Erro na autenticação</h2>
+                    <p>${error}</p>
+                    <p>Esta janela pode ser fechada.</p>
+                `;
+                
+                // Enviar mensagem de erro para a janela pai (tentar múltiplas origens)
+                if (window.opener) {
+                    try {
+                        window.opener.postMessage({
+                            type: 'ewelink-callback-error',
+                            error: error
+                        }, window.location.origin);
+                    } catch (e) {
+                        // Tentar com wildcard se origin falhar
+                        window.opener.postMessage({
+                            type: 'ewelink-callback-error',
+                            error: error
+                        }, '*');
+                    }
+                }
+                
+                setTimeout(() => {
+                    if (window.opener) {
+                        window.close();
+                    } else {
+                        window.location.href = '/automacao.html';
+                    }
+                }, 3000);
+                return;
+            }
+            
+            if (code) {
+                console.log('Código de autorização recebido:', code);
+                
+                // Enviar código para a janela pai
+                if (window.opener) {
+                    try {
+                        window.opener.postMessage({
+                            type: 'ewelink-callback',
+                            code: code,
+                            state: state
+                        }, window.location.origin);
+                        
+                        document.querySelector('.container').innerHTML = `
+                            <h2 style="color: #00ff00;">✓ Login realizado com sucesso!</h2>
+                            <p>Esta janela será fechada automaticamente.</p>
+                        `;
+                        
+                        setTimeout(() => {
+                            window.close();
+                        }, 1500);
+                    } catch (e) {
+                        console.error('Erro ao enviar mensagem:', e);
+                        // Tentar com wildcard
+                        window.opener.postMessage({
+                            type: 'ewelink-callback',
+                            code: code,
+                            state: state
+                        }, '*');
+                        
+                        setTimeout(() => {
+                            window.close();
+                        }, 2000);
+                    }
+                } else {
+                    // Se não houver window.opener (redirecionamento completo), redirecionar IMEDIATAMENTE
+                    // O código OAuth expira em 30 segundos, então precisamos processar rapidamente
+                    // Armazenar código no sessionStorage para processamento rápido
+                    sessionStorage.setItem('ewelink_oauth_code', code);
+                    sessionStorage.setItem('ewelink_oauth_state', state || '');
+                    sessionStorage.setItem('ewelink_oauth_region', region || '');
+                    sessionStorage.setItem('ewelink_oauth_timestamp', Date.now().toString());
+                    
+                    // Redirecionar IMEDIATAMENTE para automacao.html
+                    // O automacao.html irá processar o código do sessionStorage
+                    window.location.href = '/automacao.html?ewelink_process=1';
+                }
+            } else {
+                // Verificar se há código no hash (alguns OAuth flows usam hash)
+                const hashMatch = window.location.hash.match(/[#&]code=([^&]+)/);
+                if (hashMatch) {
+                    const hashCode = hashMatch[1];
+                    console.log('Código encontrado no hash:', hashCode);
+                    
+                    if (window.opener) {
+                        window.opener.postMessage({
+                            type: 'ewelink-callback',
+                            code: hashCode,
+                            state: state
+                        }, '*');
+                        
+                        setTimeout(() => {
+                            window.close();
+                        }, 1500);
+                        return;
+                    }
+                }
+                
+                document.querySelector('.container').innerHTML = `
+                    <h2 style="color: #ffaa00;">Aguardando código de autorização...</h2>
+                    <p>Se você já fez login, aguarde alguns segundos.</p>
+                    <p>URL completa: ${window.location.href}</p>
+                `;
+                
+                // Aguardar um pouco mais para ver se o código chega
+                setTimeout(() => {
+                    const params2 = getUrlParams();
+                    const code2 = params2.code || params2.authorization_code;
+                    
+                    if (code2) {
+                        if (window.opener) {
+                            window.opener.postMessage({
+                                type: 'ewelink-callback',
+                                code: code2
+                            }, '*');
+                            window.close();
+                        }
+                    } else {
+                        document.querySelector('.container').innerHTML = `
+                            <h2 style="color: #ff4444;">Código de autorização não recebido</h2>
+                            <p>Por favor, tente novamente.</p>
+                            <p>Esta janela pode ser fechada.</p>
+                        `;
+                        
+                        setTimeout(() => {
+                            if (window.opener) {
+                                window.close();
+                            } else {
+                                window.location.href = '/automacao.html';
+                            }
+                        }, 5000);
+                    }
+                }, 3000);
+            }
+        })();
+    </script>
+</body>
+</html>

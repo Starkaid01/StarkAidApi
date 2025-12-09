@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using StarkAid.Api.EntityConfigurations;
+using StarkAid.Api.Options;
 
 namespace StarkAid.Api.Controllers
 {

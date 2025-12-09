@@ -43,7 +43,6 @@ public class ComandosSociaisController : ControllerBase
 
         try
         {
-            
             var novo = await _service.AddAsync(userId, request.Comando, request.Resposta, request.Estilo);
             if (novo == null)
                 return StatusCode(500, "Erro ao gerar variações com a IA.");
@@ -56,13 +55,13 @@ public class ComandosSociaisController : ControllerBase
         }
     }
 
-    //RespsrandomAnswers(Guid userId, string resposta)
     [HttpGet("random-answers")]
     public async Task<IActionResult> GetRandomAnswers([FromQuery] string resposta)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
             return Unauthorized("Token inválido.");
+
         try
         {
             var respostasAleatorias = await _service.RespsrandomAnswers(userId, resposta);
@@ -99,8 +98,6 @@ public class ComandosSociaisController : ControllerBase
             return BadRequest("Saldo insuficiente para atualizar comando.");
         }
     }
-
-
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)

@@ -1,24 +1,21 @@
-﻿using Microsoft.Extensions.Hosting;
-using StarkAid.Api.Services.Devices;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
 
+namespace StarkAid.Api.Services.Devices;
+
+/// <summary>
+/// Serviço hospedado que inicia o cliente MQTT quando a aplicação sobe.
+/// </summary>
 public class MqttHostedService : IHostedService
 {
-    private readonly IMqttClientService _mqttClientService;
+    private readonly IMqttClientService _mqttService;
 
-    public MqttHostedService(IMqttClientService mqttClientService)
-    {
-        _mqttClientService = mqttClientService;
-    }
+    public MqttHostedService(IMqttClientService mqttService) => _mqttService = mqttService;
 
-    public async Task StartAsync(CancellationToken cancellationToken)
-    {
-        await _mqttClientService.StartAsync();
-    }
+    public Task StartAsync(CancellationToken cancellationToken) =>
+        _mqttService.StartAsync();
 
-    public async Task StopAsync(CancellationToken cancellationToken)
-    {
-        await _mqttClientService.DisposeAsync();
-    }
+    public Task StopAsync(CancellationToken cancellationToken) =>
+        _mqttService.DisposeAsync().AsTask();
 }

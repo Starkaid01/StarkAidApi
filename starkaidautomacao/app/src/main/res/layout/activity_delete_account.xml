@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:padding="0dp"
+    android:background="@color/white">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/colormenu"
+            app:navigationIcon="@drawable/ic_arrow_left"
+            app:title="Deletar Conta"
+            app:titleCentered="true"
+            app:titleTextColor="@android:color/white" />
+
+        <!-- Cabeçalho -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Deletar Conta Permanentemente"
+            android:textSize="20sp"
+            android:textColor="@color/black"
+            android:gravity="center"
+            android:layout_margin="10dp"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Esta ação não pode ser desfeita"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:layout_margin="10dp"
+            android:layout_marginBottom="32dp"/>
+
+        <!-- Caixa de aviso -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_warning_box"
+            android:padding="16dp"
+            android:layout_margin="10dp"
+            android:layout_marginBottom="32dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ATENÇÃO IMPORTANTE"
+                android:textColor="@color/red_inactive"
+                android:textSize="18sp"
+                android:layout_marginBottom="8dp"
+                android:drawableLeft="@drawable/ic_warning"
+                android:drawablePadding="8dp"
+                android:gravity="center_vertical"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ao deletar sua conta:"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="• Todos os seus dados serão permanentemente apagados"
+                android:textSize="16sp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="• Dispositivos vinculados serão desassociados"
+                android:textSize="16sp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="• Comandos personalizados serão perdidos"
+                android:textSize="16sp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="• Se você tem planos de assinatura ativos:"
+                android:textSize="16sp"
+                android:layout_marginTop="8dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Todas as suas assinaturas ativas serão canceladas automaticamente."
+                android:textSize="16sp"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+        <!-- Botão de ação -->
+        <Button
+            android:id="@+id/btnDeleteAccount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sim, Deletar Minha Conta"
+            android:backgroundTint="@color/red_inactive"
+            android:textColor="@color/white"
+            android:layout_margin="10dp"
+            android:layout_marginTop="16dp"/>
+
+        <!-- Nota de rodapé -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Esta ação é irreversível. Ao confirmar, todos os seus dados serão apagados de nossos sistemas."
+            android:textSize="14sp"
+            android:gravity="center"
+            android:layout_margin="10dp"
+            android:layout_marginTop="32dp"/>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:layout_margin="10dp"
+            android:layout_marginTop="16dp"/>
+    </LinearLayout>
+
+
+</ScrollView>

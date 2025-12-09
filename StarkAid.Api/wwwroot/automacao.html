@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starkaid Automação - Sistema de Controle</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/automacao.css?v=3">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+</head>
+<body>
+
+    <!-- Menu Hamburger -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <h1>Starkaid</h1>
+            </div>
+            <button class="hamburger" id="hamburger" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu" id="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="automacao.html" class="active">Starkaid Automação</a></li>
+                <li><a href="cursos.html">Starkaid Cursos</a></li>
+                <li><a href="contato.html">Contato</a></li>
+                <li id="auth-menu-item"></li>
+            </ul>
+            <!-- Notificações (apenas para administrador) -->
+            <div id="notifications-container" style="display: none; position: relative;">
+                <button id="notifications-btn" class="notifications-btn" onclick="toggleNotifications()" aria-label="Notificações">
+                    <span class="notification-icon">🔔</span>
+                    <span id="notifications-count" class="notification-badge" style="display: none;">0</span>
+                </button>
+                <div id="notifications-dropdown" class="notifications-dropdown" style="display: none;">
+                    <div class="notifications-header">
+                        <h3>Notificações</h3>
+                        <button onclick="markAllAsRead()" class="mark-all-read-btn">Marcar todas como lidas</button>
+                    </div>
+                    <div id="notifications-list" class="notifications-list">
+                        <div class="notification-loading">Carregando notificações...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login/Cadastro Section -->
+    <section id="auth-section" class="auth-section">
+        <div class="auth-container">
+            <div class="auth-tabs">
+                <button class="tab-btn active" data-tab="login">Login</button>
+                <button class="tab-btn" data-tab="register">Cadastro</button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="login-form" class="auth-form active">
+                <h2>Bem-vindo de volta</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Senha</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Entrar</button>
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <a href="#" onclick="requestPasswordReset(); return false;" style="color: white; text-decoration: none; font-size: 0.9rem; cursor: pointer;">Esqueceu sua senha? Clique aqui.</a>
+                    </div>
+                </form>
+                <div id="login-error" class="error-message"></div>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-form" class="auth-form">
+                <h2>Criar conta</h2>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="register-name">Nome</label>
+                        <input type="text" id="register-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Senha</label>
+                        <input type="password" id="register-password" required minlength="6">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Cadastrar</button>
+                </form>
+                <div id="register-error" class="error-message"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Section (Hidden by default) -->
+    <section id="dashboard-section" class="dashboard-section" style="display: none;">
+        <div class="container">
+            <h1 class="dashboard-title">Dashboard</h1>
+
+            <!-- Admin Dashboard -->
+            <div id="admin-dashboard" style="display: none;">
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="total-users">-</div>
+                            <div class="stat-label">Total de Usuários</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="active-users">-</div>
+                            <div class="stat-label">Usuários Ativos</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon status-icon" id="api-status-icon">🔴</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="api-status">-</div>
+                            <div class="stat-label">Status API</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon status-icon" id="mqtt-status-icon">🔴</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="mqtt-status">-</div>
+                            <div class="stat-label">Status MQTT</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Tabs -->
+                <div class="admin-tabs-container">
+                    <div class="admin-tabs">
+                        <button class="admin-tab-btn active" data-tab="admin-users">Administração de Usuários</button>
+                        <button class="admin-tab-btn" data-tab="admin-online">Usuários Online</button>
+                        <button class="admin-tab-btn" data-tab="admin-planos">Usuários Planos Ativos</button>
+                        <button class="admin-tab-btn" data-tab="admin-vendas">Starkcoins Vendas</button>
+                        <button class="admin-tab-btn" data-tab="admin-falhas">Pagamentos com Falhas</button>
+                        <button class="admin-tab-btn" data-tab="admin-error-logs">Error Logs</button>
+                        <button class="admin-tab-btn" data-tab="admin-consultar-codigo">Consultar Codigo de erro</button>
+                        <button class="admin-tab-btn" data-tab="admin-solucoes-codigo">Soluções para CodigoDeErro</button>
+                        <button class="admin-tab-btn" data-tab="admin-manutencao">Manutenção Online</button>
+                    </div>
+                </div>
+
+                <!-- Admin Tabs Content Container -->
+                <div class="admin-tabs-content-container">
+                    <!-- Administração de Usuários Tab -->
+                    <div id="admin-users-tab" class="admin-tab-content active">
+                        <div class="users-section">
+                            <div class="section-header">
+                                <h2>Administração de Usuários</h2>
+                                <button class="btn btn-primary" onclick="refreshUsers()">Atualizar</button>
+                            </div>
+                            <div class="table-container">
+                                <table class="users-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Status</th>
+                                            <th>StarkCoins</th>
+                                            <th>Criado em</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-table-body">
+                                        <tr>
+                                            <td colspan="7" class="loading">Carregando usuários...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Usuários Online Tab -->
+                    <div id="admin-online-tab" class="admin-tab-content">
+                        <div class="users-section">
+                            <div class="section-header">
+                                <h2>Usuários Online</h2>
+                                <button class="btn btn-primary" onclick="refreshOnlineUsers()">Atualizar</button>
+                            </div>
+                            <div class="table-container">
+                                <table class="users-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>StarkCoins</th>
+                                            <th>Origem</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="online-users-table-body">
+                                        <tr>
+                                            <td colspan="6" class="loading">Carregando usuários online...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Usuários Planos Ativos Tab -->
+                    <div id="admin-planos-tab" class="admin-tab-content">
+                        <div class="users-section">
+                            <div class="section-header">
+                                <h2>Usuários Planos Ativos</h2>
+                                <button class="btn btn-primary" onclick="refreshUsersWithPlans()">Atualizar</button>
+                            </div>
+                            <div class="table-container">
+                                <table class="users-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>StarkCoins</th>
+                                            <th>Plano</th>
+                                            <th>Valor</th>
+                                            <th>Status</th>
+                                            <th>Expira em</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-with-plans-table-body">
+                                        <tr>
+                                            <td colspan="9" class="loading">Carregando usuários com planos ativos...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Starkcoins Vendas Tab -->
+                    <div id="admin-vendas-tab" class="admin-tab-content">
+                        <div class="users-section">
+                            <div class="section-header">
+                                <h2>Starkcoins Vendas</h2>
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <span id="starkcoins-vendas-total" style="font-size: 1.1rem; font-weight: bold; color: var(--primary-color);">Total: R$ 0,00</span>
+                                    <button class="btn btn-primary" onclick="refreshStarkcoinsVendas()">Atualizar</button>
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table class="users-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Data</th>
+                                            <th>Horário</th>
+                                            <th>Valor</th>
+                                            <th>Nome do Usuário</th>
+                                            <th>Email</th>
+                                            <th>Status</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="starkcoins-vendas-table-body">
+                                        <tr>
+                                            <td colspan="7" class="loading">Carregando vendas de StarkCoins...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pagamentos com Falhas Tab -->
+                    <div id="admin-falhas-tab" class="admin-tab-content">
+                        <div class="users-section">
+                            <div class="section-header">
+                                <h2>Pagamentos com Falhas</h2>
+                                <button class="btn btn-primary" onclick="refreshPagamentosFalhas()">Atualizar</button>
+                            </div>
+                            <div class="table-container">
+                                <table class="users-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Data</th>
+                                            <th>Horário</th>
+                                            <th>Valor</th>
+                                            <th>Nome do Usuário</th>
+                                            <th>Email</th>
+                                            <th>Status</th>
+                                            <th>Código de Erro</th>
+                                            <th>Detalhe Erro</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pagamentos-falhas-table-body">
+                                        <tr>
+                                            <td colspan="9" class="loading">Carregando pagamentos com falhas...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Logs Tab -->
+                    <div id="admin-error-logs-tab" class="admin-tab-content">
+                        <div class="users-section">
+                            <div class="section-header">
+                                <h2>Error Logs</h2>
+                                <button class="btn btn-primary" onclick="refreshErrorLogs()">Atualizar</button>
+                            </div>
+                            <div class="table-container">
+                                <table class="users-table">
+                                    <thead>
+                                        <tr>
+                                            <th>IdUser</th>
+                                            <th>Nome Usuário</th>
+                                            <th>Email</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="error-logs-table-body">
+                                        <tr>
+                                            <td colspan="4" class="loading">Carregando usuários com logs de erro...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Consultar Codigo de erro Tab -->
+                    <div id="admin-consultar-codigo-tab" class="admin-tab-content">
+                        <div class="users-section">
+                            <div class="section-header">
+                                <h2>Consultar Codigo de erro</h2>
+                            </div>
+                            
+                            <!-- Consultar Codigo de erro Soft -->
+                            <div style="margin-bottom: 3rem; padding: 2rem; background: var(--dark-surface); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h3 style="color: var(--light-text); margin-bottom: 1.5rem;">Consultar Codigo de erro Soft</h3>
+                                <div style="display: flex; gap: 1rem; align-items: flex-end;">
+                                    <div style="flex: 1;">
+                                        <label style="display: block; margin-bottom: 0.5rem; color: var(--light-text); font-weight: 600;">Código de Erro</label>
+                                        <input type="text" id="codigo-erro-soft" placeholder="Ex: ERR_001" style="width: 100%; padding: 0.75rem; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;" />
+                                    </div>
+                                    <button class="btn btn-primary" onclick="consultarCodigoErroSoft()">Consultar</button>
+                                </div>
+                                <div id="resultado-codigo-soft" style="margin-top: 1.5rem; padding: 1.5rem; background: var(--dark-bg); border-radius: 8px; display: none;">
+                                    <h4 style="color: var(--light-text); margin-bottom: 1rem;">Resultado:</h4>
+                                    <div id="conteudo-resultado-soft" style="color: var(--light-text);"></div>
+                                </div>
+                            </div>
+
+                            <!-- Consultar Codigo de erro App -->
+                            <div style="padding: 2rem; background: var(--dark-surface); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h3 style="color: var(--light-text); margin-bottom: 1.5rem;">Consultar Codigo de erro App</h3>
+                                <div style="display: flex; gap: 1rem; align-items: flex-end;">
+                                    <div style="flex: 1;">
+                                        <label style="display: block; margin-bottom: 0.5rem; color: var(--light-text); font-weight: 600;">Código de Erro</label>
+                                        <input type="text" id="codigo-erro-app" placeholder="Ex: ERR_001" style="width: 100%; padding: 0.75rem; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;" />
+                                    </div>
+                                    <button class="btn btn-primary" onclick="consultarCodigoErroApp()">Consultar</button>
+                                </div>
+                                <div id="resultado-codigo-app" style="margin-top: 1.5rem; padding: 1.5rem; background: var(--dark-bg); border-radius: 8px; display: none;">
+                                    <h4 style="color: var(--light-text); margin-bottom: 1rem;">Resultado:</h4>
+                                    <div id="conteudo-resultado-app" style="color: var(--light-text);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Soluções para CodigoDeErro Tab -->
+                    <div id="admin-solucoes-codigo-tab" class="admin-tab-content">
+                        <div class="users-section">
+                            <div class="section-header">
+                                <h2>Soluções para CodigoDeErro</h2>
+                            </div>
+                            
+                            <!-- Soluções Software -->
+                            <div style="margin-bottom: 3rem; padding: 2rem; background: var(--dark-surface); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h3 style="color: var(--light-text); margin-bottom: 1.5rem;">Software</h3>
+                                <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 2rem;">
+                                    <div style="flex: 1;">
+                                        <label style="display: block; margin-bottom: 0.5rem; color: var(--light-text); font-weight: 600;">Código de Erro</label>
+                                        <input type="text" id="codigo-solucao-soft" placeholder="Ex: ERR_001" style="width: 100%; padding: 0.75rem; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;" />
+                                    </div>
+                                    <button class="btn btn-primary" onclick="buscarSolucoesSoft()">Buscar</button>
+                                </div>
+                                <div id="solucoes-soft-result" style="display: none;">
+                                    <h4 style="color: var(--light-text); margin-bottom: 1rem;">Soluções:</h4>
+                                    <ul id="solucoes-soft-list" style="list-style: none; padding: 0; margin: 0;">
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Soluções Aplicativo -->
+                            <div style="padding: 2rem; background: var(--dark-surface); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h3 style="color: var(--light-text); margin-bottom: 1.5rem;">Aplicativo</h3>
+                                <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 2rem;">
+                                    <div style="flex: 1;">
+                                        <label style="display: block; margin-bottom: 0.5rem; color: var(--light-text); font-weight: 600;">Código de Erro</label>
+                                        <input type="text" id="codigo-solucao-app" placeholder="Ex: ERR_001" style="width: 100%; padding: 0.75rem; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;" />
+                                    </div>
+                                    <button class="btn btn-primary" onclick="buscarSolucoesApp()">Buscar</button>
+                                </div>
+                                <div id="solucoes-app-result" style="display: none;">
+                                    <h4 style="color: var(--light-text); margin-bottom: 1rem;">Soluções:</h4>
+                                    <ul id="solucoes-app-list" style="list-style: none; padding: 0; margin: 0;">
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manutenção Online Tab -->
+                    <div id="admin-manutencao-tab" class="admin-tab-content">
+                        <div class="users-section">
+                            <div class="section-header">
+                                <h2>Manutenção Online</h2>
+                            </div>
+
+                            <!-- Card Software -->
+                            <div class="manutencao-card" style="margin-bottom: 2rem; padding: 2rem; background: var(--dark-surface); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h3 style="color: var(--light-text); margin-bottom: 1.5rem; border-bottom: 2px solid var(--primary-color); padding-bottom: 0.5rem;">🔧 Software</h3>
+                                
+                                <div class="form-group" style="margin-bottom: 1.5rem;">
+                                    <label style="display: block; margin-bottom: 0.5rem; color: var(--light-text); font-weight: 600;">UserId</label>
+                                    <input type="text" id="manutencao-software-userid" placeholder="Digite o UserId" style="width: 100%; padding: 0.75rem; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;" />
+                                </div>
+
+                                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                                    <button class="btn btn-primary" onclick="iniciarManutencaoSoftware()">Iniciar Manutenção</button>
+                                    <button class="btn btn-secondary" onclick="finalizarManutencaoSoftware()">Finalizar Manutenção</button>
+                                </div>
+
+                                <div id="manutencao-software-status" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--dark-bg); border-radius: 8px; display: none;">
+                                    <p style="color: var(--light-text); margin: 0;"></p>
+                                </div>
+
+                                <!-- Alterar Senha -->
+                                <div style="margin-bottom: 1.5rem; padding: 1.5rem; background: var(--dark-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <h4 style="color: var(--light-text); margin-bottom: 1rem;">Alterar Senha Provisória</h4>
+                                    <div style="display: flex; gap: 1rem; align-items: flex-end;">
+                                        <div style="flex: 1;">
+                                            <input type="password" id="manutencao-software-nova-senha" placeholder="Nova senha provisória" style="width: 100%; padding: 0.75rem; background: var(--dark-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;" />
+                                        </div>
+                                        <button class="btn btn-primary" onclick="alterarSenhaSoftware()">Alterar</button>
+                                    </div>
+                                </div>
+
+                                <!-- Salvar Nome Assistente -->
+                                <div style="margin-bottom: 1.5rem; padding: 1.5rem; background: var(--dark-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <h4 style="color: var(--light-text); margin-bottom: 1rem;">Salvar Nome Assistente Provisório</h4>
+                                    <div style="display: flex; gap: 1rem; align-items: flex-end;">
+                                        <div style="flex: 1;">
+                                            <input type="text" id="manutencao-software-nome-assistente" placeholder="Nome do assistente" style="width: 100%; padding: 0.75rem; background: var(--dark-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;" />
+                                        </div>
+                                        <button class="btn btn-primary" onclick="salvarNomeAssistenteSoftware()">Salvar</button>
+                                    </div>
+                                </div>
+
+                                <!-- Botões de Ação -->
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                                    <button class="btn btn-primary" onclick="verDispositivosEspSoftware()">Ver Dispositivos ESP</button>
+                                    <button class="btn btn-primary" onclick="verComandosSociaisSoftware()">Ver Comandos Sociais</button>
+                                    <button class="btn btn-warning" onclick="limparCacheSoftware()">Apagar Cache</button>
+                                    <button class="btn btn-warning" onclick="limparDadosSoftware()">Limpar Dados</button>
+                                    <button class="btn btn-danger" onclick="logoutSoftware()">Deslogar Usuário</button>
+                                </div>
+
+                                <!-- Últimos Comandos (Somente Leitura) -->
+                                <div style="margin-bottom: 1.5rem; padding: 1.5rem; background: var(--dark-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <h4 style="color: var(--light-text); margin-bottom: 1rem;">Últimos Comandos</h4>
+                                    <button class="btn btn-secondary" onclick="carregarUltimosComandosSoftware()" style="margin-bottom: 1rem;">Carregar</button>
+                                    <div id="ultimos-comandos-software" style="color: var(--light-text);">
+                                        <p style="margin: 0.5rem 0;"><strong>Último Comando IA:</strong> <span id="ultimo-comando-ia-soft">-</span></p>
+                                        <p style="margin: 0.5rem 0;"><strong>Última Resposta IA:</strong> <span id="ultima-resposta-ia-soft">-</span></p>
+                                        <p style="margin: 0.5rem 0;"><strong>Último Comando Automação:</strong> <span id="ultimo-comando-automacao-soft">-</span></p>
+                                        <p style="margin: 0.5rem 0;"><strong>Último Comando Social:</strong> <span id="ultimo-comando-social-soft">-</span></p>
+                                        <p style="margin: 0.5rem 0;"><strong>Última Resposta Social:</strong> <span id="ultima-resposta-social-soft">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card App -->
+                            <div class="manutencao-card" style="padding: 2rem; background: var(--dark-surface); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h3 style="color: var(--light-text); margin-bottom: 1.5rem; border-bottom: 2px solid var(--primary-color); padding-bottom: 0.5rem;">📱 App</h3>
+                                
+                                <div class="form-group" style="margin-bottom: 1.5rem;">
+                                    <label style="display: block; margin-bottom: 0.5rem; color: var(--light-text); font-weight: 600;">UserId</label>
+                                    <input type="text" id="manutencao-app-userid" placeholder="Digite o UserId" style="width: 100%; padding: 0.75rem; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;" />
+                                </div>
+
+                                <!-- Botões de Ação App -->
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                                    <button class="btn btn-warning" onclick="limparCacheApp()">Limpar Cache</button>
+                                    <button class="btn btn-warning" onclick="limparDadosApp()">Limpar Dados</button>
+                                    <button class="btn btn-danger" onclick="logoutApp()">Logout</button>
+                                </div>
+
+                                <!-- Últimos Comandos App -->
+                                <div style="padding: 1.5rem; background: var(--dark-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <h4 style="color: var(--light-text); margin-bottom: 1rem;">Últimos Comandos</h4>
+                                    <button class="btn btn-secondary" onclick="carregarUltimosComandosApp()" style="margin-bottom: 1rem;">Carregar</button>
+                                    <div id="ultimos-comandos-app" style="color: var(--light-text);">
+                                        <p style="margin: 0.5rem 0;"><strong>Último Comando IA:</strong> <span id="ultimo-comando-ia-app">-</span></p>
+                                        <p style="margin: 0.5rem 0;"><strong>Última Resposta IA:</strong> <span id="ultima-resposta-ia-app">-</span></p>
+                                        <p style="margin: 0.5rem 0;"><strong>Último Comando Automação:</strong> <span id="ultimo-comando-automacao-app">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Chat de Suporte -->
+                            <div class="chat-suporte-card" style="margin-top: 2rem; padding: 2rem; background: var(--dark-surface); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h3 style="color: var(--light-text); margin-bottom: 1.5rem; border-bottom: 2px solid var(--primary-color); padding-bottom: 0.5rem;">💬 Chat de Suporte</h3>
+                                
+                                <div id="chat-queue-status" style="margin-bottom: 1rem; padding: 1rem; background: var(--dark-bg); border-radius: 8px; display: none;">
+                                    <p style="color: var(--light-text); margin: 0;"></p>
+                                </div>
+
+                                <div id="chat-messages" style="height: 400px; overflow-y: auto; padding: 1rem; background: var(--dark-bg); border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border-color);">
+                                    <p style="color: var(--light-text); text-align: center; margin-top: 50%;">Nenhuma mensagem ainda. Conecte-se para iniciar o chat.</p>
+                                </div>
+
+                                <div style="display: flex; gap: 1rem;">
+                                    <input type="text" id="chat-message-input" placeholder="Digite sua mensagem..." style="flex: 1; padding: 0.75rem; background: var(--dark-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;" />
+                                    <button class="btn btn-primary" onclick="enviarMensagemChat()">Enviar</button>
+                                    <button class="btn btn-secondary" onclick="conectarChatSuporte()">Conectar</button>
+                                    <button class="btn btn-danger" onclick="desconectarChatSuporte()">Desconectar</button>
+                                </div>
+
+                                <!-- Formulário de Limite -->
+                                <div id="formulario-limite" style="display: none; margin-top: 1rem; padding: 1.5rem; background: var(--dark-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <h4 style="color: var(--light-text); margin-bottom: 1rem;">Formulário de Suporte</h4>
+                                    <div class="form-group" style="margin-bottom: 1rem;">
+                                        <label style="display: block; margin-bottom: 0.5rem; color: var(--light-text);">Mensagem</label>
+                                        <textarea id="formulario-mensagem" rows="4" style="width: 100%; padding: 0.75rem; background: var(--dark-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;" placeholder="Descreva detalhadamente os erros que está enfrentando..."></textarea>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 1rem;">
+                                        <label style="display: block; margin-bottom: 0.5rem; color: var(--light-text);">Detalhes Adicionais (opcional)</label>
+                                        <textarea id="formulario-detalhes" rows="2" style="width: 100%; padding: 0.75rem; background: var(--dark-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;" placeholder="Informações adicionais que possam ajudar..."></textarea>
+                                    </div>
+                                    <button class="btn btn-primary" onclick="enviarFormularioLimite()">Enviar para Suporte</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Dashboard -->
+            <div id="user-dashboard" style="display: none;">
+                <!-- Dashboard Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📱</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="user-total-devices">-</div>
+                            <div class="stat-label">Dispositivos</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💬</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="user-total-comandos">-</div>
+                            <div class="stat-label">Comandos Sociais</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon status-icon" id="user-api-status-icon">🔴</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="user-api-status">-</div>
+                            <div class="stat-label">Status API</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon status-icon" id="user-mqtt-status-icon">🔴</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="user-mqtt-status">-</div>
+                            <div class="stat-label">Status MQTT</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Info Card -->
+                <div class="welcome-card">
+                    <div class="welcome-header" style="display: flex !important; flex-direction: column !important; align-items: center !important; gap: 1rem !important; width: 100% !important;">
+                        <h2 style="width: 100% !important; text-align: center !important; margin-bottom: 0 !important;">Bem-vindo, <span id="user-name"></span>!</h2>
+                        <div class="welcome-actions" style="width: 100% !important; display: flex !important; justify-content: center !important;">
+                            <button class="btn btn-secondary" onclick="openEditProfileModal()">Editar Perfil</button>
+                            <button class="btn btn-secondary" onclick="openAddFundsModal()">Adicionar Fundos</button>
+                            <button class="btn btn-secondary" onclick="openPlanoModal()">Contratar Plano</button>
+                        </div>
+                    </div>
+                    <div class="user-info">
+                        <div class="info-item">
+                            <span class="info-label">Email:</span>
+                            <span id="user-email"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">StarkCoins:</span>
+                            <span id="user-coins" style="font-weight: 800; color: var(--primary-color);"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">API Key:</span>
+                            <div class="api-key-container">
+                                <span id="user-api-key" class="api-key-text"></span>
+                                <button class="btn btn-secondary btn-copy-api" onclick="copyApiKey()">Copiar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs Navigation - Grid 3x3 / Recolhível em Mobile -->
+                <div class="user-tabs-container">
+                    <!-- Botão de expandir/recolher para mobile -->
+                    <button class="user-tabs-toggle" id="user-tabs-toggle" aria-label="Expandir menu">
+                        <span id="user-tabs-active-label">🌤️ Previsão do Tempo</span>
+                        <span class="user-tabs-arrow">▼</span>
+                    </button>
+                    
+                    <div class="user-tabs-grid" id="user-tabs">
+                        <button class="user-tab-btn active" data-tab="previsao-tempo">🌤️ Previsão do Tempo</button>
+                        <button class="user-tab-btn" data-tab="windows-software">🪟 Windows Software</button>
+                        <button class="user-tab-btn" data-tab="devices">📱 Dispositivos</button>
+                        <button class="user-tab-btn" data-tab="dispositivos-esp">🔌 Dispositivos ESP</button>
+                        <button class="user-tab-btn" data-tab="ewelink">🔌 Dispositivos Ewelink</button>
+                        <button class="user-tab-btn" data-tab="comandos">💬 Comandos Sociais</button>
+                        <button class="user-tab-btn" data-tab="agendamentos">⏰ Agendamentos</button>
+                        <button class="user-tab-btn" data-tab="planos-ativos">💳 Planos Ativos</button>
+                        <button class="user-tab-btn" data-tab="configuracoes">⚙️ Configurações</button>
+                    </div>
+                </div>
+
+                <!-- Devices Tab -->
+                <div id="devices-tab" class="user-tab-content">
+                    <div class="section-header">
+                        <h3>Meus Dispositivos</h3>
+                        <button class="btn btn-primary" onclick="openAddDeviceModal()">+ Adicionar Dispositivo</button>
+                    </div>
+                    <div id="devices-list" class="items-list">
+                        <div class="loading-spinner">Carregando dispositivos...</div>
+                    </div>
+                </div>
+
+                <!-- DispositivosESP Tab -->
+                <div id="dispositivos-esp-tab" class="user-tab-content">
+                    <div class="section-header">
+                        <h3>Meus Dispositivos ESP</h3>
+                        <button class="btn btn-primary" onclick="openAddDispositivoEspModal()">+ Adicionar Dispositivo ESP</button>
+                    </div>
+                    <div id="dispositivos-esp-list" class="items-list">
+                        <div class="loading-spinner">Carregando dispositivos ESP...</div>
+                    </div>
+                </div>
+
+                <!-- Dispositivos Ewelink Tab -->
+                <div id="ewelink-tab" class="user-tab-content">
+                    <div class="section-header">
+                        <h3>Dispositivos Ewelink</h3>
+                        <div>
+                            <button class="btn btn-secondary" onclick="checkEwelinkStatus()" id="ewelink-status-btn">🔄 Atualizar</button>
+                            <button class="btn btn-primary" onclick="syncEwelinkDevices()" id="ewelink-sync-btn" style="display: none;">Sincronizar Dispositivos</button>
+                            <button class="btn btn-primary" onclick="openEwelinkLoginModal()" id="ewelink-login-btn">🔐 Conectar Conta Ewelink</button>
+                            <button class="btn btn-secondary" onclick="logoutEwelink()" id="ewelink-logout-btn" style="display: none; background: rgba(239, 68, 68, 0.2); color: var(--error-color);">Desconectar</button>
+                        </div>
+                    </div>
+                    <div id="ewelink-status-message" style="margin: 1rem 0; padding: 1rem; background: rgba(0, 255, 255, 0.1); border-radius: 8px; display: none;"></div>
+                    <div id="ewelink-devices-list" class="items-list">
+                        <div class="loading-spinner">Verificando status...</div>
+                    </div>
+                </div>
+
+                <!-- Comandos Sociais Tab -->
+                <div id="comandos-tab" class="user-tab-content">
+                    <div class="section-header">
+                        <h3>Meus Comandos Sociais</h3>
+                        <button class="btn btn-primary" onclick="openAddComandoModal()">+ Adicionar Comando</button>
+                    </div>
+                    <div id="comandos-list" class="items-list">
+                        <div class="loading-spinner">Carregando comandos...</div>
+                    </div>
+                </div>
+
+                <!-- Agendamentos Tab -->
+                <div id="agendamentos-tab" class="user-tab-content">
+                    <div class="section-header">
+                        <h3>Meus Agendamentos</h3>
+                        <div>
+                            <button class="btn btn-primary" onclick="openCriarAgendamentoEspModal()">+ Agendamento ESP</button>
+                            <button class="btn btn-primary" onclick="openCriarAgendamentoStarkswitchModal()" style="margin-left: 10px;">+ Agendamento Starkswitch</button>
+                            <button class="btn btn-primary" onclick="openCriarAgendamentoEwelinkModal()" style="margin-left: 10px;">+ Agendamento Ewelink</button>
+                        </div>
+                    </div>
+                    <div id="agendamentos-list" class="items-list">
+                        <div class="loading-spinner">Carregando agendamentos...</div>
+                    </div>
+                </div>
+
+                <!-- Planos Ativos Tab -->
+                <div id="planos-ativos-tab" class="user-tab-content ">
+                    <div class="section-header">
+                        <h3>Meus Planos Ativos</h3>
+                        <button class="btn btn-primary" onclick="openPlanoModal()">+ Contratar Novo Plano</button>
+                    </div>
+                    <div id="planos-ativos-list" class="items-list">
+                        <div class="loading-spinner">Carregando planos ativos...</div>
+                    </div>
+                </div>
+
+                <!-- Previsão do Tempo Tab -->
+                <div id="previsao-tempo-tab" class="user-tab-content active">
+                    <div class="section-header">
+                        <h3>🌤️ Previsão do Tempo</h3>
+                        <button class="btn btn-secondary" onclick="loadWeatherForecast()">🔄 Atualizar</button>
+                    </div>
+                    <div id="weather-forecast-content" style="padding: 1.5rem;">
+                        <div class="loading-spinner">Carregando previsão do tempo...</div>
+                    </div>
+                </div>
+
+                <!-- Windows Software Tab -->
+                <div id="windows-software-tab" class="user-tab-content">
+                    <div class="welcome-card" style="margin-top: 0;">
+                        <div class="welcome-header" style="display: flex !important; flex-direction: column !important; align-items: center !important; gap: 1rem !important; width: 100% !important;">
+                            <h2 style="width: 100% !important; text-align: center !important; margin-bottom: 0 !important;">Windows Software</h2>
+                        </div>
+                        <div class="user-info" style="margin-top: 1.5rem; max-width: 100%;">
+                            <div class="info-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(0, 255, 255, 0.05); border-radius: 8px; margin-bottom: 1rem;">
+                                <span class="info-label" style="font-size: 1rem; color: var(--light-text);">Baixar Para Windows</span>
+                                <button class="btn btn-secondary" onclick="downloadWindowsSoftware()" style="padding: 0.5rem 1.5rem;">Download</button>
+                            </div>
+                            <div class="info-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(0, 255, 255, 0.05); border-radius: 8px; margin-bottom: 1rem;">
+                                <span class="info-label" style="font-size: 1rem; color: var(--light-text);">Adquirir Licença</span>
+                                <button class="btn btn-primary" onclick="window.location.href='/licenses'" style="padding: 0.5rem 1.5rem;">Adquirir</button>
+                            </div>
+                            <div class="info-item" style="display: flex; flex-direction: column; padding: 1rem; background: rgba(0, 255, 255, 0.05); border-radius: 8px; width: 100%; box-sizing: border-box;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; width: 100%; flex-shrink: 0;">
+                                    <span class="info-label" style="font-size: 1rem; color: var(--light-text);">Minhas Licenças</span>
+                                    <button class="btn btn-secondary" onclick="loadUserLicenses()" style="padding: 0.5rem 1rem; font-size: 0.9rem; flex-shrink: 0;">Atualizar</button>
+                                </div>
+                                <div id="user-licenses-list" style="width: 100%; max-height: 600px; overflow-y: auto; display: flex; flex-direction: column;">
+                                    <div class="loading-spinner" style="text-align: center; padding: 1rem; color: var(--light-text);">Carregando licenças...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configurações Tab -->
+                <div id="configuracoes-tab" class="user-tab-content">
+                    <div class="settings-section">
+                        <h3>Configurações da Conta</h3>
+                        <div class="settings-item">
+                            <div>
+                                <h4>Alterar Senha</h4>
+                                <p>Atualize sua senha de acesso</p>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <button class="btn btn-secondary" onclick="openChangePasswordModal()">Alterar Senha</button>
+                                <a href="#" onclick="requestPasswordReset(); return false;" style="color: white; text-decoration: none; text-align: center; font-size: 0.9rem; cursor: pointer; padding: 0.5rem;">Esqueceu sua senha? Clique aqui.</a>
+                            </div>
+                        </div>
+                        <div class="settings-item">
+                            <div>
+                                <h4>Excluir Conta</h4>
+                                <p>Exclua permanentemente sua conta e todos os dados</p>
+                            </div>
+                            <button class="btn btn-secondary" onclick="openDeleteAccountModal()" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color);">Excluir Conta</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- User Details Modal -->
+    <div id="user-details-modal" class="modal">
+        <div class="modal-content large-modal">
+            <span class="close" onclick="closeUserDetailsModal()">&times;</span>
+            <h2>Detalhes do Usuário - Suporte</h2>
+            <div id="user-details-content" class="user-details-content">
+                <div class="loading-spinner">Carregando...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-edit-modal">&times;</span>
+            <h2>Editar Usuário</h2>
+            <form id="edit-user-form">
+                <input type="hidden" id="edit-user-id">
+                <div class="form-group">
+                    <label for="edit-name">Nome</label>
+                    <input type="text" id="edit-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-email">Email</label>
+                    <input type="email" id="edit-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-role">Role</label>
+                    <select id="edit-role" required>
+                        <option value="UserNivel1">UserNivel1</option>
+                        <option value="UserNivel2">UserNivel2</option>
+                        <option value="UserNivel3">UserNivel3</option>
+                        <option value="Administrador">Administrador</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-active">Status</label>
+                    <select id="edit-active" required>
+                        <option value="true">Ativo</option>
+                        <option value="false">Inativo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-coins">StarkCoins</label>
+                    <input type="number" id="edit-coins" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-removal-ads">RemovalAds</label>
+                    <select id="edit-removal-ads" name="removalAds" required>
+                        <option value="Desativado">Desativado</option>
+                        <option value="Ativo">Ativo</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Device Modal -->
+    <div id="edit-device-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('edit-device-modal').style.display='none'">&times;</span>
+            <h2>Editar Dispositivo</h2>
+            <form id="edit-device-form">
+                <input type="hidden" id="edit-device-id">
+                <div class="form-group">
+                    <label for="edit-device-name">Nome</label>
+                    <input type="text" id="edit-device-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-device-comando">Comando</label>
+                    <input type="text" id="edit-device-comando" placeholder="Ex: ligar, desligar">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-device-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Comando Social Modal -->
+    <div id="edit-comando-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('edit-comando-modal').style.display='none'">&times;</span>
+            <h2>Editar Comando Social</h2>
+            <form id="edit-comando-form">
+                <input type="hidden" id="edit-comando-id">
+                <div class="form-group">
+                    <label for="edit-comando-comando">Comando</label>
+                    <input type="text" id="edit-comando-comando" required placeholder="Ex: oi, olá">
+                </div>
+                <div class="form-group">
+                    <label for="edit-comando-resposta">Resposta</label>
+                    <textarea id="edit-comando-resposta" rows="3" required placeholder="Resposta do comando"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-comando-variacoes">Variações (JSON opcional)</label>
+                    <textarea id="edit-comando-variacoes" rows="4" placeholder='{"alternativas": ["...", "..."]}'></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-comando-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Agendamento Modal -->
+    <div id="edit-agendamento-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('edit-agendamento-modal').style.display='none'">&times;</span>
+            <h2>Editar Agendamento</h2>
+            <form id="edit-agendamento-form">
+                <input type="hidden" id="edit-agendamento-id">
+                <div class="form-group">
+                    <label for="edit-agendamento-comando">Comando</label>
+                    <input type="text" id="edit-agendamento-comando" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-agendamento-data">Data e Hora</label>
+                    <input type="datetime-local" id="edit-agendamento-data" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-agendamento-recorrencia">Recorrência (opcional)</label>
+                    <input type="text" id="edit-agendamento-recorrencia" placeholder="Ex: diário, semanal">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="edit-agendamento-executado">
+                        Marcar como executado
+                    </label>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-agendamento-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Device Modal -->
+    <div id="add-device-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('add-device-modal').style.display='none'">&times;</span>
+            <h2>Adicionar Dispositivo</h2>
+            <form id="add-device-form">
+                <div class="form-group">
+                    <label for="new-device-name">Nome do Dispositivo</label>
+                    <input type="text" id="new-device-name" required placeholder="Ex: Luz Sala">
+                </div>
+                <div class="form-group">
+                    <label for="new-device-comando">Comando</label>
+                    <input type="text" id="new-device-comando" placeholder="Ex: ligar, desligar">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Criar</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-device-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Device Modal (User) -->
+    <div id="edit-user-device-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('edit-user-device-modal').style.display='none'">&times;</span>
+            <h2>Editar Dispositivo</h2>
+            <form id="edit-user-device-form">
+                <input type="hidden" id="edit-user-device-id">
+                <div class="form-group">
+                    <label for="edit-user-device-name">Nome</label>
+                    <input type="text" id="edit-user-device-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-user-device-comando">Comando</label>
+                    <input type="text" id="edit-user-device-comando" placeholder="Ex: ligar, desligar">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-user-device-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Comando Social Modal -->
+    <div id="add-comando-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('add-comando-modal').style.display='none'">&times;</span>
+            <h2>Adicionar Comando Social</h2>
+            <form id="add-comando-form">
+                <div class="form-group">
+                    <label for="new-comando-comando">Comando</label>
+                    <input type="text" id="new-comando-comando" required placeholder="Ex: oi, olá">
+                </div>
+                <div class="form-group">
+                    <label for="new-comando-resposta">Resposta</label>
+                    <textarea id="new-comando-resposta" rows="3" required placeholder="Resposta do comando"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="new-comando-estilo">Estilo (opcional)</label>
+                    <input type="text" id="new-comando-estilo" placeholder="Ex: formal, casual">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Criar</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-comando-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Comando Social Modal (User) -->
+    <div id="edit-user-comando-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('edit-user-comando-modal').style.display='none'">&times;</span>
+            <h2>Editar Comando Social</h2>
+            <form id="edit-user-comando-form">
+                <input type="hidden" id="edit-user-comando-id">
+                <div class="form-group">
+                    <label for="edit-user-comando-comando">Comando</label>
+                    <input type="text" id="edit-user-comando-comando" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-user-comando-resposta">Resposta</label>
+                    <textarea id="edit-user-comando-resposta" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-user-comando-estilo">Estilo (opcional)</label>
+                    <input type="text" id="edit-user-comando-estilo">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-user-comando-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('edit-profile-modal').style.display='none'">&times;</span>
+            <h2>Editar Perfil</h2>
+            <form id="edit-profile-form">
+                <div class="form-group">
+                    <label for="edit-profile-name">Nome</label>
+                    <input type="text" id="edit-profile-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-profile-email">Email</label>
+                    <input type="email" id="edit-profile-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-profile-estado">Estado</label>
+                    <input type="text" id="edit-profile-estado" placeholder="Ex: São Paulo">
+                </div>
+                <div class="form-group">
+                    <label for="edit-profile-cidade">Cidade</label>
+                    <input type="text" id="edit-profile-cidade" placeholder="Ex: São Paulo">
+                </div>
+                <div class="form-group">
+                    <label for="edit-profile-bairro">Bairro</label>
+                    <input type="text" id="edit-profile-bairro" placeholder="Ex: Centro">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-profile-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Funds Modal -->
+    <div id="add-funds-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('add-funds-modal').style.display='none'">&times;</span>
+            <h2>Adicionar Fundos - StarkCoins</h2>
+            <form id="add-funds-form">
+                <div class="form-group">
+                    <label for="funds-amount">Valor (R$)</label>
+                    <input type="number" id="funds-amount" step="0.01" min="1" required placeholder="Ex: 10.00">
+                </div>
+                <div class="form-group">
+                    <label>Valores Sugeridos:</label>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                        <button type="button" class="btn btn-secondary" onclick="setFundsAmount(10)" style="padding: 0.5rem 1rem;">R$ 10</button>
+                        <button type="button" class="btn btn-secondary" onclick="setFundsAmount(25)" style="padding: 0.5rem 1rem;">R$ 25</button>
+                        <button type="button" class="btn btn-secondary" onclick="setFundsAmount(50)" style="padding: 0.5rem 1rem;">R$ 50</button>
+                        <button type="button" class="btn btn-secondary" onclick="setFundsAmount(100)" style="padding: 0.5rem 1rem;">R$ 100</button>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Continuar para Pagamento</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-funds-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Plano Modal -->
+    <div id="plano-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('plano-modal').style.display='none'">&times;</span>
+            <h2>Contratar Plano</h2>
+            <div class="planos-grid">
+                <div class="plano-card">
+                    <h3>Nível 2</h3>
+                    <div class="plano-price">R$ 10,00</div>
+                    <button class="btn btn-primary" onclick="contratarPlano(2)">Contratar</button>
+                </div>
+                <div class="plano-card">
+                    <h3>Nível 3</h3>
+                    <div class="plano-price">R$ 5,00</div>
+                    <button class="btn btn-primary" onclick="contratarPlano(3)">Contratar</button>
+                </div>
+                <div class="plano-card">
+                    <h3>Nível 4</h3>
+                    <div class="plano-price">R$ 15,00</div>
+                    <button class="btn btn-primary" onclick="contratarPlano(4)">Contratar</button>
+                </div>
+                <div class="plano-card">
+                    <h3>Nível 5</h3>
+                    <div class="plano-price">R$ 25,00</div>
+                    <button class="btn btn-primary" onclick="contratarPlano(5)">Contratar</button>
+                </div>
+                <div class="plano-card">
+                    <h3>Nível 6</h3>
+                    <div class="plano-price">R$ 50,00</div>
+                    <button class="btn btn-primary" onclick="contratarPlano(6)">Contratar</button>
+                </div>
+                <div class="plano-card">
+                    <h3>Nível 7</h3>
+                    <div class="plano-price">R$ 100,00</div>
+                    <button class="btn btn-primary" onclick="contratarPlano(7)">Contratar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="change-password-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('change-password-modal').style.display='none'">&times;</span>
+            <h2>Alterar Senha</h2>
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label for="current-password">Senha Atual</label>
+                    <input type="password" id="current-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">Nova Senha</label>
+                    <input type="password" id="new-password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Confirmar Nova Senha</label>
+                    <input type="password" id="confirm-password" required minlength="6">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Alterar Senha</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('change-password-modal').style.display='none'">Cancelar</button>
+                </div>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <a href="#" onclick="requestPasswordReset(); return false;" style="color: white; text-decoration: none; font-size: 0.9rem; cursor: pointer;">Esqueceu sua senha? Clique aqui.</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Account Modal -->
+    <div id="delete-account-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('delete-account-modal').style.display='none'">&times;</span>
+            <h2>Excluir Conta</h2>
+            <div class="warning-box">
+                <p><strong>⚠️ Atenção!</strong> Esta ação é irreversível. Todos os seus dados serão permanentemente excluídos.</p>
+            </div>
+            <form id="delete-account-form">
+                <div class="form-group">
+                    <label for="delete-password">Digite sua senha para confirmar</label>
+                    <input type="password" id="delete-password" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn" style="background: var(--error-color); color: white;">Excluir Conta Permanentemente</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('delete-account-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Add DispositivoESP Modal -->
+    <div id="add-dispositivo-esp-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('add-dispositivo-esp-modal').style.display='none'">&times;</span>
+            <h2>Adicionar Dispositivo ESP</h2>
+            <form id="add-dispositivo-esp-form">
+                <div class="form-group">
+                    <label for="new-esp-nome">Nome</label>
+                    <input type="text" id="new-esp-nome" required placeholder="Ex: Luz Quarto">
+                </div>
+                <div class="form-group">
+                    <label for="new-esp-ip">IP</label>
+                    <input type="text" id="new-esp-ip" required placeholder="Ex: 192.168.1.100">
+                </div>
+                <div class="form-group">
+                    <label for="new-esp-porta">Porta</label>
+                    <input type="number" id="new-esp-porta" required min="1" max="65535" placeholder="Ex: 8080">
+                </div>
+                <div class="form-group">
+                    <label for="new-esp-comando">Comando</label>
+                    <input type="text" id="new-esp-comando" placeholder="Ex: ligar luz do quarto">
+                </div>
+                <div class="form-group">
+                    <label for="new-esp-comandToEsp">Comando para ESP</label>
+                    <input type="text" id="new-esp-comandToEsp" placeholder="Ex: comando específico para ESP">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Criar</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-dispositivo-esp-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit DispositivoESP Modal -->
+    <div id="edit-dispositivo-esp-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('edit-dispositivo-esp-modal').style.display='none'">&times;</span>
+            <h2>Editar Dispositivo ESP</h2>
+            <form id="edit-dispositivo-esp-form">
+                <input type="hidden" id="edit-esp-id">
+                <div class="form-group">
+                    <label for="edit-esp-nome">Nome</label>
+                    <input type="text" id="edit-esp-nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-esp-ip">IP</label>
+                    <input type="text" id="edit-esp-ip" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-esp-porta">Porta</label>
+                    <input type="number" id="edit-esp-porta" required min="1" max="65535">
+                </div>
+                <div class="form-group">
+                    <label for="edit-esp-comando">Comando</label>
+                    <input type="text" id="edit-esp-comando">
+                </div>
+                <div class="form-group">
+                    <label for="edit-esp-comandToEsp">Comando para ESP</label>
+                    <input type="text" id="edit-esp-comandToEsp">
+                </div>
+                <div class="form-group">
+                    <label for="edit-esp-status">Status</label>
+                    <select id="edit-esp-status">
+                        <option value="Conectado">Conectado</option>
+                        <option value="Desconectado">Desconectado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="edit-esp-ligado">
+                        Ligado/Desligado
+                    </label>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-dispositivo-esp-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Enviar Comando ESP Modal -->
+    <div id="enviar-comando-esp-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('enviar-comando-esp-modal').style.display='none'">&times;</span>
+            <h2>Enviar Comando</h2>
+            <form id="enviar-comando-esp-form">
+                <input type="hidden" id="comando-esp-id">
+                <div class="form-group">
+                    <label for="comando-esp-texto">Comando</label>
+                    <input type="text" id="comando-esp-texto" required placeholder="Ex: ligar luz do quarto">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Enviar Comando</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('enviar-comando-esp-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Criar Agendamento ESP Modal -->
+    <div id="criar-agendamento-esp-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('criar-agendamento-esp-modal').style.display='none'">&times;</span>
+            <h2>Criar Agendamento ESP</h2>
+            <form id="criar-agendamento-esp-form">
+                <div class="form-group">
+                    <label for="agendamento-esp-dispositivo">Dispositivo ESP</label>
+                    <select id="agendamento-esp-dispositivo" required>
+                        <option value="">Selecione um dispositivo ESP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-esp-data">Data</label>
+                    <input type="date" id="agendamento-esp-data" required>
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-esp-hora">Hora</label>
+                    <input type="number" id="agendamento-esp-hora" required min="0" max="23" placeholder="0-23">
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-esp-minuto">Minuto</label>
+                    <input type="number" id="agendamento-esp-minuto" required min="0" max="59" placeholder="0-59">
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-esp-recorrencia">Repetir</label>
+                    <select id="agendamento-esp-recorrencia" required>
+                        <option value="NaoRepetir">Não Repetir</option>
+                        <option value="TodosOsDias">Todos os dias</option>
+                        <option value="TodaSemana">Toda Semana</option>
+                        <option value="TodoMes">Todo Mês</option>
+                        <option value="TodoAno">Todo Ano</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Criar Agendamento</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('criar-agendamento-esp-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Criar Agendamento Starkswitch Modal -->
+    <div id="criar-agendamento-starkswitch-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('criar-agendamento-starkswitch-modal').style.display='none'">&times;</span>
+            <h2>Criar Agendamento Starkswitch</h2>
+            <form id="criar-agendamento-starkswitch-form">
+                <div class="form-group">
+                    <label for="agendamento-starkswitch-dispositivo">Dispositivo Starkswitch</label>
+                    <select id="agendamento-starkswitch-dispositivo" required>
+                        <option value="">Selecione um dispositivo Starkswitch</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-starkswitch-acao">Ação</label>
+                    <select id="agendamento-starkswitch-acao" required>
+                        <option value="ligar">Ligar</option>
+                        <option value="desligar">Desligar</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-starkswitch-data">Data</label>
+                    <input type="date" id="agendamento-starkswitch-data" required>
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-starkswitch-hora">Hora</label>
+                    <input type="number" id="agendamento-starkswitch-hora" required min="0" max="23" placeholder="0-23">
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-starkswitch-minuto">Minuto</label>
+                    <input type="number" id="agendamento-starkswitch-minuto" required min="0" max="59" placeholder="0-59">
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-starkswitch-recorrencia">Repetir</label>
+                    <select id="agendamento-starkswitch-recorrencia" required>
+                        <option value="NaoRepetir">Não Repetir</option>
+                        <option value="TodosOsDias">Todos os dias</option>
+                        <option value="TodaSemana">Toda Semana</option>
+                        <option value="TodoMes">Todo Mês</option>
+                        <option value="TodoAno">Todo Ano</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Criar Agendamento</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('criar-agendamento-starkswitch-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Criar Agendamento Ewelink Modal -->
+    <div id="criar-agendamento-ewelink-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('criar-agendamento-ewelink-modal').style.display='none'">&times;</span>
+            <h2>Criar Agendamento Ewelink</h2>
+            <form id="criar-agendamento-ewelink-form">
+                <div class="form-group">
+                    <label for="agendamento-ewelink-dispositivo">Dispositivo Ewelink</label>
+                    <select id="agendamento-ewelink-dispositivo" required>
+                        <option value="">Selecione um dispositivo Ewelink</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-ewelink-acao">Ação</label>
+                    <select id="agendamento-ewelink-acao" required>
+                        <option value="ligar">Ligar</option>
+                        <option value="desligar">Desligar</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-ewelink-data">Data</label>
+                    <input type="date" id="agendamento-ewelink-data" required>
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-ewelink-hora">Hora</label>
+                    <input type="number" id="agendamento-ewelink-hora" required min="0" max="23" placeholder="0-23">
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-ewelink-minuto">Minuto</label>
+                    <input type="number" id="agendamento-ewelink-minuto" required min="0" max="59" placeholder="0-59">
+                </div>
+                <div class="form-group">
+                    <label for="agendamento-ewelink-recorrencia">Repetir</label>
+                    <select id="agendamento-ewelink-recorrencia" required>
+                        <option value="NaoRepetir">Não Repetir</option>
+                        <option value="TodosOsDias">Todos os dias</option>
+                        <option value="TodaSemana">Toda Semana</option>
+                        <option value="TodoMes">Todo Mês</option>
+                        <option value="TodoAno">Todo Ano</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Criar Agendamento</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('criar-agendamento-ewelink-modal').style.display='none'">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    <script src="js/automacao.js?v=9"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
+

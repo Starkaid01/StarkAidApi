@@ -19,7 +19,7 @@ namespace StarkAid.Api.Controllers
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(_jsonPath)!);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Fallback: usar temporary path se App_Data não funcionar
                 var tempPath = Path.GetTempPath();
@@ -40,7 +40,7 @@ namespace StarkAid.Api.Controllers
                 var data = JsonSerializer.Deserialize<object>(json);
                 return Ok(data);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return Ok(new { message = "Nenhum dado salvo ainda." });
             }

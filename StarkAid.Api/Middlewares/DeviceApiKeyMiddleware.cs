@@ -2,12 +2,15 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using StarkAid.Api.Data;
-using System;
-using System.Threading.Tasks;
 
+namespace StarkAid.Api.Middlewares;
+
+/// <summary>
+/// Valida a API‑Key enviada nos headers para rotas de dispositivos.
+/// </summary>
 public class DeviceApiKeyMiddleware
 {
-    private const string ApiKeyHeaderName = "Api-Key";
+    private const string HeaderName = "Api-Key";
     private readonly RequestDelegate _next;
     private readonly ILogger<DeviceApiKeyMiddleware> _logger;
 
@@ -19,56 +22,51 @@ public class DeviceApiKeyMiddleware
 
     public async Task InvokeAsync(HttpContext context, AppDbContext db)
     {
-        var path = context.Request.Path.Value?.ToLower() ?? string.Empty;
-        var method = context.Request.Method.ToUpper();
+        // PathString permite StartsWithSegments
+        var path = context.Request.Path;
+        var method = context.Request.Method.ToUpperInvariant();
 
-        _logger.LogInformation("Requisição para {Path} via {Method}", path, method);
-
-        // Ignora rota de pareamento de dispositivos
-        if (context.Request.Path.StartsWithSegments("/api/devices/pair", StringComparison.OrdinalIgnoreCase))
+        // Rotas de pareamento (/pair) são públicas
+        if (path.StartsWithSegments("/api/devices/pair"))
         {
             await _next(context);
             return;
         }
 
-        // Permite POST em /api/devices sem API Key
-        if (context.Request.Path.Equals("/api/devices", StringComparison.OrdinalIgnoreCase) && method == "POST")
+        // POST /api/devices (criação) aceita sem API‑Key – usa JWT
+        if (path.Equals("/api/devices", StringComparison.OrdinalIgnoreCase) && method == "POST")
         {
             await _next(context);
             return;
         }
 
-        // Se usuário autenticado via JWT, permite
+        // Rotas já protegidas por JWT passam antes deste middleware
         if (context.User.Identity?.IsAuthenticated == true)
         {
-            _logger.LogInformation("Requisição autenticada via JWT.");
             await _next(context);
             return;
         }
 
-        // Para rotas de dispositivos, exige ApiKey
-        if (context.Request.Path.StartsWithSegments("/api/devices", StringComparison.OrdinalIgnoreCase))
+        // Demais rotas de dispositivos exigem ApiKey
+        if (path.StartsWithSegments("/api/devices"))
         {
-            if (!context.Request.Headers.TryGetValue(ApiKeyHeaderName, out var extractedApiKey))
+            if (!context.Request.Headers.TryGetValue(HeaderName, out var apiKey))
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsync("API Key não fornecida.");
+                await context.Response.WriteAsync("API Key não informada.");
                 return;
             }
 
-            var device = await db.Devices
-                .FirstOrDefaultAsync(d => d.ApiKey == extractedApiKey.ToString());
-
+            var device = await db.Devices.FirstOrDefaultAsync(d => d.ApiKey == apiKey);
             if (device == null)
             {
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 await context.Response.WriteAsync("API Key inválida.");
                 return;
             }
-            // Se quiser armazenar no contexto para uso no controller, faz aqui
-            context.Items["Device"] = device;
 
-            _logger.LogInformation("Dispositivo {DeviceId} autenticado via API Key.", device.Id);
+            // Opcional: colocar o device no HttpContext.Items para uso nos controllers
+            context.Items["Device"] = device;
         }
 
         await _next(context);

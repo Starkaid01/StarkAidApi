@@ -1,10 +1,12 @@
-﻿namespace StarkAid.Api.Options
+﻿namespace StarkAid.Api.Options;
+
+/// <summary>
+/// Opções de integração ao NLP.
+/// </summary>
+public sealed class NlpConnectOptions
 {
-    public class NlpConnectOptions
-    {
-        public string TokenDeAutenticacao { get; set; } = string.Empty;
-        public string NovoDominio { get; set; } = string.Empty;
-        public string BaseUrl { get; set; } = string.Empty;
-        public string? UserId { get; set; } // usado apenas na atualização do domínio
-    }
+    public string BaseUrl { get; set; } = string.Empty;
+    public string TokenDeAutenticacao { get; set; } = string.Empty;
+    public string NovoDominio { get; set; } = string.Empty;
+    public string? UserId { get; set; }
 }

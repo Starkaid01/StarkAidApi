@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AlertDialogTheme" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
+        <item name="buttonBarPositiveButtonStyle">@style/AlertDialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/AlertDialogButton</item>
+        <item name="dialogCornerRadius">16dp</item>
+    </style>
+
+    <style name="AlertDialogButton" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">?attr/colorPrimary</item>
+    </style>
+
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Cores principais -->
+        <item name="colorPrimary">#0d47a1</item>
+        <item name="colorPrimaryDark">#002171</item>
+        <item name="colorAccent">#00b0ff</item>
+
+        <!-- Estilo do menu -->
+        <item name="actionMenuTextColor">@android:color/white</item>
+        <item name="android:actionMenuTextAppearance">@style/TextAppearance.AppCompat.Menu</item>
+        <item name="actionBarStyle">@style/StarkAidActionBar</item>
+    </style>
+
+    <style name="StarkAidActionBar" parent="Widget.AppCompat.ActionBar">
+    <item name="background">?attr/colorPrimary</item>
+    <item name="titleTextStyle">@style/ActionBarTitle</item>
+    </style>
+
+    <style name="ActionBarTitle" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+    <item name="android:textColor">@android:color/white</item>
+    <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="FullScreenDialog" parent="Theme.MaterialComponents.Dialog">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+    </style>
+</resources>

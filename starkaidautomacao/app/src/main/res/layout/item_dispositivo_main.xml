@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="12dp"
+    android:background="?attr/selectableItemBackground">
+
+    <ImageView
+        android:id="@+id/imgStatusMain"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_status_online"
+        app:tint="#4CAF50"
+        android:layout_marginEnd="8dp" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/txtNomeDispositivoMain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Dispositivo"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/txtEstadoDispositivoMain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Desligado"
+            android:textColor="#F44336"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
+    <!-- Botão com feedback visual de estado -->
+    <ImageButton
+        android:id="@+id/btnAlternarMain"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@drawable/btn_toggle_selector"
+        android:src="@drawable/ic_power"
+        android:contentDescription="@string/alternar_dispositivo"
+        android:layout_marginStart="8dp"
+        app:tint="@android:color/white" />
+
+</LinearLayout>

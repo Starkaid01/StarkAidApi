@@ -299,3 +299,21 @@ yabbi.me, 675d9254-4032-47ed-9074-b6ef4dbab522, RESELLER
 unity.com, 6033938, DIRECT, 96cabb5fbdde37a7
 xapads.com, 117219, RESELLER
 google.com, pub-8791322668156076, DIRECT, f08c47fec0942fa0
+
+indexexchange.com, 214183, REVENDEDOR, 50b1c356f2c5c8fc
+
+outbrain.com, 0073fa86cff719c752763d2c3ee52c8f00, REVENDEDOR
+
+themediagrid.com, NC7LXT, REVENDEDOR, 35d5010d7789b49d
+
+video.unrulymedia.com, 657436911, REVENDEDOR
+
+indexexchange.com, 214183, RESELLER, 50b1c356f2c5c8fc
+
+outbrain.com, 0073fa86cff719c752763d2c3ee52c8f00, RESELLER
+
+themediagrid.com, NC7LXT, RESELLER, 35d5010d7789b49d
+
+video.unrulymedia.com, 657436911, RESELLER
+
+google.com, pub-8791322668156076, DIRECT, f08c47fec0942fa0

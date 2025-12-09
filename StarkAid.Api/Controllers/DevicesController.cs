@@ -1,170 +1,89 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using StarkAid.Api.DTOs.Devices;
 using StarkAid.Api.Services.Devices;
-using System;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace StarkAid.Api.Controllers
 {
-    [ApiController]    
+    [Authorize]
+    [ApiController]
     [Route("api/[controller]")]
     public class DevicesController : ControllerBase
     {
-        private readonly DeviceService _deviceService;
+        private readonly IDeviceService _deviceService;
 
-        public DevicesController(DeviceService deviceService)
+        public DevicesController(IDeviceService deviceService)
         {
             _deviceService = deviceService;
         }
 
-        // GET: /api/Devices
-        [Authorize]
+        private Guid GetUserId()
+            => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
         [HttpGet]
         public async Task<IActionResult> GetDevices()
         {
-            var apiKeyFromHeader = Request.Headers["Api-Key"].FirstOrDefault();
-
-            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-            
-            if (string.IsNullOrEmpty(apiKeyFromHeader))
-                return Unauthorized("ApiKey obrigatória.");
-
-            var userIdStr = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
-                return Unauthorized("Usuário inválido ou token corrompido.");
-
-            // Pega o usuário no banco pelo Id
-            var user = await _deviceService.GetUserByIdAsync(userId);
-            if (user == null)
-                return Unauthorized("Usuário não encontrado.");
-
-            if (user.ApiKey != apiKeyFromHeader)
-                return Unauthorized("ApiKey inválida.");
-
-            var devices = await _deviceService.GetDevicesByUserIdAsync(userId);
-
-            var result = devices.Select(d => new
-            {
-                d.Id,
-                d.Name,
-                d.MqttTopic,
-                d.Comando
-            });
-
-            return Ok(result);
+            var devices = await _deviceService.GetByUserAsync(GetUserId());
+            return Ok(devices);
         }
 
-        [Authorize]
-        [HttpPut("{deviceId}/Rename")]
-        public async Task<IActionResult> RenameDevice(Guid deviceId, [FromBody] RenameDeviceRequest request)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetDeviceById(Guid id)
         {
-            if (string.IsNullOrWhiteSpace(request.NewName))
-                return BadRequest("Novo nome obrigatório.");
+            var device = await _deviceService.GetByIdAsync(id);
 
-            var apiKeyFromHeader = Request.Headers["Api-Key"].FirstOrDefault();
-            if (string.IsNullOrEmpty(apiKeyFromHeader))
-                return Unauthorized("ApiKey obrigatória.");
+            if (device == null || device.UserId != GetUserId())
+                return NotFound();
 
-            var userIdStr = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
-                return Unauthorized("Token inválido.");
-
-            var user = await _deviceService.GetUserByIdAsync(userId);
-            if (user == null)
-                return Unauthorized("Usuário não encontrado.");
-
-            if (user.ApiKey != apiKeyFromHeader)
-                return Unauthorized("ApiKey inválida.");
-
-            var updated = await _deviceService.RenameDeviceAsync(deviceId, userId, request.NewName, request.NewComando);
-            if (!updated)
-                return NotFound("Dispositivo não encontrado ou não pertence ao usuário.");
-
-            return Ok("Nome do dispositivo atualizado com sucesso.");
+            return Ok(device);
         }
 
-        [HttpPost("Pair")]
-        public async Task<IActionResult> PairDevice([FromQuery] string apiKey, [FromBody] PairDeviceRequest request)
-        {
-            if (string.IsNullOrEmpty(apiKey))
-                return Unauthorized("API Key não fornecida.");
-
-            var (device, exists) = await _deviceService.PairDeviceAsync(apiKey, request.Name);
-
-            if (device == null)
-                return Unauthorized("ApiKey inválida.");
-
-            return exists
-                ? Ok(new
-                {
-                    deviceId = device.Id,
-                    userId = device.UserId,
-                    mqttTopic = device.MqttTopic,
-                    comando = device.Comando
-                })
-                : Created("", new
-                {
-                    deviceId = device.Id,
-                    userId = device.UserId,
-                    mqttTopic = device.MqttTopic
-                });
-        }
-
-        [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateDevice([FromBody] CreateDeviceRequest request)
         {
-            var userIdStr = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
-            {
-                return Unauthorized("Claim nameidentifier não encontrada ou inválida no token.");
-            }
-
-            var device = await _deviceService.CreateDeviceAsync(request.Name, userId, request.Comando);
-
-            var response = new DeviceResponseDto
-            {
-                Id = device.Id,
-                Name = device.Name,
-                ApiKey = device.ApiKey,
-                MqttTopic = device.MqttTopic,
-                Comando = device.Comando
-            };
-
-            return Ok(response);
+            var device = await _deviceService.CreateAsync(request.Name, GetUserId(), request.Comando);
+            return Created("", device);
         }
 
-        [Authorize]
-        [HttpDelete("{deviceId}")]
-        public async Task<IActionResult> DeleteDevice(Guid deviceId)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> RenameDevice(Guid id, [FromBody] RenameDeviceRequest request)
         {
-            var apiKeyFromHeader = Request.Headers["Api-Key"].FirstOrDefault();
-            if (string.IsNullOrEmpty(apiKeyFromHeader))
-                return Unauthorized("ApiKey obrigatória.");
+            var success = await _deviceService.RenameAsync(id, GetUserId(), request.NewName, request.NewComando);
 
-            var userIdStr = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
-                return Unauthorized("Token inválido.");
+            if (!success)
+                return NotFound();
 
-            var user = await _deviceService.GetUserByIdAsync(userId);
-            if (user == null)
-                return Unauthorized("Usuário não encontrado.");
-
-            if (user.ApiKey != apiKeyFromHeader)
-                return Unauthorized("ApiKey inválida.");
-
-            var deleted = await _deviceService.DeleteDeviceAsync(deviceId, userId);
-            if (!deleted)
-                return NotFound("Dispositivo não encontrado ou não pertence ao usuário.");
-
-            return Ok("Dispositivo removido com sucesso.");
+            return Ok("Device updated.");
         }
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteDevice(Guid id)
+        {
+            var success = await _deviceService.DeleteAsync(id, GetUserId());
+
+            if (!success)
+                return NotFound();
+
+            return Ok("Device deleted.");
+        }
+
+        [HttpPost("pair")]
+        [AllowAnonymous]
+        public async Task<IActionResult> PairDevice([FromBody] PairDeviceRequest request, [FromHeader] string apiKey)
+        {
+            if (string.IsNullOrWhiteSpace(apiKey))
+                return BadRequest("API Key is required.");
+
+            var (device, exists) = await _deviceService.PairAsync(apiKey, request.Name);
+
+            if (device == null)
+                return Unauthorized("Invalid API Key.");
+
+            if (exists)
+                return Ok(new { message = "Device already paired.", device });
+
+            return Created("", new { message = "Device paired successfully.", device });
+        }
     }
 }

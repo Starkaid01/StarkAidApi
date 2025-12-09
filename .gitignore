@@ -361,3 +361,66 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Android / Kotlin
+*.iml
+.gradle
+local.properties
+.idea/
+build/
+captures/
+.externalNativeBuild
+.cxx
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+.gradle/
+local.properties
+*.keystore
+!debug.keystore
+proguard/
+*.hprof
+*.log
+*.orig
+*.rej
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Firebase
+firebase-adminsdk.json
+firebase_path_debug.txt
+
+# Sensitive config files
+**/appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+!appsettings.Production.json
+**/web.config
+**/local.properties
+
+# Logs
+*.log
+logs/
+startup*.log
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+**/local.db
+
+# Temporary files
+*.tmp
+*.temp
+*.backup
+*.bak
+*Backup*.tmp
+*Backup*.csproj

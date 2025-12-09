@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="24dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Adicionar Dispositivo ESP"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:hintEnabled="true"
+            app:hintTextColor="#B0B0B0"
+            app:boxStrokeColor="#1E88E5">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editNome"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Nome do Dispositivo"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#B0B0B0"
+                android:inputType="text"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:hintEnabled="true"
+            app:hintTextColor="#B0B0B0"
+            app:boxStrokeColor="#1E88E5">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editIp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="IP (ex: 192.168.1.100)"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#B0B0B0"
+                android:inputType="text"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:hintEnabled="true"
+            app:hintTextColor="#B0B0B0"
+            app:boxStrokeColor="#1E88E5">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editPorta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Porta (ex: 8080)"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#B0B0B0"
+                android:inputType="number"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:hintEnabled="true"
+            app:hintTextColor="#B0B0B0"
+            app:boxStrokeColor="#1E88E5">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editComando"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Comando (ex: ligar luz)"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#B0B0B0"
+                android:inputType="text"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:hintEnabled="true"
+            app:hintTextColor="#B0B0B0"
+            app:boxStrokeColor="#1E88E5">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editComandToEsp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Comando para ESP (ex: ON)"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#B0B0B0"
+                android:inputType="text"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end">
+
+            <Button
+                android:id="@+id/buttonCancel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cancelar"
+                android:layout_marginEnd="8dp"
+                style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+            <Button
+                android:id="@+id/buttonSave"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Salvar"
+                style="@style/Widget.Material3.Button"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>
+

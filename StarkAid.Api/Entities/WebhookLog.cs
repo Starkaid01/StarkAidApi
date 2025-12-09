@@ -1,12 +1,13 @@
-﻿namespace StarkAid.Api.Entities
+﻿using System;
+
+namespace StarkAid.Api.Entities;
+
+public class WebhookLog
 {
-    public class WebhookLog
-    {
-        public int Id { get; set; }
-        public DateTime DataRecebida { get; set; }
-        public string Tipo { get; set; } = "";
-        public string Acao { get; set; } = "";
-        public string DataId { get; set; } = "";
-        public string JsonDetalhado { get; set; } = "";
-    }
+    public int Id { get; set; }
+    public DateTime DataRecebida { get; set; }
+    public string Tipo { get; set; } = string.Empty;
+    public string Acao { get; set; } = string.Empty;
+    public string DataId { get; set; } = string.Empty;
+    public string JsonDetalhado { get; set; } = string.Empty;
 }

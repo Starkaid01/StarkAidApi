@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using StarkAid.Api.Services;
+using StarkAid.Api.Services.Firebase;
 
 namespace StarkAid.Api.Controllers
 {

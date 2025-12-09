@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#121212"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <Button
+        android:id="@+id/itemConfigUser"
+        android:text="👤 Config. Usuário"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:background="?attr/selectableItemBackground"
+        android:textSize="16sp"
+        android:padding="12dp" />
+
+    <Button
+        android:id="@+id/itemConfigApp"
+        android:text="⚙️ Config. App"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:background="?attr/selectableItemBackground"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:layout_marginTop="8dp" />
+
+    <Button
+        android:id="@+id/itemConfigStarkSwitch"
+        android:text="💡 Config. StarkSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:background="?attr/selectableItemBackground"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:layout_marginTop="8dp" />
+
+    <Button
+        android:id="@+id/itemConfigStarkEagle"
+        android:text="🦅 Config. StarkEagle-Alarm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:background="?attr/selectableItemBackground"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:layout_marginTop="8dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#333333"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/itemConfigComandos"
+        android:text="📝 Config. Comandos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:background="?attr/selectableItemBackground"
+        android:textSize="16sp"
+        android:padding="12dp" />
+
+    <Button
+        android:id="@+id/itemBotWhatsapp"
+        android:text="💬 Bot-Whatsapp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:background="?attr/selectableItemBackground"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:layout_marginTop="8dp" />
+
+    <Button
+        android:id="@+id/itemMeusPlanos"
+        android:text="💳 Meus Planos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:background="?attr/selectableItemBackground"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:layout_marginTop="8dp" />
+
+    <Button
+        android:id="@+id/itemContato"
+        android:text="📞 Entre em Contato"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:background="?attr/selectableItemBackground"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:layout_marginTop="8dp" />
+
+</LinearLayout>

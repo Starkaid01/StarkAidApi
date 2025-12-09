@@ -1,4 +1,4 @@
-﻿using Amazon;
+using Amazon;
 using Amazon.TranscribeStreaming;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
@@ -21,7 +21,14 @@ using StarkAid.Api.Services.Auth;
 using StarkAid.Api.Services.Devices;
 using StarkAid.Api.Services.SocialCommand;
 using StarkAid.Api.Services.SuperIA;
-using StarkAid.Api.Services.Users;
+using StarkAid.Api.Services.Email;
+using StarkAid.Api.Services.Firebase;
+using StarkAid.Api.Services.Disparo;
+using StarkAid.Api.Services.DispositivoEsp;
+using StarkAid.Api.Services.License;
+using StarkAid.Api.Services.Weather;
+using StarkAid.Api.Services.Suporte;
+using StarkAid.Api.Hubs;
 using Stripe;
 using System.Diagnostics;
 using System.Text;
@@ -144,12 +151,14 @@ try
     builder.Services.AddScoped<ComandoSocialService>();
     builder.Services.AddScoped<AgendamentoService>();
     builder.Services.AddScoped<IEmailService, EmailService>();
+    builder.Services.AddScoped<StarkAid.Api.Services.Notifications.NotificationService>();
     builder.Services.AddScoped<DisparoService>();
     builder.Services.AddScoped<FcmNotificationService>();
     builder.Services.AddScoped<FirebaseTokenService>();
     builder.Services.AddScoped<StripeWebhookService>();
     builder.Services.AddScoped<DispositivoDisparoService>();
     builder.Services.AddScoped<StripeService>();
+    builder.Services.AddScoped<IEwelinkService, EwelinkService>();
 
 
     // 🧩 Lê o domínio Cloudflare atual do banco e injeta na configuração
@@ -201,7 +210,6 @@ try
         return new AmazonTranscribeStreamingClient(accessKey, secretKey, config);
     });
 
-
     builder.Services.AddSingleton<TranscribeProxyService>(sp =>
     {
         var transcribeClient = sp.GetRequiredService<AmazonTranscribeStreamingClient>();
@@ -209,12 +217,10 @@ try
         return new TranscribeProxyService(transcribeClient, sp, logger);
     });
 
-
-    builder.Services.AddMemoryCache();
-
+    // Stripe
     builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("StripeSettings"));
     builder.Services.AddSingleton(sp =>
-    sp.GetRequiredService<IOptions<StripeSettings>>().Value);
+        sp.GetRequiredService<IOptions<StripeSettings>>().Value);
 
     // ✅ StripeClient configurado corretamente
     builder.Services.AddSingleton<StripeClient>(sp =>
@@ -222,6 +228,10 @@ try
         var options = sp.GetRequiredService<IOptions<StripeSettings>>().Value;
         return new StripeClient(options.SecretKey);
     });
+
+    StripeConfiguration.ApiKey = builder.Configuration["StripeSettings:SecretKey"];
+
+    builder.Services.AddMemoryCache();
 
     // 9. Swagger
     builder.Services.AddEndpointsApiExplorer();
@@ -272,6 +282,18 @@ try
         });
     });
 
+    builder.Services.AddScoped<IAgendamentoService, AgendamentoService>();
+    builder.Services.AddScoped<IDeviceService, DeviceService>();
+    builder.Services.AddScoped<DispositivoEspService>();
+    builder.Services.AddScoped<LicenseService>();
+    builder.Services.AddHttpClient<WeatherService>();
+    builder.Services.AddScoped<IWeatherService, WeatherService>();
+    
+    // Serviços de Suporte
+    builder.Services.AddSingleton<ISupportQueueService, SupportQueueService>();
+    builder.Services.AddScoped<ISupportIaService, SupportIaService>();
+    builder.Services.AddScoped<ISuporteChatService, SuporteChatService>();
+
     var app = builder.Build();
 
     // 10. Pipeline
@@ -294,7 +316,9 @@ try
     app.UseMiddleware<CommandRateLimiterMiddleware>();
 
     app.MapControllers();
-    app.MapHub<StarkAid.Api.Hubs.DeviceHub>("/hubs/device"); // endpoint do hub
+    app.MapHub<StarkAid.Api.Hubs.DeviceHub>("/hubs/device");
+    app.MapHub<StarkAid.Api.Hubs.DispositivoEspHub>("/hubs/dispositivo-esp");
+    app.MapHub<StarkAid.Api.Hubs.SupportChatHub>("/hubs/support-chat");
 
     if (app.Environment.IsDevelopment())
     {
@@ -312,6 +336,13 @@ try
             if (mqttService is IAsyncDisposable asyncDisposable) await asyncDisposable.DisposeAsync();
         }).Wait();
     });
+
+    // Popular códigos de erro na primeira execução
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        SeedErrorCodes.SeedErrorCodeDescriptions(context);
+    }
 
     app.Run();
 }

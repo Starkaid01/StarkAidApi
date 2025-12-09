@@ -1,25 +1,21 @@
-﻿using StarkAid.Api.Entities;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
+
+namespace StarkAid.Api.Entities;
 
 public class RefreshToken
 {
-    [Key]
-    public Guid Id { get; set; }
+    [Key] public Guid Id { get; set; }
 
-    [Required]
-    public string Token { get; set; } = null!;
+    [Required] public string Token { get; set; } = string.Empty;
 
-    [Required]
-    public DateTimeOffset Expiration { get; set; } // datetimeoffset no DbContext
+    [Required] public DateTimeOffset Expiration { get; set; }
 
-    [Required]
-    public bool IsRevoked { get; set; }
+    [Required] public bool IsRevoked { get; set; }
 
-    [Required]
-    public Guid UserId { get; set; }
+    [Required] public Guid UserId { get; set; }
 
     public User User { get; set; } = null!;
 
-    // 🔥 Novo campo
-    public string Origem { get; set; } = "web"; // default "web"
+    public string Origem { get; set; } = "web"; // "app" ou "web"
 }

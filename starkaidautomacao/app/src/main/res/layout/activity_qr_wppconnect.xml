@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="24dp"
+    tools:context=".ui.QrActivityWppConnect">
+
+    <TextView
+        android:id="@+id/txtQrLink"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="https://starkaid.runasp.net/api/wpp/{userId}"
+        android:textSize="16sp"
+        android:textColor="@android:color/holo_blue_dark"
+        android:autoLink="web"
+        android:gravity="center"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/btnCopiarLink"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:padding="16dp" />
+
+    <Button
+        android:id="@+id/btnCopiarLink"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:text="Copiar Link"
+        app:layout_constraintTop_toBottomOf="@id/txtQrLink"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <Button
+        android:id="@+id/btnCompartilharLink"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:text="Compartilhar Link"
+        app:layout_constraintTop_toBottomOf="@id/btnCopiarLink"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp" />
+
+    <TextView
+        android:id="@+id/txtInstrucoes"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Para conectar o WhatsApp Web:\n\n1. Abra o WhatsApp no seu celular.\n2. Vá em Configurações > Dispositivos conectados.\n3. Toque em 'Conectar um dispositivo'.\n4. Escaneie o QR Code da página aberta pelo link acima."
+        android:textSize="15sp"
+        android:gravity="center"
+        android:textColor="@android:color/black"
+        app:layout_constraintTop_toBottomOf="@id/btnCompartilharLink"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="20dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

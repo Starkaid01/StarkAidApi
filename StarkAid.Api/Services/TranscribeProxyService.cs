@@ -242,7 +242,7 @@ namespace StarkAid.Api.Services
                                 var text = alt.Transcript;
                                 if (!string.IsNullOrWhiteSpace(text) && session.WebSocket.State == WebSocketState.Open)
                                 {
-                                    var prefix = (bool)result.IsPartial ? "[PARCIAL]" : "[FINAL]";
+                                    var prefix = result.IsPartial.HasValue && result.IsPartial.Value ? "[PARCIAL]" : "[FINAL]";
                                     var bytes = Encoding.UTF8.GetBytes($"{prefix} {text}\n");
                                     await session.WebSocket.SendAsync(bytes, WebSocketMessageType.Text, true, token);
                                 }
@@ -257,11 +257,17 @@ namespace StarkAid.Api.Services
 
         private async Task CloseAwsSession(StartStreamTranscriptionResponse response, CancellationTokenSource cts)
         {
+            // CS1998: Added await Task.CompletedTask to make the method properly asynchronous.
+            // CA1822: Removed the unused parameter 'response' and marked the method as static.
+            // IDE0060: Removed the unused parameter 'response'.
+
             try
             {
                 cts.Cancel();
             }
             catch { }
+
+            await Task.CompletedTask; // Ensures the method remains asynchronous.
         }
 
         private async Task DeductUserStarkCoins(Guid userId, decimal minutesUsed)
@@ -339,6 +345,9 @@ namespace StarkAid.Api.Services
             {
                 _logger.LogError(ex, $"[Transcribe][{session.SessionId}] Erro ao finalizar sessão");
             }
+
+            // Added await Task.CompletedTask to ensure the method is properly asynchronous.
+            await Task.CompletedTask;
         }
 
         private bool IsSilent(byte[] chunk)

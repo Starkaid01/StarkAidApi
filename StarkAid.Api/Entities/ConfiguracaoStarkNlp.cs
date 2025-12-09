@@ -1,16 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
-namespace StarkAid.Api.Entities
+namespace StarkAid.Api.Entities;
+
+public class ConfiguracaoStarkNlp
 {
-    public class ConfiguracaoStarkNlp
-    {
-        [Key]
-        public Guid Id { get; set; } = Guid.NewGuid();
+    [Key] public Guid Id { get; set; } = Guid.NewGuid();
 
-        [Required]
-        [MaxLength(500)]
-        public string StarkNlpUrl { get; set; } = string.Empty;
+    [Required, MaxLength(500)] public string StarkNlpUrl { get; set; } = string.Empty;
 
-        public DateTime DataAtualizacao { get; set; } = DateTime.UtcNow;
-    }
+    public DateTime DataAtualizacao { get; set; } = DateTime.UtcNow;
 }
