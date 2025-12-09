@@ -422,3 +422,9 @@ startup*.log
 *.bak
 *Backup*.tmp
 *Backup*.csproj
+
+# Files with secrets (environment variables)
+VARIAVEIS_AMBIENTE.md
+VARIAVEIS_MONSTERASP.txt
+configurar-variaveis-ambiente.ps1
+INSTRUCOES_VARIAVEIS_AMBIENTE_WINDOWS.md
