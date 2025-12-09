@@ -2,6 +2,8 @@
 
 Sistema completo de automação residencial com suporte para múltiplas plataformas.
 
+> Aviso: Este software é de uso autorizado exclusivamente pelos licenciados. É proibida a cópia, redistribuição, modificação ou uso comercial sem autorização prévia e por escrito.
+
 ## Projetos Incluídos
 
 ### 1. StarkAid.Api
@@ -124,7 +126,7 @@ O sistema foi projetado para funcionar completamente offline:
 
 ## Licença
 
-Ver arquivo LICENSE.txt
+Ver arquivo LICENSE.
 
 ## Contribuição
 

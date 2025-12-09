@@ -2681,6 +2681,13 @@ public partial class MainForm : Form
             // Verificar se está em processo de resolução de suporte
             _ = VerificarResolvendoSuporteAsync();
             
+            // Aviso de uso autorizado
+            MessageBox.Show(
+                "Uso autorizado apenas pelo licenciante. Qualquer uso não autorizado, cópia ou distribuição é proibido.",
+                "Aviso de Licença",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+            
             // 5. Configurar timer de verificação de status da API
             var apiCheckTimer = new System.Windows.Forms.Timer();
             
