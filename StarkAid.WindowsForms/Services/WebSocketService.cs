@@ -11,6 +11,8 @@ public class WebSocketService
     private HubConnection? _connection;
     private readonly string _baseUrl = "https://starkaid.runasp.net";
     private string? _token;
+    private readonly HashSet<string> _processedMessages = new HashSet<string>();
+    private readonly object _processLock = new object();
 
     public event EventHandler<(string nome, string ip, int porta, string comando)>? ComandoDispositivoReceived;
     public event EventHandler<string>? RespostaDispositivoReceived;
@@ -130,10 +132,12 @@ public class WebSocketService
                     {
                         var resposta = obj.resposta?.ToString() ?? "";
                         
-                        // Verificar se contém "toSoft:" e processar
-                        ProcessToSoftMessage(resposta);
-                        
-                        RespostaDispositivoReceived?.Invoke(this, resposta);
+                        // Se contém "toSoft:", processar apenas via handler ToSoft (evitar duplicação)
+                        // Não processar aqui para evitar que seja falado duas vezes
+                        if (!resposta.Contains("toSoft:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            RespostaDispositivoReceived?.Invoke(this, resposta);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -172,10 +176,12 @@ public class WebSocketService
                     {
                         var resposta = obj.resposta?.ToString() ?? obj.ToString() ?? "";
                         
-                        // Verificar se contém "toSoft:" e processar
-                        ProcessToSoftMessage(resposta);
-                        
-                        RespostaDispositivoReceived?.Invoke(this, resposta);
+                        // Se contém "toSoft:", processar apenas via handler ToSoft (evitar duplicação)
+                        // Não processar aqui para evitar que seja falado duas vezes
+                        if (!resposta.Contains("toSoft:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            RespostaDispositivoReceived?.Invoke(this, resposta);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -242,6 +248,7 @@ public class WebSocketService
 
     /// <summary>
     /// Processa mensagens que contêm o prefixo "toSoft:" removendo o prefixo e disparando evento
+    /// Evita processamento duplicado usando um HashSet para rastrear mensagens já processadas
     /// </summary>
     private void ProcessToSoftMessage(string message)
     {
@@ -255,6 +262,39 @@ public class WebSocketService
             if (index >= 0)
             {
                 var mensagemSemPrefixo = message.Substring(index + "toSoft:".Length).Trim();
+                
+                // Evitar processamento duplicado - verificar se já processamos esta mensagem nos últimos 3 segundos
+                lock (_processLock)
+                {
+                    var messageKey = mensagemSemPrefixo.ToLowerInvariant();
+                    
+                    // Limpar mensagens antigas (mais de 3 segundos) - simplificado
+                    // Na prática, vamos apenas verificar se a mensagem já está no HashSet
+                    // e limpar periodicamente (a cada 10 mensagens processadas)
+                    if (_processedMessages.Count > 100)
+                    {
+                        _processedMessages.Clear();
+                    }
+                    
+                    // Se já processamos esta mensagem recentemente, ignorar
+                    if (_processedMessages.Contains(messageKey))
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[WebSocket] Mensagem toSoft duplicada ignorada: {mensagemSemPrefixo}");
+                        return;
+                    }
+                    
+                    // Adicionar mensagem atual
+                    _processedMessages.Add(messageKey);
+                    
+                    // Remover após 3 segundos (usando Task.Delay em background)
+                    _ = Task.Delay(3000).ContinueWith(_ =>
+                    {
+                        lock (_processLock)
+                        {
+                            _processedMessages.Remove(messageKey);
+                        }
+                    });
+                }
                 
                 System.Diagnostics.Debug.WriteLine($"[WebSocket] Mensagem toSoft detectada: {message}");
                 System.Diagnostics.Debug.WriteLine($"[WebSocket] Mensagem após remover prefixo: {mensagemSemPrefixo}");

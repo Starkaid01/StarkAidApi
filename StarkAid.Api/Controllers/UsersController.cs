@@ -594,13 +594,26 @@ namespace StarkAid.Api.Controllers
         {
             try
             {
+                _logger.LogInformation("📱 [SyncErrorLogsApp] Endpoint chamado - UserId recebido: {UserId}, Logs: {Count}", request?.UserId, request?.Logs?.Count ?? 0);
+                
                 var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                
+                // Converter userId da requisição (String) para Guid
+                Guid requestUserId;
+                if (!Guid.TryParse(request.UserId, out requestUserId))
+                {
+                    _logger.LogWarning("⚠️ [SyncErrorLogsApp] UserId inválido na requisição: {UserId}", request?.UserId);
+                    return BadRequest("UserId inválido.");
+                }
 
                 // Validar que o userId da requisição corresponde ao usuário autenticado
-                if (request.UserId != userId)
+                if (requestUserId != userId)
                 {
+                    _logger.LogWarning("⚠️ [SyncErrorLogsApp] Tentativa de sincronizar logs de outro usuário. Autenticado: {AuthUserId}, Requisição: {RequestUserId}", userId, requestUserId);
                     return Forbid("Você só pode sincronizar seus próprios logs.");
                 }
+                
+                _logger.LogInformation("✅ [SyncErrorLogsApp] Validação OK - UserId: {UserId}, Logs para sincronizar: {Count}", userId, request?.Logs?.Count ?? 0);
 
                 // Deletar todos os logs existentes do usuário
                 var existingLogs = await _context.ErrorLogsApp
@@ -627,7 +640,7 @@ namespace StarkAid.Api.Controllers
                 _context.ErrorLogsApp.AddRange(newLogs);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("✅ Sincronizados {Count} logs de erro do app para usuário {UserId}", newLogs.Count, userId);
+                _logger.LogInformation("✅ [SyncErrorLogsApp] Sincronizados {Count} logs de erro do app para usuário {UserId}", newLogs.Count, userId);
                 return Ok(new { message = $"Sincronizados {newLogs.Count} logs de erro.", count = newLogs.Count });
             }
             catch (Exception ex)
@@ -641,31 +654,44 @@ namespace StarkAid.Api.Controllers
         [Authorize(Roles = "Administrador,userAdmin")]
         public async Task<IActionResult> GetOnlineUsers()
         {
-            // Buscar todas as sessões ativas
-            var onlineSessions = await _context.UserSessions
-                .Include(s => s.User)
-                .Where(s => s.IsActive)
-                .GroupBy(s => s.UserId)
-                .Select(g => new
-                {
-                    UserId = g.Key,
-                    User = g.First().User,
-                    Origens = g.Select(s => s.Origem).ToList(),
-                    LastActivity = g.Max(s => s.LastActivityAt ?? s.CreatedAt)
-                })
-                .ToListAsync();
-
-            var result = onlineSessions.Select(s => new
+            try
             {
-                id = s.User.Id,
-                name = s.User.Name,
-                email = s.User.Email,
-                role = s.User.Role,
-                starkCoins = s.User.StarkCoins,
-                origem = string.Join(", ", s.Origens.Distinct())
-            }).ToList();
+                _logger.LogInformation("🔍 [GetOnlineUsers] Buscando usuários online...");
+                
+                // Buscar todas as sessões ativas
+                var onlineSessions = await _context.UserSessions
+                    .Include(s => s.User)
+                    .Where(s => s.IsActive)
+                    .GroupBy(s => s.UserId)
+                    .Select(g => new
+                    {
+                        UserId = g.Key,
+                        User = g.First().User,
+                        Origens = g.Select(s => s.Origem).ToList(),
+                        LastActivity = g.Max(s => s.LastActivityAt ?? s.CreatedAt)
+                    })
+                    .ToListAsync();
 
-            return Ok(result);
+                _logger.LogInformation("📊 [GetOnlineUsers] Encontradas {Count} sessões ativas", onlineSessions.Count);
+
+                var result = onlineSessions.Select(s => new
+                {
+                    id = s.User.Id,
+                    name = s.User.Name,
+                    email = s.User.Email,
+                    role = s.User.Role,
+                    starkCoins = s.User.StarkCoins,
+                    origem = string.Join(", ", s.Origens.Distinct())
+                }).ToList();
+
+                _logger.LogInformation("✅ [GetOnlineUsers] Retornando {Count} usuários online", result.Count);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ [GetOnlineUsers] Erro ao buscar usuários online");
+                return StatusCode(500, new { message = "Erro ao buscar usuários online", error = ex.Message });
+            }
         }
     }
 
@@ -718,7 +744,7 @@ namespace StarkAid.Api.Controllers
 
     public class SyncErrorLogsAppRequest
     {
-        public Guid UserId { get; set; }
+        public string UserId { get; set; } = string.Empty; // String para compatibilidade com app Kotlin
         public List<ErrorLogAppDto> Logs { get; set; } = new();
     }
 

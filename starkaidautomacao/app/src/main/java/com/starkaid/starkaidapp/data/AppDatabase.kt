@@ -4,8 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.starkaid.starkaidapp.models.AppConfig
 import com.starkaid.starkaidapp.models.AppConfigDao
+import com.starkaid.starkaidapp.models.AppConfigEntity
 import com.starkaid.starkaidapp.models.ComandoSocialDao
 import com.starkaid.starkaidapp.models.ComandoSocialEntity
 import com.starkaid.starkaidapp.models.ContatoDao
@@ -17,10 +17,10 @@ import com.starkaid.starkaidapp.models.LogToSuporteEntity
     entities = [
         ComandoSocialEntity::class,
         ContatoEntity::class,
-        AppConfig::class,
+        AppConfigEntity::class,
         LogToSuporteEntity::class
     ],
-    version = 7  // Aumente a versão
+    version = 8  // Aumente a versão devido à mudança de entidade
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun comandoSocialDao(): ComandoSocialDao

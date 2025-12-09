@@ -21,18 +21,24 @@ class ErrorLogSyncService(private val context: Context) {
      */
     suspend fun syncLogsToBackend(): Boolean {
         return try {
+            Log.d("ErrorLogSync", "[syncLogsToBackend] Iniciando sincronização de logs...")
+            
             val userId = sessionManager.fetchUserId()
             val token = sessionManager.fetchAuthToken()
             
             if (userId == null || token.isNullOrEmpty()) {
-                Log.w("ErrorLogSync", "⚠️ Usuário não autenticado, pulando sincronização de logs")
+                Log.w("ErrorLogSync", "[syncLogsToBackend] ⚠️ Usuário não autenticado, pulando sincronização de logs. UserId: $userId, Token presente: ${!token.isNullOrEmpty()}")
                 return false
             }
             
+            Log.d("ErrorLogSync", "[syncLogsToBackend] Usuário autenticado: $userId")
+            
             val logs = errorLogger.getAllLogs()
             
+            Log.d("ErrorLogSync", "[syncLogsToBackend] Logs encontrados localmente: ${logs.size}")
+            
             if (logs.isEmpty()) {
-                Log.d("ErrorLogSync", "✅ Nenhum log para sincronizar")
+                Log.d("ErrorLogSync", "[syncLogsToBackend] ✅ Nenhum log para sincronizar")
                 return true
             }
             
@@ -50,6 +56,8 @@ class ErrorLogSyncService(private val context: Context) {
                 )
             }
             
+            Log.d("ErrorLogSync", "[syncLogsToBackend] Criando request com ${logsDto.size} logs")
+            
             val request = SyncErrorLogsAppRequest(
                 userId = userId,
                 logs = logsDto
@@ -58,20 +66,24 @@ class ErrorLogSyncService(private val context: Context) {
             val retrofit = ApiClient.getClient(context)
             val api = retrofit.create(ErrorLogSyncApi::class.java)
             
+            Log.d("ErrorLogSync", "[syncLogsToBackend] Enviando requisição para API...")
             val response = api.syncErrorLogs(request)
             
             if (response.isSuccessful) {
-                Log.d("ErrorLogSync", "✅ Logs sincronizados com sucesso: ${logs.size} logs")
+                val responseBody = response.body()
+                Log.d("ErrorLogSync", "[syncLogsToBackend] ✅ Logs sincronizados com sucesso: ${logs.size} logs. Resposta: ${responseBody?.message}")
                 // Limpar logs locais após sincronização bem-sucedida
                 errorLogger.clearAllLogs()
                 true
             } else {
-                Log.e("ErrorLogSync", "❌ Erro ao sincronizar logs: ${response.code()} - ${response.message()}")
+                val errorBody = response.errorBody()?.string()
+                Log.e("ErrorLogSync", "[syncLogsToBackend] ❌ Erro ao sincronizar logs: ${response.code()} - ${response.message()} - $errorBody")
                 false
             }
             
         } catch (e: Exception) {
-            Log.e("ErrorLogSync", "❌ Exceção ao sincronizar logs", e)
+            Log.e("ErrorLogSync", "[syncLogsToBackend] ❌ Exceção ao sincronizar logs: ${e.message}", e)
+            e.printStackTrace()
             false
         }
     }

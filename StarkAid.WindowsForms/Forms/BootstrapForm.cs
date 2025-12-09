@@ -76,53 +76,53 @@ public partial class BootstrapForm : Form
                 // API ONLINE: Tentar fazer login normalmente
                 if (!string.IsNullOrEmpty(savedEmail) && !string.IsNullOrEmpty(savedPasswordHash) && !string.IsNullOrEmpty(savedToken))
                 {
-                    try
-                    {
-                        _apiService.SetToken(savedToken);
-
-                        var passwordBytes = Convert.FromBase64String(savedPasswordHash);
-                        var password = System.Text.Encoding.UTF8.GetString(passwordBytes);
-
-                        var loginRequest = new LoginRequest
-                        {
-                            Email = savedEmail,
-                            Password = password,
-                            Origem = "app"
-                        };
-
-                        loginResult = await _apiService.LoginAsync(loginRequest);
-                        if (loginResult != null)
-                        {
-                            _apiService.SetToken(loginResult.Token);
-                            _database.UpdateLoginToken(loginResult.Token);
-                            user = loginResult.User;
-                        }
-                    }
-                    catch
-                    {
-                        loginResult = null;
-                    }
-                }
-
-                // Se não conseguiu fazer login automático, mostrar formulário
-                if (loginResult == null)
+                try
                 {
-                    this.Hide();
-                    using var loginForm = new LoginForm(_apiService, _database);
-                    if (loginForm.ShowDialog() != DialogResult.OK || loginForm.LoginResult == null)
+                    _apiService.SetToken(savedToken);
+
+                    var passwordBytes = Convert.FromBase64String(savedPasswordHash);
+                    var password = System.Text.Encoding.UTF8.GetString(passwordBytes);
+
+                    var loginRequest = new LoginRequest
                     {
-                        Application.Exit();
-                        return;
-                    }
-                    loginResult = loginForm.LoginResult;
-                    // Garantir que o token está configurado
-                    if (loginResult != null && !string.IsNullOrEmpty(loginResult.Token))
+                        Email = savedEmail,
+                        Password = password,
+                        Origem = "app"
+                    };
+
+                    loginResult = await _apiService.LoginAsync(loginRequest);
+                    if (loginResult != null)
                     {
                         _apiService.SetToken(loginResult.Token);
-                        user = loginResult.User;
+                        _database.UpdateLoginToken(loginResult.Token);
+                            user = loginResult.User;
                     }
-                    this.Show();
                 }
+                catch
+                {
+                    loginResult = null;
+                }
+            }
+
+            // Se não conseguiu fazer login automático, mostrar formulário
+            if (loginResult == null)
+            {
+                this.Hide();
+                using var loginForm = new LoginForm(_apiService, _database);
+                if (loginForm.ShowDialog() != DialogResult.OK || loginForm.LoginResult == null)
+                {
+                    Application.Exit();
+                    return;
+                }
+                loginResult = loginForm.LoginResult;
+                // Garantir que o token está configurado
+                if (loginResult != null && !string.IsNullOrEmpty(loginResult.Token))
+                {
+                    _apiService.SetToken(loginResult.Token);
+                        user = loginResult.User;
+                }
+                this.Show();
+            }
             }
             else
             {
@@ -190,27 +190,27 @@ public partial class BootstrapForm : Form
                 // Se está online, verificar licença na API
                 if (isOnline)
                 {
-                    try
+                try
+                {
+                    var isValid = await licenseService.VerifyLicenseAsync();
+                    if (!isValid)
                     {
-                        var isValid = await licenseService.VerifyLicenseAsync();
-                        if (!isValid)
-                        {
-                            this.Hide();
-                            MessageBox.Show("Sua licença não está mais válida. Por favor, ative uma nova licença.",
-                                "Licença Inválida", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        this.Hide();
+                        MessageBox.Show("Sua licença não está mais válida. Por favor, ative uma nova licença.",
+                            "Licença Inválida", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
-                            using var licenseForm = new LicenseActivationForm(licenseService);
-                            if (licenseForm.ShowDialog() != DialogResult.OK || !licenseForm.LicenseActivated)
-                            {
-                                Application.Exit();
-                                return;
-                            }
-                            this.Show();
+                        using var licenseForm = new LicenseActivationForm(licenseService);
+                        if (licenseForm.ShowDialog() != DialogResult.OK || !licenseForm.LicenseActivated)
+                        {
+                            Application.Exit();
+                            return;
                         }
+                        this.Show();
                     }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Erro ao verificar licença: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Erro ao verificar licença: {ex.Message}");
                         // Em caso de erro, continuar (modo offline tolerante)
                     }
                 }
@@ -224,56 +224,56 @@ public partial class BootstrapForm : Form
             // Se estiver online, sincronizar dados e marcar usuário como online
             if (isOnline)
             {
-                try
+            try
+            {
+                var token = _apiService.GetToken();
+                if (string.IsNullOrEmpty(token))
                 {
-                    var token = _apiService.GetToken();
-                    if (string.IsNullOrEmpty(token))
+                    System.Diagnostics.Debug.WriteLine("[BootstrapForm] Token não encontrado, tentando obter do loginResult...");
+                    if (loginResult != null && !string.IsNullOrEmpty(loginResult.Token))
                     {
-                        System.Diagnostics.Debug.WriteLine("[BootstrapForm] Token não encontrado, tentando obter do loginResult...");
-                        if (loginResult != null && !string.IsNullOrEmpty(loginResult.Token))
-                        {
-                            _apiService.SetToken(loginResult.Token);
-                            System.Diagnostics.Debug.WriteLine("[BootstrapForm] Token configurado do loginResult");
-                        }
-                        else
-                        {
-                            System.Diagnostics.Debug.WriteLine("[BootstrapForm] ERRO: Não foi possível obter o token!");
-                            return;
-                        }
+                        _apiService.SetToken(loginResult.Token);
+                        System.Diagnostics.Debug.WriteLine("[BootstrapForm] Token configurado do loginResult");
                     }
-                    
-                    System.Diagnostics.Debug.WriteLine("[BootstrapForm] Chamando SetUserOnlineAsync...");
-                    var result = await _apiService.SetUserOnlineAsync();
-                    System.Diagnostics.Debug.WriteLine($"[BootstrapForm] SetUserOnlineAsync resultado: {result}");
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("[BootstrapForm] ERRO: Não foi possível obter o token!");
+                        return;
+                    }
+                }
+                
+                System.Diagnostics.Debug.WriteLine("[BootstrapForm] Chamando SetUserOnlineAsync...");
+                var result = await _apiService.SetUserOnlineAsync();
+                System.Diagnostics.Debug.WriteLine($"[BootstrapForm] SetUserOnlineAsync resultado: {result}");
 
                     // Sincronizar todos os dados
                     System.Diagnostics.Debug.WriteLine("[BootstrapForm] Sincronizando dados...");
                     await SyncAllDataAsync();
 
-                    // Sincronizar logs de erro
-                    try
+                // Sincronizar logs de erro
+                try
+                {
+                    if (loginResult?.User?.Id != null)
                     {
-                        if (loginResult?.User?.Id != null)
+                        var logs = _database.GetAllLogsToSuporte();
+                        if (logs.Count > 0)
                         {
-                            var logs = _database.GetAllLogsToSuporte();
-                            if (logs.Count > 0)
-                            {
-                                System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Sincronizando {logs.Count} logs de erro...");
-                                var syncResult = await _apiService.SyncErrorLogsSoftAsync(loginResult.User.Id, logs);
-                                System.Diagnostics.Debug.WriteLine($"[BootstrapForm] SyncErrorLogsSoftAsync resultado: {syncResult}");
-                            }
+                            System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Sincronizando {logs.Count} logs de erro...");
+                            var syncResult = await _apiService.SyncErrorLogsSoftAsync(loginResult.User.Id, logs);
+                            System.Diagnostics.Debug.WriteLine($"[BootstrapForm] SyncErrorLogsSoftAsync resultado: {syncResult}");
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Erro ao sincronizar logs: {ex.Message}");
-                        System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Stack trace: {ex.StackTrace}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Erro ao sincronizar dados: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Erro ao sincronizar logs: {ex.Message}");
                     System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Stack trace: {ex.StackTrace}");
+                }
+            }
+            catch (Exception ex)
+            {
+                    System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Erro ao sincronizar dados: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Stack trace: {ex.StackTrace}");
                 }
             }
             else

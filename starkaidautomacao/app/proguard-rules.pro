@@ -256,3 +256,116 @@
 # Joda-Time
 -keep class org.joda.time.** { *; }
 -dontwarn org.joda.time.**
+
+#############################################
+# =========== APACHE COMMONS LOGGING =========
+#############################################
+
+# Suprimir avisos do R8 sobre Log4JLogger
+-dontwarn org.apache.commons.logging.impl.Log4JLogger
+-keep class org.apache.commons.logging.** { *; }
+-dontwarn org.apache.commons.logging.**
+-keep class org.apache.log4j.** { *; }
+-dontwarn org.apache.log4j.**
+
+#############################################
+# =========== USUÁRIO ONLINE/OFFLINE ========
+#############################################
+
+# Manter todas as classes e métodos relacionados a setUserOnline/setUserOffline
+-keep class com.starkaid.starkaidapp.services.SetUserOnlineRequest { *; }
+-keep class com.starkaid.starkaidapp.services.SetUserOnlineResponse { *; }
+-keep class com.starkaid.starkaidapp.services.SetUserOfflineRequest { *; }
+-keep class com.starkaid.starkaidapp.services.SetUserOfflineResponse { *; }
+
+# Manter métodos setUserOnline e setUserOffline no MainActivity
+-keepclassmembers class com.starkaid.starkaidapp.ui.MainActivity {
+    private suspend fun setUserOnline();
+    private suspend fun setUserOffline();
+}
+
+# Manter métodos da UsuarioApi relacionados a online/offline
+-keepclassmembers interface com.starkaid.starkaidapp.services.UsuarioApi {
+    suspend fun setUserOnline(...);
+    suspend fun setUserOffline(...);
+}
+
+# Manter todas as chamadas de corrotinas relacionadas
+-keepclassmembers class * {
+    suspend fun setUserOnline();
+    suspend fun setUserOffline();
+}
+
+# Garantir que os métodos sejam chamados corretamente
+-keepclassmembers class com.starkaid.starkaidapp.ui.MainActivity {
+    void onCreate(android.os.Bundle);
+    void onResume();
+    void onPause();
+}
+
+# Manter todas as classes de request/response do UsuarioApi
+-keep class com.starkaid.starkaidapp.services.UsuarioApi$* { *; }
+-keep class com.starkaid.starkaidapp.services.*Request { *; }
+-keep class com.starkaid.starkaidapp.services.*Response { *; }
+
+# Manter corrotinas e métodos suspend
+-keepclassmembers class * {
+    suspend fun *(...);
+}
+
+# Manter métodos que chamam setUserOnline/setUserOffline
+-keepclassmembers class com.starkaid.starkaidapp.ui.MainActivity {
+    void onCreate(...);
+    void onResume();
+    void onPause();
+}
+
+# Garantir que CoroutineScope e launch sejam mantidos
+-keep class kotlinx.coroutines.** { *; }
+-keepclassmembers class * {
+    kotlinx.coroutines.CoroutineScope *;
+}
+
+# Manter todas as chamadas de API do Retrofit
+-keepclassmembers,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
+
+# Manter classes de dados (data classes) usadas em requests
+-keep class com.starkaid.starkaidapp.services.SetUserOnlineRequest {
+    <fields>;
+    <init>(...);
+}
+
+-keep class com.starkaid.starkaidapp.services.SetUserOfflineRequest {
+    <fields>;
+    <init>(...);
+}
+
+-keep class com.starkaid.starkaidapp.services.SetUserOnlineResponse {
+    <fields>;
+    <init>(...);
+}
+
+-keep class com.starkaid.starkaidapp.services.SetUserOfflineResponse {
+    <fields>;
+    <init>(...);
+}
+
+# Manter logs no build de release para debug (importante para rastrear problemas)
+-keepclassmembers class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** i(...);
+    public static *** w(...);
+    public static *** e(...);
+}
+
+# Se quiser remover logs para reduzir tamanho do APK, descomente a linha abaixo e comente a acima
+# -assumenosideeffects class android.util.Log {
+#     public static *** d(...);
+#     public static *** v(...);
+#     public static *** i(...);
+#     public static *** w(...);
+#     public static *** e(...);
+# }

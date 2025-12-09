@@ -60,6 +60,32 @@ public class LicenseService
         return license;
     }
 
+    public async Task<LicenseEntity> CreateActiveLicenseAsync(Guid userId, int maxMachines, decimal price)
+    {
+        var licenseKey = GenerateLicenseKey();
+        
+        var license = new LicenseEntity
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            LicenseKey = licenseKey,
+            MaxMachines = maxMachines,
+            Price = price,
+            CreatedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = DateTimeOffset.UtcNow.AddYears(100), // Licença vitalícia (100 anos)
+            IsActive = true, // Ativa imediatamente (criação manual pelo admin)
+            PaymentConfirmedAt = DateTimeOffset.UtcNow,
+            StripePaymentIntentId = "ADMIN_MANUAL_CREATION"
+        };
+
+        _context.Licenses.Add(license);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Licença criada e ativada manualmente pelo admin: {LicenseId} para usuário {UserId}", license.Id, userId);
+
+        return license;
+    }
+
     public async Task<LicenseEntity?> GetLicenseByKeyAsync(string licenseKey)
     {
         // Normalizar a chave: remover espaços e converter para maiúsculas

@@ -8,7 +8,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.textfield.TextInputEditText
 import com.starkaid.starkaidapp.data.AppDatabase
 import com.starkaid.starkaidapp.databinding.ActivityConfigAppBinding
-import com.starkaid.starkaidapp.models.AppConfig
+import com.starkaid.starkaidapp.models.AppConfigEntity
 import kotlinx.coroutines.launch
 
 class ConfigAppActivity : AppCompatActivity() {
@@ -160,7 +160,7 @@ class ConfigAppActivity : AppCompatActivity() {
     private fun updateAssistantName(newName: String) {
         lifecycleScope.launch {
             try {
-                database.appConfigDao().saveConfig(AppConfig(configKey = KEY_ASSISTANT_NAME, value = newName))
+                database.appConfigDao().saveConfig(AppConfigEntity(configKey = KEY_ASSISTANT_NAME, value = newName))
                 binding.tvCurrentName.text = newName
                 showSuccessMessage("Nome do assistente atualizado com sucesso!")
             } catch (e: Exception) {
@@ -173,7 +173,7 @@ class ConfigAppActivity : AppCompatActivity() {
     private fun updateDefaultResponse(newResponse: String) {
         lifecycleScope.launch {
             try {
-                database.appConfigDao().saveConfig(AppConfig(configKey = KEY_DEFAULT_RESPONSE, value = newResponse))
+                database.appConfigDao().saveConfig(AppConfigEntity(configKey = KEY_DEFAULT_RESPONSE, value = newResponse))
                 binding.tvCurrentResponse.text = newResponse
                 showSuccessMessage("Resposta padrão atualizada com sucesso!")
             } catch (e: Exception) {
@@ -186,7 +186,7 @@ class ConfigAppActivity : AppCompatActivity() {
     private fun updatePersonality(newPersonality: String) {
         lifecycleScope.launch {
             try {
-                database.appConfigDao().saveConfig(AppConfig(configKey = KEY_PERSONALITY, value = newPersonality))
+                database.appConfigDao().saveConfig(AppConfigEntity(configKey = KEY_PERSONALITY, value = newPersonality))
                 binding.tvCurrentPersonality.text = newPersonality
                 showSuccessMessage("Personalidade atualizada com sucesso!")
             } catch (e: Exception) {

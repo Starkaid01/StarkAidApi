@@ -3,6 +3,9 @@ package com.starkaid.starkaidapp.services
 import android.content.Context
 import android.util.Log
 import com.starkaid.starkaidapp.data.SessionManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import okhttp3.Dns
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
@@ -12,17 +15,22 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
     private var retrofit: Retrofit? = null
+    private var configLoaded = false
+    private val defaultBaseUrl = "https://starkaid.runasp.net/"
 
     fun getClient(context: Context): Retrofit {
         if (retrofit == null) {
-            val sessionManager = SessionManager.getInstance(context) // 🔥 CORREÇÃO: getInstance
+            val sessionManager = SessionManager.getInstance(context)
+            
+            // Buscar base URL salva ou usar padrão
+            val baseUrl = sessionManager.fetchApiBaseUrl() ?: defaultBaseUrl
 
             val client = OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS) // Reduzido de 30s para 10s
-                .readTimeout(10, TimeUnit.SECONDS) // Reduzido de 30s para 10s
-                .writeTimeout(10, TimeUnit.SECONDS) // Reduzido de 30s para 10s
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
                 .dns(Dns.SYSTEM)
-                .retryOnConnectionFailure(true) // Adicionar retry automático
+                .retryOnConnectionFailure(true)
                 .addInterceptor { chain ->
                     val requestBuilder = chain.request().newBuilder()
 
@@ -35,16 +43,13 @@ object ApiClient {
                         Log.d("API_HEADERS", "Added API Key: $it")
                     }
                     
-                    // Marcar todas as requisições como vindas do app
                     requestBuilder.addHeader("X-From-App", "true")
 
                     val request = requestBuilder.build()
                     Log.d("API_HEADERS", "Request to ${request.url}")
-                    Log.d("API_HEADERS", "Headers: ${request.headers}")
 
                     val response = chain.proceed(request)
                     Log.d("API_HEADERS", "Response: ${response.code} for ${request.url}")
-                    // Não consumir o response body aqui para evitar conflitos
                     response
                 }
                 .addInterceptor(RefreshTokenInterceptor(context))
@@ -52,12 +57,73 @@ object ApiClient {
                 .build()
 
             retrofit = Retrofit.Builder()
-                .baseUrl("https://starkaid.runasp.net/")
+                .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build()
+
+            // Carregar configuração em background se ainda não foi carregada
+            if (!configLoaded) {
+                loadConfigAsync(context, sessionManager)
+            }
         }
         return retrofit!!
     }
 
+    private fun loadConfigAsync(context: Context, sessionManager: SessionManager) {
+        configLoaded = true
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Criar cliente temporário com URL padrão para buscar config
+                val tempClient = OkHttpClient.Builder()
+                    .connectTimeout(5, TimeUnit.SECONDS)
+                    .readTimeout(5, TimeUnit.SECONDS)
+                    .build()
+
+                val tempRetrofit = Retrofit.Builder()
+                    .baseUrl(defaultBaseUrl)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .client(tempClient)
+                    .build()
+
+                val configApi = tempRetrofit.create(ConfigApi::class.java)
+                val response = configApi.getAppConfig()
+
+                if (response.isSuccessful && response.body() != null) {
+                    val config = response.body()!!
+                    
+                    // Salvar configurações
+                    sessionManager.saveApiBaseUrl(config.apiBaseUrl)
+                    config.spotify?.let {
+                        sessionManager.saveSpotifyClientId(it.clientId)
+                        sessionManager.saveSpotifyClientSecret(it.clientSecret)
+                    }
+                    config.ewelink?.let {
+                        sessionManager.saveEwelinkClientId(it.clientId)
+                        sessionManager.saveEwelinkClientSecret(it.clientSecret)
+                        sessionManager.saveEwelinkRedirectUri(it.redirectUri)
+                    }
+
+                    // Recriar retrofit com nova base URL se mudou
+                    if (config.apiBaseUrl != defaultBaseUrl.trimEnd('/')) {
+                        val newBaseUrl = if (config.apiBaseUrl.endsWith("/")) config.apiBaseUrl else "$config.apiBaseUrl/"
+                        retrofit = null // Força recriação na próxima chamada
+                        Log.d("ApiClient", "Configuração carregada. Nova base URL: $newBaseUrl")
+                    } else {
+                        Log.d("ApiClient", "Configuração carregada. Usando URL padrão.")
+                    }
+                } else {
+                    Log.w("ApiClient", "Falha ao carregar configuração: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("ApiClient", "Erro ao carregar configuração", e)
+            }
+        }
+    }
+
+    fun reloadConfig(context: Context) {
+        configLoaded = false
+        retrofit = null
+        getClient(context) // Força recarregar
+    }
 }

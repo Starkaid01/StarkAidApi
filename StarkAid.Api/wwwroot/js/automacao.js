@@ -6,6 +6,62 @@ let refreshToken = null;
 let currentUserIdForDetails = null;
 let userDetailsCache = null; // Cache para dados do usuário atual
 
+// Configurações do app (carregadas do endpoint)
+let appConfig = {
+    apiBaseUrl: API_BASE_URL,
+    spotify: {
+        clientId: null,
+        clientSecret: null,
+        tokenUrl: 'https://accounts.spotify.com/api/token'
+    },
+    ewelink: {
+        clientId: null,
+        clientSecret: null,
+        redirectUri: null
+    }
+};
+
+// Carregar configuração do app na inicialização
+(async function loadAppConfig() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/Config/app-config`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const config = await response.json();
+            appConfig = {
+                apiBaseUrl: config.apiBaseUrl || API_BASE_URL,
+                spotify: {
+                    clientId: config.spotify?.clientId || null,
+                    clientSecret: config.spotify?.clientSecret || null,
+                    tokenUrl: config.spotify?.tokenUrl || 'https://accounts.spotify.com/api/token'
+                },
+                ewelink: {
+                    clientId: config.ewelink?.clientId || null,
+                    clientSecret: config.ewelink?.clientSecret || null,
+                    redirectUri: config.ewelink?.redirectUri || null
+                }
+            };
+            console.log('Configuração do app carregada:', { 
+                apiBaseUrl: appConfig.apiBaseUrl,
+                hasSpotify: !!appConfig.spotify.clientId,
+                hasEwelink: !!appConfig.ewelink.clientId
+            });
+        } else {
+            const errorText = await response.text().catch(() => 'Erro desconhecido');
+            console.warn(`Falha ao carregar configuração do app (${response.status}):`, errorText);
+            console.warn('Usando valores padrão');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar configuração do app:', error);
+        console.warn('Usando valores padrão devido ao erro');
+    }
+})();
+
 // Função para fazer requisições com refresh automático de token
 async function fetchWithAuth(url, options = {}) {
     const defaultOptions = {
@@ -753,6 +809,8 @@ function setupAdminTabs() {
                 loadStarkcoinsVendas();
             } else if (tab === 'admin-falhas') {
                 loadPagamentosFalhas();
+            } else if (tab === 'admin-criar-licenca') {
+                loadUsersForLicense();
             } else if (tab === 'admin-error-logs') {
                 loadErrorLogsUsers();
             } else if (tab === 'admin-consultar-codigo') {
@@ -2629,7 +2687,20 @@ function connectDispositivoEspHub() {
     dispositivoEspHubConnection.start()
         .then(() => {
             console.log("Conectado ao DispositivoESP Hub");
-            dispositivoEspHubConnection.invoke("IdentificarCliente", "web", currentUser?.id);
+            // Verificar se a conexão está realmente conectada antes de invocar
+            if (dispositivoEspHubConnection.state === signalR.HubConnectionState.Connected) {
+                dispositivoEspHubConnection.invoke("IdentificarCliente", "web", currentUser?.id)
+                    .catch(err => console.error("Erro ao identificar cliente no hub:", err));
+            } else {
+                console.warn("Hub não está conectado, aguardando...");
+                // Aguardar um pouco e tentar novamente
+                setTimeout(() => {
+                    if (dispositivoEspHubConnection.state === signalR.HubConnectionState.Connected) {
+                        dispositivoEspHubConnection.invoke("IdentificarCliente", "web", currentUser?.id)
+                            .catch(err => console.error("Erro ao identificar cliente no hub (retry):", err));
+                    }
+                }, 1000);
+            }
         })
         .catch(err => console.error("Erro ao conectar ao DispositivoESP Hub:", err));
 }
@@ -2637,18 +2708,31 @@ function connectDispositivoEspHub() {
 // Load Online Users
 async function loadOnlineUsers() {
     try {
+        console.log('[loadOnlineUsers] Carregando usuários online...');
         const response = await fetchWithAuth(`${API_BASE_URL}/api/users/online`);
 
-        if (!response.ok) throw new Error('Erro ao carregar usuários online');
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[loadOnlineUsers] Erro na resposta:', response.status, errorText);
+            throw new Error(`Erro ao carregar usuários online: ${response.status} - ${errorText}`);
+        }
 
         const users = await response.json();
+        console.log('[loadOnlineUsers] Usuários recebidos:', users);
+        
         const tbody = document.getElementById('online-users-table-body');
+        if (!tbody) {
+            console.error('[loadOnlineUsers] Elemento online-users-table-body não encontrado');
+            return;
+        }
         
         if (users.length === 0) {
+            console.log('[loadOnlineUsers] Nenhum usuário online encontrado');
             tbody.innerHTML = '<tr><td colspan="6" class="loading">Nenhum usuário online</td></tr>';
             return;
         }
 
+        console.log(`[loadOnlineUsers] Renderizando ${users.length} usuários online`);
         tbody.innerHTML = users.map(user => `
             <tr>
                 <td>${escapeHtml(user.name)}</td>
@@ -2660,7 +2744,7 @@ async function loadOnlineUsers() {
                     <div class="action-buttons">
                         <button class="action-btn view" onclick="viewUserDetails('${user.id}')">Ver Detalhes</button>
                         <button class="action-btn edit" onclick="editUser('${user.id}')">Editar</button>
-                        <button class="action-btn" onclick="disconnectUser('${user.id}')" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color);" disabled>Desconectar</button>
+                        <button class="action-btn" onclick="disconnectUser('${user.id}')" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color);">Desconectar</button>
                         <button class="action-btn" onclick="sendMessageToUser('${user.id}')" disabled>Enviar Mensagem</button>
                         <button class="action-btn" onclick="viewErrorLogsApp('${user.id}')" disabled>LogsErrorApp</button>
                         <button class="action-btn" onclick="viewErrorLogsSoft('${user.id}')" disabled>LogsErrorSoft</button>
@@ -2668,10 +2752,14 @@ async function loadOnlineUsers() {
                 </td>
             </tr>
         `).join('');
+        console.log('[loadOnlineUsers] Usuários online renderizados com sucesso');
     } catch (error) {
-        console.error('Erro ao carregar usuários online:', error);
-        document.getElementById('online-users-table-body').innerHTML = 
-            '<tr><td colspan="6" class="loading">Erro ao carregar usuários online</td></tr>';
+        console.error('[loadOnlineUsers] Erro ao carregar usuários online:', error);
+        const tbody = document.getElementById('online-users-table-body');
+        if (tbody) {
+            tbody.innerHTML = 
+                '<tr><td colspan="6" class="loading">Erro ao carregar usuários online: ' + escapeHtml(error.message) + '</td></tr>';
+        }
     }
 }
 
@@ -3019,6 +3107,108 @@ async function viewErrorLogsSoft(userId) {
     }
 }
 
+// View Error Logs App
+async function viewErrorLogsApp(userId) {
+    try {
+        console.log('[viewErrorLogsApp] Carregando logs de erro do app para usuário:', userId);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/error-logs/app/${userId}`);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[viewErrorLogsApp] Erro na resposta:', response.status, errorText);
+            throw new Error('Erro ao carregar logs de erro do app');
+        }
+
+        const logs = await response.json();
+        console.log('[viewErrorLogsApp] Logs recebidos:', logs.length);
+        
+        // Criar modal para exibir logs
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'block';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h2>Logs de Erro - App (${logs.length} registros)</h2>
+                    <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    ${logs.length === 0 ? 
+                        '<p>Nenhum log de erro encontrado para este usuário.</p>' :
+                        `<table class="users-table" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Hora</th>
+                                    <th>Código Erro</th>
+                                    <th>Ação</th>
+                                    <th>Último Comando</th>
+                                    <th>Última Resposta</th>
+                                    <th>Dispositivo</th>
+                                    <th>Erro Completo</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${logs.map(log => `
+                                    <tr>
+                                        <td>${escapeHtml(log.dataErro || 'N/A')}</td>
+                                        <td>${escapeHtml(log.horaErro || 'N/A')}</td>
+                                        <td><code>${escapeHtml(log.codigoDeErro || 'N/A')}</code></td>
+                                        <td>${escapeHtml(log.acaoErro || 'N/A')}</td>
+                                        <td>${escapeHtml(log.ultimoComando || 'N/A')}</td>
+                                        <td>${escapeHtml(log.ultimaResposta || 'N/A')}</td>
+                                        <td>${escapeHtml(log.ultimoDispositivoAcionado || 'N/A')}</td>
+                                        <td><pre style="max-width: 300px; white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(log.erroCompleto || 'N/A')}</pre></td>
+                                        <td>
+                                            <button class="action-btn" onclick="deleteErrorLogApp(${log.id}, '${userId}')" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color);">Apagar</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>`
+                    }
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Fechar modal ao clicar fora
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    } catch (error) {
+        console.error('[viewErrorLogsApp] Erro ao carregar logs de erro:', error);
+        alert('Erro ao carregar logs de erro do app: ' + error.message);
+    }
+}
+
+// Delete Error Log App
+async function deleteErrorLogApp(logId, userId) {
+    if (!confirm('Tem certeza que deseja apagar este log de erro?')) {
+        return;
+    }
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/error-logs/app/${logId}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Erro ao apagar log');
+        }
+
+        // Recarregar a lista de logs
+        viewErrorLogsApp(userId);
+    } catch (error) {
+        console.error('Erro ao apagar log de erro:', error);
+        alert('Erro ao apagar log: ' + error.message);
+    }
+}
+
 // Delete Error Log Soft
 async function deleteErrorLogSoft(logId, userId) {
     if (!confirm('Tem certeza que deseja apagar este log de erro?')) {
@@ -3234,9 +3424,30 @@ async function buscarSolucoesApp() {
 }
 
 // Placeholder functions for future implementation
-function disconnectUser(userId) {
-    // Implementar depois
-    alert('Funcionalidade será implementada em breve');
+async function disconnectUser(userId) {
+    if (!confirm(`Tem certeza que deseja desconectar o usuário ${userId} do app?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/app/logout`, {
+            method: 'POST',
+            body: JSON.stringify({ userId: userId })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            alert(data.message || 'Usuário desconectado com sucesso!');
+            // Recarregar lista de usuários online
+            loadOnlineUsers();
+        } else {
+            const errorData = await response.json();
+            alert(errorData.message || 'Erro ao desconectar usuário');
+        }
+    } catch (error) {
+        console.error('Erro ao desconectar usuário:', error);
+        alert('Erro ao desconectar usuário: ' + error.message);
+    }
 }
 
 function sendMessageToUser(userId) {
@@ -4513,13 +4724,17 @@ function generateNonce() {
 // Abrir login Ewelink (redirecionamento direto)
 async function openEwelinkLoginModal() {
     try {
-        const clientId = 'qPNNDkWlhKwh4xn41bteq2qD02aiGs3D';
-        const clientSecret = 'kdG0r5OPddNB90tPKvarWyMWmpppIX9s';
+        // Usar configuração do app ou valores padrão como fallback
+        const clientId = appConfig.ewelink.clientId || 'qPNNDkWlhKwh4xn41bteq2qD02aiGs3D';
+        const clientSecret = appConfig.ewelink.clientSecret || 'kdG0r5OPddNB90tPKvarWyMWmpppIX9s';
+        const redirectUrlRaw = appConfig.ewelink.redirectUri || 'https://starkaid.runasp.net/auth/ewelink/callback.html';
+        
+        if (!clientId || !clientSecret) {
+            throw new Error('Credenciais Ewelink não configuradas. Recarregue a página.');
+        }
+
         const seq = Date.now();
         const nonce = generateNonce();
-        // IMPORTANTE: O redirectUrl deve ser EXATAMENTE igual ao registrado no console Ewelink
-        // O redirectUrl na URL de autorização deve ser o mesmo usado na troca do token
-        const redirectUrlRaw = 'https://starkaid.runasp.net/auth/ewelink/callback.html';
         const redirectUrl = encodeURIComponent(redirectUrlRaw);
         const state = 'starkaid';
         const grantType = 'authorization_code';
@@ -4530,14 +4745,14 @@ async function openEwelinkLoginModal() {
             redirectUrlEncoded: redirectUrl,
             seq, 
             nonce,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            usingConfig: !!appConfig.ewelink.clientId
         });
         
         // Calcular assinatura: HMAC-SHA256({clientId}_{seq})
         const authorization = await calculateOAuthSignature(clientId, seq, clientSecret);
         
         // Montar URL conforme documentação
-        // IMPORTANTE: redirectUrl aqui é o encoded, mas no backend usamos o raw
         const authUrl = `https://c2ccdn.coolkit.cc/oauth/index.html?clientId=${clientId}&seq=${seq}&authorization=${encodeURIComponent(authorization)}&redirectUrl=${redirectUrl}&grantType=${grantType}&state=${state}&nonce=${nonce}&showQRCode=false`;
         
         console.log('URL de autorização gerada:', authUrl);
@@ -4548,7 +4763,7 @@ async function openEwelinkLoginModal() {
         window.location.href = authUrl;
     } catch (error) {
         console.error('Erro ao gerar URL de autorização:', error);
-        showNotification('Erro ao gerar URL de autorização: ' + error.message, 'error');
+        showNotification('Erro ao iniciar login Ewelink. Tente novamente.', 'error');
     }
 }
 
@@ -5479,6 +5694,157 @@ async function enviarFormularioLimite() {
     } catch (error) {
         console.error('Erro:', error);
         alert('Erro ao enviar formulário');
+    }
+}
+
+// ========================================
+// Funções para Criar Licença (Admin)
+// ========================================
+
+async function loadUsersForLicense() {
+    try {
+        const select = document.getElementById('license-user-select');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Carregando usuários...</option>';
+
+        const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao carregar usuários');
+        }
+
+        const users = await response.json();
+        
+        if (users.length === 0) {
+            select.innerHTML = '<option value="">Nenhum usuário encontrado</option>';
+            return;
+        }
+
+        select.innerHTML = '<option value="">Selecione um usuário</option>' +
+            users.map(user => 
+                `<option value="${user.id}">${user.name} (${user.email})</option>`
+            ).join('');
+    } catch (error) {
+        console.error('Erro ao carregar usuários:', error);
+        const select = document.getElementById('license-user-select');
+        if (select) {
+            select.innerHTML = '<option value="">Erro ao carregar usuários</option>';
+        }
+    }
+}
+
+async function createLicenseForUser() {
+    try {
+        const userId = document.getElementById('license-user-select').value;
+        const maxMachines = parseInt(document.getElementById('license-max-machines').value);
+        const priceInput = document.getElementById('license-price').value;
+        const price = priceInput ? parseFloat(priceInput) : null;
+
+        if (!userId) {
+            alert('Por favor, selecione um usuário');
+            return;
+        }
+
+        if (!maxMachines || (maxMachines !== 2 && maxMachines !== 4)) {
+            alert('Por favor, selecione 2 ou 4 máquinas');
+            return;
+        }
+
+        const resultDiv = document.getElementById('license-creation-result');
+        const contentDiv = document.getElementById('license-creation-content');
+        
+        resultDiv.style.display = 'block';
+        contentDiv.innerHTML = '<p>Criando licença...</p>';
+
+        const requestBody = {
+            userId: userId,
+            maxMachines: maxMachines
+        };
+
+        if (price !== null && price > 0) {
+            requestBody.price = price;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/licenses/admin/create`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Erro ao criar licença');
+        }
+
+        const license = await response.json();
+
+        // Formatar data
+        const createdAt = new Date(license.createdAt).toLocaleDateString('pt-BR');
+        const expiresAt = new Date(license.expiresAt).toLocaleDateString('pt-BR');
+
+        contentDiv.innerHTML = `
+            <div style="padding: 1rem; background: rgba(0, 255, 0, 0.1); border: 1px solid #00ff00; border-radius: 8px; margin-bottom: 1rem;">
+                <h4 style="color: #00ff00; margin-bottom: 0.5rem;">✅ Licença criada com sucesso!</h4>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <strong style="color: var(--primary-color);">Chave da Licença:</strong>
+                    <p style="color: var(--light-text); font-family: monospace; font-size: 1.1rem; margin-top: 0.5rem; padding: 0.5rem; background: var(--dark-bg); border-radius: 4px;">${license.licenseKey}</p>
+                </div>
+                <div>
+                    <strong style="color: var(--primary-color);">Status:</strong>
+                    <p style="color: #00ff00; font-weight: bold; margin-top: 0.5rem;">ATIVA</p>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <strong style="color: var(--primary-color);">Máquinas Permitidas:</strong>
+                    <p style="color: var(--light-text); margin-top: 0.5rem;">${license.maxMachines}</p>
+                </div>
+                <div>
+                    <strong style="color: var(--primary-color);">Preço:</strong>
+                    <p style="color: var(--light-text); margin-top: 0.5rem;">R$ ${license.price.toFixed(2)}</p>
+                </div>
+                <div>
+                    <strong style="color: var(--primary-color);">Data de Criação:</strong>
+                    <p style="color: var(--light-text); margin-top: 0.5rem;">${createdAt}</p>
+                </div>
+                <div>
+                    <strong style="color: var(--primary-color);">Expira em:</strong>
+                    <p style="color: var(--light-text); margin-top: 0.5rem;">${expiresAt}</p>
+                </div>
+            </div>
+            <div style="margin-top: 1rem; padding: 1rem; background: var(--dark-bg); border-radius: 8px;">
+                <strong style="color: var(--primary-color);">Máquinas Ativadas:</strong>
+                <p style="color: var(--light-text); margin-top: 0.5rem;">${license.activeActivations} / ${license.maxMachines}</p>
+            </div>
+        `;
+
+        // Limpar formulário
+        document.getElementById('license-user-select').value = '';
+        document.getElementById('license-max-machines').value = '2';
+        document.getElementById('license-price').value = '';
+
+    } catch (error) {
+        console.error('Erro ao criar licença:', error);
+        const resultDiv = document.getElementById('license-creation-result');
+        const contentDiv = document.getElementById('license-creation-content');
+        
+        resultDiv.style.display = 'block';
+        contentDiv.innerHTML = `
+            <div style="padding: 1rem; background: rgba(255, 0, 0, 0.1); border: 1px solid #ff0000; border-radius: 8px;">
+                <h4 style="color: #ff0000; margin-bottom: 0.5rem;">❌ Erro ao criar licença</h4>
+                <p style="color: var(--light-text);">${error.message}</p>
+            </div>
+        `;
     }
 }
 

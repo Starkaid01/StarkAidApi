@@ -147,6 +147,7 @@
                         <button class="admin-tab-btn" data-tab="admin-planos">Usuários Planos Ativos</button>
                         <button class="admin-tab-btn" data-tab="admin-vendas">Starkcoins Vendas</button>
                         <button class="admin-tab-btn" data-tab="admin-falhas">Pagamentos com Falhas</button>
+                        <button class="admin-tab-btn" data-tab="admin-criar-licenca">Criar Licença</button>
                         <button class="admin-tab-btn" data-tab="admin-error-logs">Error Logs</button>
                         <button class="admin-tab-btn" data-tab="admin-consultar-codigo">Consultar Codigo de erro</button>
                         <button class="admin-tab-btn" data-tab="admin-solucoes-codigo">Soluções para CodigoDeErro</button>
@@ -308,6 +309,49 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Criar Licença Tab -->
+                    <div id="admin-criar-licenca-tab" class="admin-tab-content">
+                        <div class="users-section">
+                            <div class="section-header">
+                                <h2>Criar Licença para Usuário</h2>
+                                <button class="btn btn-primary" onclick="loadUsersForLicense()">Atualizar Lista</button>
+                            </div>
+                            
+                            <div style="padding: 2rem; background: var(--dark-surface); border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 2rem;">
+                                <h3 style="color: var(--light-text); margin-bottom: 1.5rem;">Formulário de Criação de Licença</h3>
+                                
+                                <div class="form-group" style="margin-bottom: 1.5rem;">
+                                    <label style="display: block; margin-bottom: 0.5rem; color: var(--light-text); font-weight: 600;">Selecionar Usuário</label>
+                                    <select id="license-user-select" style="width: 100%; padding: 0.75rem; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;">
+                                        <option value="">Carregando usuários...</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group" style="margin-bottom: 1.5rem;">
+                                    <label style="display: block; margin-bottom: 0.5rem; color: var(--light-text); font-weight: 600;">Máquinas Permitidas</label>
+                                    <select id="license-max-machines" style="width: 100%; padding: 0.75rem; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;">
+                                        <option value="2">2 Máquinas (R$ 250,00)</option>
+                                        <option value="4">4 Máquinas (R$ 454,00)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group" style="margin-bottom: 1.5rem;">
+                                    <label style="display: block; margin-bottom: 0.5rem; color: var(--light-text); font-weight: 600;">Preço (opcional - deixe vazio para usar preço padrão)</label>
+                                    <input type="number" id="license-price" step="0.01" min="0" placeholder="Ex: 250.00" style="width: 100%; padding: 0.75rem; background: var(--dark-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--light-text); font-size: 1rem;" />
+                                </div>
+
+                                <button class="btn btn-success" onclick="createLicenseForUser()" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
+                                    Criar Licença Ativa
+                                </button>
+
+                                <div id="license-creation-result" style="margin-top: 1.5rem; padding: 1.5rem; background: var(--dark-bg); border-radius: 8px; display: none;">
+                                    <h4 style="color: var(--light-text); margin-bottom: 1rem;">Resultado:</h4>
+                                    <div id="license-creation-content" style="color: var(--light-text);"></div>
+                                </div>
                             </div>
                         </div>
                     </div>

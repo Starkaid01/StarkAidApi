@@ -383,6 +383,10 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     val role = fetchUserRoleFromEndpoint()
                     role?.let { sessionManager.saveUserRole(it) }
                 }
+                // Marcar usuário como online
+                CoroutineScope(Dispatchers.IO).launch {
+                    setUserOnline()
+                }
             } else {
                 // Offline: verifica se temos dados locais
                 val localRole = sessionManager.fetchUserRole()
@@ -3007,6 +3011,72 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
     private suspend fun getAssistantPerson(): String {
         return db.appConfigDao().getConfig("personality") ?: "Descolado, carioca"
+    }
+
+    // Marcar usuário como online na API
+    private suspend fun setUserOnline() {
+        try {
+            Log.d("MainActivity", "[setUserOnline] Iniciando chamada para marcar usuário como online")
+            
+            val token = sessionManager.fetchAuthToken()
+            if (token.isNullOrEmpty()) {
+                Log.w("MainActivity", "[setUserOnline] Token não disponível para marcar usuário como online")
+                return
+            }
+            
+            Log.d("MainActivity", "[setUserOnline] Token disponível, criando cliente Retrofit")
+
+            val retrofit = ApiClient.getClient(this)
+            val api = retrofit.create(UsuarioApi::class.java)
+            val request = com.starkaid.starkaidapp.services.SetUserOnlineRequest(origem = "app")
+            
+            Log.d("MainActivity", "[setUserOnline] Enviando requisição para API...")
+            val response = api.setUserOnline(request)
+            
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                Log.d("MainActivity", "[setUserOnline] ✅ Usuário marcado como online com sucesso! Resposta: ${responseBody?.message}")
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Log.e("MainActivity", "[setUserOnline] ❌ Erro ao marcar usuário como online: ${response.code()} - $errorBody")
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "[setUserOnline] ❌ Exceção ao marcar usuário como online: ${e.message}", e)
+            e.printStackTrace()
+        }
+    }
+
+    // Marcar usuário como offline na API
+    private suspend fun setUserOffline() {
+        try {
+            Log.d("MainActivity", "[setUserOffline] Iniciando chamada para marcar usuário como offline")
+            
+            val token = sessionManager.fetchAuthToken()
+            if (token.isNullOrEmpty()) {
+                Log.w("MainActivity", "[setUserOffline] Token não disponível para marcar usuário como offline")
+                return
+            }
+            
+            Log.d("MainActivity", "[setUserOffline] Token disponível, criando cliente Retrofit")
+
+            val retrofit = ApiClient.getClient(this)
+            val api = retrofit.create(UsuarioApi::class.java)
+            val request = com.starkaid.starkaidapp.services.SetUserOfflineRequest(origem = "app")
+            
+            Log.d("MainActivity", "[setUserOffline] Enviando requisição para API...")
+            val response = api.setUserOffline(request)
+            
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                Log.d("MainActivity", "[setUserOffline] ✅ Usuário marcado como offline com sucesso! Resposta: ${responseBody?.message}")
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Log.e("MainActivity", "[setUserOffline] ❌ Erro ao marcar usuário como offline: ${response.code()} - $errorBody")
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "[setUserOffline] ❌ Exceção ao marcar usuário como offline: ${e.message}", e)
+            e.printStackTrace()
+        }
     }
 
     private suspend fun getDefaultResponse(): String {
@@ -6016,6 +6086,13 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     override fun onResume() {
         super.onResume()
         
+        // Marcar usuário como online quando o app volta ao foreground
+        if (isOnline()) {
+            CoroutineScope(Dispatchers.IO).launch {
+                setUserOnline()
+            }
+        }
+        
         // Verificar deep link quando o app retorna do background
         intent?.data?.let { uri ->
             if (uri.scheme == "starkaid" && uri.host == "payment") {
@@ -6165,6 +6242,12 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     override fun onPause() {
         super.onPause()
 
+        // Marcar usuário como offline quando o app vai para background
+        if (isOnline()) {
+            CoroutineScope(Dispatchers.IO).launch {
+                setUserOffline()
+            }
+        }
 
         val totalTime = System.currentTimeMillis() - startupTime
         Log.d("Perf", "Activity lifetime: $totalTime ms")

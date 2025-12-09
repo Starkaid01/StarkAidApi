@@ -1,10 +1,30 @@
 package com.starkaid.starkaidapp.models
-import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "app_config")
+import com.google.gson.annotations.SerializedName
+
 data class AppConfig(
-    @PrimaryKey
-    val configKey: String,  // Mude de "key" para "configKey"
-    val value: String
+    @SerializedName("apiBaseUrl")
+    val apiBaseUrl: String,
+    @SerializedName("spotify")
+    val spotify: SpotifyConfig?,
+    @SerializedName("ewelink")
+    val ewelink: EwelinkConfig?
+)
+
+data class SpotifyConfig(
+    @SerializedName("clientId")
+    val clientId: String,
+    @SerializedName("clientSecret")
+    val clientSecret: String,
+    @SerializedName("tokenUrl")
+    val tokenUrl: String
+)
+
+data class EwelinkConfig(
+    @SerializedName("clientId")
+    val clientId: String,
+    @SerializedName("clientSecret")
+    val clientSecret: String,
+    @SerializedName("redirectUri")
+    val redirectUri: String
 )

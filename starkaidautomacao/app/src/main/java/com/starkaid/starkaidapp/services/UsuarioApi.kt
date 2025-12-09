@@ -68,6 +68,16 @@ interface UsuarioApi {
     suspend fun chamarSuperIA(
         @Body request: IaRequest
     ): Response<IaResponse>
+
+    @POST("api/Users/online")
+    suspend fun setUserOnline(
+        @Body request: SetUserOnlineRequest
+    ): Response<SetUserOnlineResponse>
+
+    @POST("api/Users/offline")
+    suspend fun setUserOffline(
+        @Body request: SetUserOfflineRequest
+    ): Response<SetUserOfflineResponse>
 }
 
 data class SenhaRequest(
@@ -83,5 +93,21 @@ data class ResetSenhaRequest(
 data class UpdateStarkCoinsResponse(
     val message: String,
     val saldoAtual: Double
+)
+
+data class SetUserOnlineRequest(
+    val origem: String = "app"
+)
+
+data class SetUserOnlineResponse(
+    val message: String
+)
+
+data class SetUserOfflineRequest(
+    val origem: String = "app"
+)
+
+data class SetUserOfflineResponse(
+    val message: String
 )
 

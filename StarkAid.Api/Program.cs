@@ -3,6 +3,7 @@ using Amazon.TranscribeStreaming;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -31,6 +32,7 @@ using StarkAid.Api.Services.Suporte;
 using StarkAid.Api.Hubs;
 using Stripe;
 using System.Diagnostics;
+using System.Threading.RateLimiting;
 using System.Text;
 
 try
@@ -68,6 +70,31 @@ try
     // 3. Firebase
     var firebasePath = builder.Configuration["Firebase:CredentialsPath"]
         ?? throw new InvalidOperationException("Firebase credentials path não configurado.");
+    
+    // Resolver caminho relativo se necessário
+    // Usar ContentRootPath que aponta para o diretório raiz do projeto
+    if (!Path.IsPathRooted(firebasePath))
+    {
+        var contentRoot = builder.Environment.ContentRootPath;
+        firebasePath = Path.Combine(contentRoot, firebasePath);
+        
+        // Se ainda não existir, tentar a partir do diretório atual (para compatibilidade)
+        if (!System.IO.File.Exists(firebasePath))
+        {
+            var currentDirPath = Path.Combine(Directory.GetCurrentDirectory(), firebasePath);
+            if (System.IO.File.Exists(currentDirPath))
+            {
+                firebasePath = currentDirPath;
+            }
+        }
+    }
+    
+    // Verificar se o arquivo existe
+    if (!System.IO.File.Exists(firebasePath))
+    {
+        throw new FileNotFoundException($"Arquivo Firebase não encontrado: {firebasePath}. Diretório atual: {Directory.GetCurrentDirectory()}, ContentRoot: {builder.Environment.ContentRootPath}");
+    }
+    
     FirebaseApp.Create(new AppOptions { Credential = GoogleCredential.FromFile(firebasePath) });
 
     // 4. JWT
@@ -104,16 +131,46 @@ try
             };
         });
 
-    // 5. CORS
+    // 5. Rate Limiting
+    builder.Services.AddRateLimiter(options =>
+    {
+        // Rate limiting global padrão
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                factory: partition => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true,
+                    PermitLimit = 100,
+                    Window = TimeSpan.FromMinutes(1)
+                }));
+
+        // Rate limiting específico para endpoint de configuração (90 req/min)
+        options.AddFixedWindowLimiter("ConfigEndpoint", options =>
+        {
+            options.PermitLimit = 90;
+            options.Window = TimeSpan.FromMinutes(1);
+            options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            options.QueueLimit = 10;
+        });
+    });
+
+    // 6. CORS (melhorado para segurança)
     builder.Services.AddCors(options =>
     {
-        options.AddPolicy("AllowAll", policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+        options.AddPolicy("AllowAll", policy => 
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .WithExposedHeaders("X-RateLimit-Remaining", "X-RateLimit-Reset");
+        });
     });
 
 
     builder.Services.AddSignalR();
 
-    // 6. Policies
+    // 7. Policies
     builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy("UserNivel1Only", policy => policy.RequireRole("UserNivel1", "UserNivel2", "UserNivel3", "Administrador")); 
@@ -133,6 +190,8 @@ try
         });
     });
 
+    builder.Services.AddHttpContextAccessor();
+    
     builder.Services.AddControllers()
         .AddJsonOptions(opt =>
         {
@@ -231,7 +290,10 @@ try
 
     StripeConfiguration.ApiKey = builder.Configuration["StripeSettings:SecretKey"];
 
-    builder.Services.AddMemoryCache();
+    builder.Services.AddMemoryCache(options =>
+    {
+        options.SizeLimit = 1024; // Limite de 1024 itens no cache
+    });
 
     // 9. Swagger
     builder.Services.AddEndpointsApiExplorer();
@@ -300,6 +362,7 @@ try
     app.UseHttpsRedirection();
     app.UseStaticFiles();
     app.UseRouting();
+    app.UseRateLimiter(); // Rate limiting deve vir antes de CORS
     app.UseCors("AllowAll");
     app.UseAuthentication();
     app.UseAuthorization();

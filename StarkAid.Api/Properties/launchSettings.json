@@ -16,7 +16,9 @@
       "launchUrl": "swagger",
       "applicationUrl": "http://localhost:5000",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Firebase__CredentialsPath": "Configs/firebase-adminsdk.json",
+        "ConnectionStrings__DefaultConnection": "Server=db32296.public.databaseasp.net,1433;Database=db32296;User Id=db32296;Password=Q@n4%j7Cd6L-;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True"
       }
     },
     "https": {
@@ -26,7 +28,9 @@
       "launchUrl": "swagger",
       "applicationUrl": "https://localhost:5001;http://localhost:5000",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Firebase__CredentialsPath": "Configs/firebase-adminsdk.json",
+        "ConnectionStrings__DefaultConnection": "Server=db32296.public.databaseasp.net,1433;Database=db32296;User Id=db32296;Password=Q@n4%j7Cd6L-;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True"
       }
     },
     "IIS Express": {
@@ -34,7 +38,9 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Firebase__CredentialsPath": "Configs/firebase-adminsdk.json",
+        "ConnectionStrings__DefaultConnection": "Server=db32296.public.databaseasp.net,1433;Database=db32296;User Id=db32296;Password=Q@n4%j7Cd6L-;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True"
       }
     }
   }

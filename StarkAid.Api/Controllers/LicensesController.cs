@@ -340,6 +340,60 @@ public class LicensesController : ControllerBase
         }
     }
 
+    [HttpPost("admin/create")]
+    [Authorize(Policy = "AdministradorOnly")]
+    public async Task<IActionResult> CreateLicenseForUser([FromBody] CreateLicenseForUserRequest request)
+    {
+        try
+        {
+            var dbContext = HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+            
+            // Verificar se o usuário existe
+            var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == request.UserId);
+            if (user == null)
+            {
+                return NotFound(new { message = "Usuário não encontrado" });
+            }
+
+            // Validar maxMachines
+            if (request.MaxMachines != 2 && request.MaxMachines != 4)
+            {
+                return BadRequest(new { message = "MaxMachines deve ser 2 ou 4" });
+            }
+
+            // Definir preço baseado no número de máquinas (ou usar o preço fornecido)
+            decimal price = request.Price ?? (request.MaxMachines == 2 ? 250.00m : 454.00m);
+
+            // Criar licença ativa diretamente (sem pagamento)
+            var license = await _licenseService.CreateActiveLicenseAsync(
+                request.UserId, 
+                request.MaxMachines, 
+                price
+            );
+
+            _logger.LogInformation("Licença criada manualmente pelo admin: {LicenseId} para usuário {UserId}", license.Id, request.UserId);
+
+            return Ok(new LicenseDto
+            {
+                Id = license.Id,
+                LicenseKey = license.LicenseKey,
+                MaxMachines = license.MaxMachines,
+                Price = license.Price,
+                CreatedAt = license.CreatedAt,
+                ExpiresAt = license.ExpiresAt,
+                IsActive = license.IsActive,
+                PaymentConfirmedAt = license.PaymentConfirmedAt,
+                ActiveActivations = 0,
+                Activations = new List<LicenseActivationDto>()
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao criar licença para usuário");
+            return StatusCode(500, new { message = "Erro ao criar licença", error = ex.Message });
+        }
+    }
+
     private string GetMachineId()
     {
         // Tentar obter do header customizado

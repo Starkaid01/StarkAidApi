@@ -2455,7 +2455,52 @@ public partial class MainForm : Form
         // Posição será calculada no CreateDashboardContent
         _webView = WB; // Manter referência
 
-        await WB.EnsureCoreWebView2Async(null);
+        // Configurar diretório de dados do usuário em LocalAppData para evitar problemas de permissão
+        // quando instalado em Program Files
+        var userDataFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "StarkAid",
+            "WebView2Data"
+        );
+
+        // Criar diretório se não existir
+        if (!Directory.Exists(userDataFolder))
+        {
+            Directory.CreateDirectory(userDataFolder);
+        }
+
+        // Tentar usar runtime local se disponível (pasta WebView2Runtime ao lado do executável)
+        CoreWebView2Environment? environment = null;
+        var appDirectory = Path.GetDirectoryName(Application.ExecutablePath) ?? AppDomain.CurrentDomain.BaseDirectory;
+        var localRuntimePath = Path.Combine(appDirectory, "WebView2Runtime");
+        
+        // Verificar se existe runtime local (x64)
+        var localRuntimeExe = Path.Combine(localRuntimePath, "x64", "MicrosoftEdgeWebView2.exe");
+        if (File.Exists(localRuntimeExe))
+        {
+            var browserFolder = Path.GetDirectoryName(localRuntimeExe);
+            if (browserFolder != null)
+            {
+                // Criar ambiente com runtime local
+                environment = await CoreWebView2Environment.CreateAsync(
+                    browserExecutableFolder: browserFolder,
+                    userDataFolder: userDataFolder
+                );
+                System.Diagnostics.Debug.WriteLine($"[WebView2] Usando runtime local: {browserFolder}");
+            }
+        }
+        
+        // Se não encontrou runtime local, usar o do sistema
+        if (environment == null)
+        {
+            environment = await CoreWebView2Environment.CreateAsync(
+                userDataFolder: userDataFolder
+            );
+            System.Diagnostics.Debug.WriteLine("[WebView2] Usando runtime do sistema");
+        }
+
+        // Inicializar WebView2 com o ambiente configurado
+        await WB.EnsureCoreWebView2Async(environment);
         WB.CoreWebView2!.PermissionRequested += HandlePermissionRequested;
     }
 

@@ -21,18 +21,10 @@ android {
         applicationId = "com.starkaid.starkaidapp"
         minSdk = 26
         targetSdk = 35
-        versionCode = 54
-        versionName = "5.4"
+        versionCode = 57
+        versionName = "5.7"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
-
-
-        @Suppress("UnstableApiUsage")
-        externalNativeBuild {
-            cmake {
-                arguments += listOf("-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON")
-            }
-        }
 
         manifestPlaceholders += mutableMapOf(
             "redirectSchemeName" to "starkaid",
@@ -59,6 +51,16 @@ android {
         buildConfig = true
         compose = true
         viewBinding = true
+    }
+
+    // Configurar sourceSets explicitamente para evitar problemas de "different root"
+    sourceSets {
+        getByName("main") {
+            java.srcDirs("src/main/java")
+            res.srcDirs("src/main/res")
+            assets.srcDirs("src/main/assets")
+            manifest.srcFile("src/main/AndroidManifest.xml")
+        }
     }
 
     @Suppress("UnstableApiUsage")
@@ -94,10 +96,7 @@ android {
                 "META-INF/*.DSA",
                 "META-INF/*.RSA"
             )
-
-            // Removidas referências a libs nativas relacionadas ao Vosk
         }
-        // jniLibs removido, pois não há mais lib nativa externa
     }
 }
 

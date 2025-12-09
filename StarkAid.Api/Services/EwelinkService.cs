@@ -18,17 +18,38 @@ namespace StarkAid.Api.Services
     {
         private readonly HttpClient _http;
         private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly string _clientId;
+        private readonly string _clientSecret;
 
-        private readonly string _clientId = "qPNNDkWlhKwh4xn41bteq2qD02aiGs3D";
-        private readonly string _clientSecret = "kdG0r5OPddNB90tPKvarWyMWmpppIX9s";
-        // O redirectUri será dinâmico baseado na origem da requisição
-        // URL temporária do Cloudflare Tunnel para testes
-        private string GetRedirectUri() => "https://starkaid.runasp.net/auth/ewelink/callback.html";
+        private string GetRedirectUri()
+        {
+            var redirectUri = _configuration["Ewelink:RedirectUri"];
+            if (!string.IsNullOrEmpty(redirectUri))
+                return redirectUri;
+            
+            // Fallback: construir dinamicamente baseado no request
+            if (_httpContextAccessor.HttpContext != null)
+            {
+                var request = _httpContextAccessor.HttpContext.Request;
+                return $"{request.Scheme}://{request.Host}/auth/ewelink/callback.html";
+            }
+            
+            return "https://starkaid.runasp.net/auth/ewelink/callback.html";
+        }
 
-        public EwelinkService(HttpClient http, AppDbContext context)
+        public EwelinkService(HttpClient http, AppDbContext context, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
             _http = http;
             _context = context;
+            _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
+            
+            _clientId = _configuration["Ewelink:ClientId"] 
+                ?? throw new InvalidOperationException("Ewelink:ClientId não configurado.");
+            _clientSecret = _configuration["Ewelink:ClientSecret"] 
+                ?? throw new InvalidOperationException("Ewelink:ClientSecret não configurado.");
         }
 
         private string HmacSign(string message)

@@ -2,8 +2,6 @@ package com.starkaid.starkaidapp.data
 
 import android.content.Context
 import android.content.SharedPreferences
-
-
 import android.util.Log
 import com.starkaid.starkaidapp.models.SpotifyWebApi
 import kotlinx.coroutines.Dispatchers
@@ -238,7 +236,7 @@ class SessionManager(context: Context) {
         return prefs.getString(KEY_REFRESH_TOKEN, null)
     }
 
-    suspend fun getValidAccessToken(): String? {
+    suspend fun getValidAccessToken(context: Context): String? {
         val currentToken = getSpotifyAccessToken()
         if (currentToken != null) return currentToken
 
@@ -246,7 +244,7 @@ class SessionManager(context: Context) {
         if (refreshToken != null) {
             return try {
                 val newTokens = withContext(Dispatchers.IO) {
-                    SpotifyWebApi.refreshToken(refreshToken)
+                    SpotifyWebApi.refreshToken(refreshToken, context)
                 }
                 saveSpotifyTokens(
                     newTokens.accessToken,
@@ -299,6 +297,55 @@ class SessionManager(context: Context) {
 
     fun fetchAssistantPerson(): String? {
         return prefs.getString("PERSON_ASSISTENT", null)
+    }
+
+    // ---------- App Config ----------
+    fun saveApiBaseUrl(baseUrl: String) {
+        prefs.edit().putString("API_BASE_URL", baseUrl).apply()
+    }
+
+    fun fetchApiBaseUrl(): String? {
+        return prefs.getString("API_BASE_URL", null)
+    }
+
+    fun saveSpotifyClientId(clientId: String) {
+        prefs.edit().putString("SPOTIFY_CLIENT_ID", clientId).apply()
+    }
+
+    fun fetchSpotifyClientId(): String? {
+        return prefs.getString("SPOTIFY_CLIENT_ID", null)
+    }
+
+    fun saveSpotifyClientSecret(clientSecret: String) {
+        prefs.edit().putString("SPOTIFY_CLIENT_SECRET", clientSecret).apply()
+    }
+
+    fun fetchSpotifyClientSecret(): String? {
+        return prefs.getString("SPOTIFY_CLIENT_SECRET", null)
+    }
+
+    fun saveEwelinkClientId(clientId: String) {
+        prefs.edit().putString("EWELINK_CLIENT_ID", clientId).apply()
+    }
+
+    fun fetchEwelinkClientId(): String? {
+        return prefs.getString("EWELINK_CLIENT_ID", null)
+    }
+
+    fun saveEwelinkClientSecret(clientSecret: String) {
+        prefs.edit().putString("EWELINK_CLIENT_SECRET", clientSecret).apply()
+    }
+
+    fun fetchEwelinkClientSecret(): String? {
+        return prefs.getString("EWELINK_CLIENT_SECRET", null)
+    }
+
+    fun saveEwelinkRedirectUri(redirectUri: String) {
+        prefs.edit().putString("EWELINK_REDIRECT_URI", redirectUri).apply()
+    }
+
+    fun fetchEwelinkRedirectUri(): String? {
+        return prefs.getString("EWELINK_REDIRECT_URI", null)
     }
 
 }

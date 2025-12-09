@@ -16,6 +16,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import com.starkaid.starkaidapp.data.SessionManager
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
@@ -25,14 +26,21 @@ class SpotifyService(private val context: Context) {
 
     private val prefs: SharedPreferences =
         context.getSharedPreferences("starkaid_prefs", Context.MODE_PRIVATE)
+    
+    private val sessionManager = SessionManager.getInstance(context)
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    private val clientId = "b777ae2408054cebafda44c36a80be31"
-    private val clientSecret = "68ecca5ce10743919b003e732c999842"
+    // Usar credenciais do SessionManager ou valores padrão como fallback
+    private val clientId: String
+        get() = sessionManager.fetchSpotifyClientId() ?: "b777ae2408054cebafda44c36a80be31"
+    
+    private val clientSecret: String
+        get() = sessionManager.fetchSpotifyClientSecret() ?: "68ecca5ce10743919b003e732c999842"
+    
     private val tokenUrl = "https://accounts.spotify.com/api/token"
     private val TAG = "SpotifyService"
 

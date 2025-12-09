@@ -11,5 +11,5 @@ interface AppConfigDao {
     suspend fun getConfig(key: String): String?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun saveConfig(config: AppConfig)
+    suspend fun saveConfig(config: AppConfigEntity)
 }

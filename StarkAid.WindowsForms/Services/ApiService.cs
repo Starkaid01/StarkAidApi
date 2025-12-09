@@ -10,8 +10,10 @@ namespace StarkAid.WindowsForms.Services;
 public class ApiService
 {
     private readonly HttpClient _httpClient;
-    private readonly string _baseUrl = "https://starkaid.runasp.net/api/";
+    private string _baseUrl = "https://starkaid.runasp.net/api/";
     private string? _token;
+    private bool _configLoaded = false;
+    private readonly object _configLock = new object();
 
     public ApiService()
     {
@@ -19,6 +21,53 @@ public class ApiService
         // Não definir BaseAddress para ter controle total sobre as URLs
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         _httpClient.Timeout = TimeSpan.FromSeconds(30);
+        
+        // Carregar configuração em background (não bloqueia inicialização)
+        _ = LoadConfigAsync();
+    }
+
+    private async Task LoadConfigAsync()
+    {
+        try
+        {
+            // URL padrão apenas para buscar configuração inicial
+            var configUrl = "https://starkaid.runasp.net/api/Config/app-config";
+            var response = await _httpClient.GetAsync(configUrl);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var config = JsonConvert.DeserializeObject<AppConfig>(content);
+                
+                if (config != null && !string.IsNullOrEmpty(config.ApiBaseUrl))
+                {
+                    lock (_configLock)
+                    {
+                        // Atualizar base URL com a retornada pela API
+                        var newBaseUrl = config.ApiBaseUrl.TrimEnd('/');
+                        if (!newBaseUrl.EndsWith("/api"))
+                        {
+                            newBaseUrl += "/api";
+                        }
+                        _baseUrl = newBaseUrl + "/";
+                        _configLoaded = true;
+                        System.Diagnostics.Debug.WriteLine($"[ApiService] Base URL atualizada para: {_baseUrl}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ApiService] Erro ao carregar configuração: {ex.Message}. Usando URL padrão.");
+        }
+    }
+
+    public async Task EnsureConfigLoadedAsync()
+    {
+        if (!_configLoaded)
+        {
+            await LoadConfigAsync();
+        }
     }
 
     public void SetToken(string token)
