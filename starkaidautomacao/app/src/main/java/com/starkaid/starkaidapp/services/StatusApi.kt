@@ -6,7 +6,7 @@ import retrofit2.http.Header
 import retrofit2.http.Path
 
 interface StatusApi {
-    @GET("api/Status/{deviceId}/status")
+    @GET("api/v1/Status/{deviceId}/status")
     suspend fun getStatus(
         @Path("deviceId") deviceId: String,
         @Header("Authorization") authHeader: String,

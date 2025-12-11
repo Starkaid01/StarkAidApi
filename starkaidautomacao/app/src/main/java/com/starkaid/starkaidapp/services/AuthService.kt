@@ -44,16 +44,16 @@ data class RegistrarTokenRequest(
 
 // Retrofit interface
 interface AuthApi {
-    @POST("api/notificacoes/registrar-token")
+    @POST("api/v1/Notificacoes/registrar-token")
     suspend fun registrarToken(@Body request: RegistrarTokenRequest): Response<Void>
 
-    @POST("api/Auth/login")
+    @POST("api/v1/Auth/login")
     suspend fun login(@Body request: AuthRequest): Response<AuthResponse>
 
-//    @POST("api/auth/refresh-token")
+//    @POST("api/v1/Auth/refresh-token")
 //    suspend fun refreshToken(@Body request: RefreshTokenRequest): Response<AuthResponse>
 
-    @POST("api/Users/request-password-reset")
+    @POST("api/v1/Users/request-password-reset")
     suspend fun requestPasswordReset(@Body request: Map<String, String>): Response<String>
 }
 

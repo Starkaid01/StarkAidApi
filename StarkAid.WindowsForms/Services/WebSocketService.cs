@@ -3,13 +3,14 @@ using Newtonsoft.Json;
 using System.Text;
 using System.Text.Json;
 using StarkAid.WindowsForms.Models;
+using StarkAid.WindowsForms.Config;
 
 namespace StarkAid.WindowsForms.Services;
 
 public class WebSocketService
 {
     private HubConnection? _connection;
-    private readonly string _baseUrl = "https://starkaid.runasp.net";
+    private readonly string _baseUrl = ApiConfig.WebBaseUrl;
     private string? _token;
     private readonly HashSet<string> _processedMessages = new HashSet<string>();
     private readonly object _processLock = new object();

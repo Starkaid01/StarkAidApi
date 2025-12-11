@@ -53,6 +53,7 @@ object ApiClient {
                     response
                 }
                 .addInterceptor(RefreshTokenInterceptor(context))
+                .addInterceptor(RateLimitInterceptor())
                 .protocols(listOf(Protocol.HTTP_1_1))
                 .build()
 

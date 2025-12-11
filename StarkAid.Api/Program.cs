@@ -4,6 +4,8 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -12,23 +14,24 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
 using StarkAid.Api.Data;
-using StarkAid.Api.DTOs.SuperIA;
+using StarkAid.Api.DTOs.V1.SuperIA;
 using StarkAid.Api.EntityConfigurations;
 using StarkAid.Api.Middlewares;
 using StarkAid.Api.Options;
-using StarkAid.Api.Services;
-using StarkAid.Api.Services.Assinatura;
-using StarkAid.Api.Services.Auth;
-using StarkAid.Api.Services.Devices;
-using StarkAid.Api.Services.SocialCommand;
-using StarkAid.Api.Services.SuperIA;
-using StarkAid.Api.Services.Email;
-using StarkAid.Api.Services.Firebase;
-using StarkAid.Api.Services.Disparo;
-using StarkAid.Api.Services.DispositivoEsp;
-using StarkAid.Api.Services.License;
-using StarkAid.Api.Services.Weather;
-using StarkAid.Api.Services.Suporte;
+using StarkAid.Api.Services.V1;
+using StarkAid.Api.Services.V1.Assinatura;
+using StarkAid.Api.Services.V1.Auth;
+using StarkAid.Api.Services.V1.Devices;
+using StarkAid.Api.Services.V1.SocialCommand;
+using StarkAid.Api.Services.V1.SuperIA;
+using StarkAid.Api.Services.V1.Email;
+using StarkAid.Api.Services.V1.Firebase;
+using StarkAid.Api.Services.V1.Disparo;
+using StarkAid.Api.Services.V1.DispositivoEsp;
+using StarkAid.Api.Services.V1.License;
+using StarkAid.Api.Services.V1.Weather;
+using StarkAid.Api.Services.V1.Suporte;
+using StarkAid.Api.Services.V1.Payment.Stripe;
 using StarkAid.Api.Hubs;
 using Stripe;
 using System.Diagnostics;
@@ -118,32 +121,110 @@ try
                 ValidAudience = builder.Configuration["Jwt:Audience"]
             };
 
-            // JWT via query param para WebSocket
+            // JWT via query param para WebSocket e via header Authorization para SignalR
             options.Events = new JwtBearerEvents
             {
                 OnMessageReceived = context =>
                 {
+                    // Para WebSockets (query string)
                     var accessToken = context.Request.Query["access_token"];
                     if (!string.IsNullOrEmpty(accessToken) && context.HttpContext.WebSockets.IsWebSocketRequest)
+                    {
                         context.Token = accessToken;
+                        return Task.CompletedTask;
+                    }
+                    
+                    // Para SignalR (header Authorization já é tratado automaticamente pelo JwtBearer)
+                    // Mas também podemos aceitar via query string para SignalR
+                    if (string.IsNullOrEmpty(context.Token))
+                    {
+                        var signalRToken = context.Request.Query["access_token"];
+                        if (!string.IsNullOrEmpty(signalRToken))
+                        {
+                            context.Token = signalRToken;
+                        }
+                    }
+                    
                     return Task.CompletedTask;
                 }
             };
         });
 
-    // 5. Rate Limiting
+    // 5. Rate Limiting Híbrido (Por Usuário + Por IP)
     builder.Services.AddRateLimiter(options =>
     {
-        // Rate limiting global padrão
+        // Rate limiting secundário por IP (proteção DDoS/Brute Force) - 200 req/min
+        // Aplicado apenas como hedge contra ataques externos
         options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
             RateLimitPartition.GetFixedWindowLimiter(
                 partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 factory: partition => new FixedWindowRateLimiterOptions
                 {
                     AutoReplenishment = true,
-                    PermitLimit = 100,
+                    PermitLimit = 200,
                     Window = TimeSpan.FromMinutes(1)
                 }));
+
+        // Rate limiting primário por usuário - 100 req/min gerais
+        // Aplicado quando o usuário está autenticado
+        options.AddPolicy<string>("UserRateLimit", context =>
+        {
+            var userId = context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var partitionKey = !string.IsNullOrEmpty(userId) 
+                ? $"user_{userId}" 
+                : context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            
+            return RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: partitionKey,
+                factory: partition => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true,
+                    PermitLimit = 100,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 10
+                });
+        });
+
+        // Rate limiting específico para IA - 10 req/min por usuário autenticado
+        options.AddPolicy<string>("IaEndpoint", context =>
+        {
+            var userId = context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var partitionKey = !string.IsNullOrEmpty(userId) 
+                ? $"ia_user_{userId}" 
+                : context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            
+            return RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: partitionKey,
+                factory: partition => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true,
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 5
+                });
+        });
+
+        // Rate limiting específico para controle IoT (Commands/publish) - 5 req/min por usuário
+        options.AddPolicy<string>("IoTCommandLimit", context =>
+        {
+            var userId = context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var partitionKey = !string.IsNullOrEmpty(userId) 
+                ? $"iot_user_{userId}" 
+                : context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            
+            return RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: partitionKey,
+                factory: partition => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true,
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 3
+                });
+        });
 
         // Rate limiting específico para endpoint de configuração (90 req/min)
         options.AddFixedWindowLimiter("ConfigEndpoint", options =>
@@ -192,6 +273,20 @@ try
 
     builder.Services.AddHttpContextAccessor();
     
+    // API Versioning
+    builder.Services.AddApiVersioning(options =>
+    {
+        options.DefaultApiVersion = new ApiVersion(1, 0);
+        options.AssumeDefaultVersionWhenUnspecified = true;
+        options.ReportApiVersions = true;
+    });
+
+    builder.Services.AddVersionedApiExplorer(options =>
+    {
+        options.GroupNameFormat = "'v'VVV";
+        options.SubstituteApiVersionInUrl = true;
+    });
+
     builder.Services.AddControllers()
         .AddJsonOptions(opt =>
         {
@@ -209,8 +304,8 @@ try
     builder.Services.AddScoped<DeviceService>();
     builder.Services.AddScoped<ComandoSocialService>();
     builder.Services.AddScoped<AgendamentoService>();
-    builder.Services.AddScoped<IEmailService, EmailService>();
-    builder.Services.AddScoped<StarkAid.Api.Services.Notifications.NotificationService>();
+    builder.Services.AddScoped<StarkAid.Api.Services.V1.Email.IEmailService, StarkAid.Api.Services.V1.Email.EmailService>();
+    builder.Services.AddScoped<StarkAid.Api.Services.V1.Notifications.NotificationService>();
     builder.Services.AddScoped<DisparoService>();
     builder.Services.AddScoped<FcmNotificationService>();
     builder.Services.AddScoped<FirebaseTokenService>();
@@ -252,7 +347,7 @@ try
 
 
     builder.Services.Configure<IaApiKeys>(builder.Configuration.GetSection("IaApiKeys"));
-    builder.Services.AddSingleton<IaService>();
+    builder.Services.AddSingleton<StarkAid.Api.Services.V1.SuperIA.IaService>();
 
 
     builder.Services.AddSingleton<AmazonTranscribeStreamingClient>(sp =>
@@ -295,10 +390,22 @@ try
         options.SizeLimit = 1024; // Limite de 1024 itens no cache
     });
 
-    // 9. Swagger
+    // 9. Swagger com suporte a versionamento
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(opt =>
     {
+        var provider = builder.Services.BuildServiceProvider().GetRequiredService<IApiVersionDescriptionProvider>();
+        
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+            opt.SwaggerDoc(description.GroupName, new OpenApiInfo
+            {
+                Title = "StarkAid API",
+                Version = description.ApiVersion.ToString(),
+                Description = $"StarkAid API {description.ApiVersion}"
+            });
+        }
+
         opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
             Name = "Authorization",
@@ -346,15 +453,15 @@ try
 
     builder.Services.AddScoped<IAgendamentoService, AgendamentoService>();
     builder.Services.AddScoped<IDeviceService, DeviceService>();
-    builder.Services.AddScoped<DispositivoEspService>();
+    builder.Services.AddScoped<StarkAid.Api.Services.V1.DispositivoEsp.DispositivoEspService>();
     builder.Services.AddScoped<LicenseService>();
     builder.Services.AddHttpClient<WeatherService>();
     builder.Services.AddScoped<IWeatherService, WeatherService>();
     
     // Serviços de Suporte
-    builder.Services.AddSingleton<ISupportQueueService, SupportQueueService>();
-    builder.Services.AddScoped<ISupportIaService, SupportIaService>();
-    builder.Services.AddScoped<ISuporteChatService, SuporteChatService>();
+    builder.Services.AddSingleton<StarkAid.Api.Services.V1.Suporte.ISupportQueueService, StarkAid.Api.Services.V1.Suporte.SupportQueueService>();
+    builder.Services.AddScoped<StarkAid.Api.Services.V1.Suporte.ISupportIaService, StarkAid.Api.Services.V1.Suporte.SupportIaService>();
+    builder.Services.AddScoped<StarkAid.Api.Services.V1.Suporte.ISuporteChatService, StarkAid.Api.Services.V1.Suporte.SuporteChatService>();
 
     var app = builder.Build();
 
@@ -386,7 +493,15 @@ try
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
-        app.UseSwaggerUI();
+        app.UseSwaggerUI(options =>
+        {
+            var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+            foreach (var description in provider.ApiVersionDescriptions)
+            {
+                options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", 
+                    $"StarkAid API {description.GroupName.ToUpperInvariant()}");
+            }
+        });
     }
 
     // Dispose MQTT on shutdown

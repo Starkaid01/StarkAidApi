@@ -6,12 +6,14 @@ using StarkAid.WindowsForms.Database;
 using StarkAid.WindowsForms.Models;
 using StarkAid.WindowsForms.Services;
 using StarkAid.WindowsForms.Utils;
+using StarkAid.WindowsForms.Config;
 using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Speech.Synthesis;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace StarkAid.WindowsForms.Forms;
@@ -77,6 +79,8 @@ public partial class MainForm : Form
     private System.Windows.Forms.Timer? _verificarAssistenteDormindoTimer;
     private int _contadorAlarmesDisparados = 0;
     private Label? _lblAssistenteDormindo;
+    private readonly HashSet<string> _processedCommands = new HashSet<string>();
+    private readonly object _commandLock = new object();
 
     public MainForm(
         ApiService apiService,
@@ -431,6 +435,9 @@ public partial class MainForm : Form
         var btnConfigAlarmes = CreateMenuButton("⏰ Configurar Alarmes", 720);
         btnConfigAlarmes.Click += (s, e) => { SoundPlayer.PlayClick(); LoadConfigAlarmes(); };
 
+        var btnDocumentacao = CreateMenuButton("📖 Documentação", 770);
+        btnDocumentacao.Click += (s, e) => { SoundPlayer.PlayClick(); LoadDocumentacao(); };
+
         // Botões _btnToggleIA, _btnAtualizar e btnSair agora são criados no CreateDashboardContent
 
         // Adicionar controles ao painel interno com scroll (sem os botões que foram movidos para o dashboard)
@@ -449,6 +456,7 @@ public partial class MainForm : Form
         pnlSidebarContent.Controls.Add(btnConfigAssistente);
         pnlSidebarContent.Controls.Add(btnConfigAprendizado);
         pnlSidebarContent.Controls.Add(btnConfigAlarmes);
+        pnlSidebarContent.Controls.Add(btnDocumentacao);
         
         // Adicionar o painel interno ao sidebar principal
         _pnlSidebar.Controls.Add(pnlSidebarContent);
@@ -1720,6 +1728,17 @@ public partial class MainForm : Form
             return;
         }
         
+        // Se está tentando ativar (não desativar), verificar StarkCoins
+        if (!_iaEnabled)
+        {
+            // Verificar se tem StarkCoins suficientes (mínimo 0.1)
+            if (_currentUser.StarkCoins < 0.1m)
+            {
+                _speechService.Speak("Você não tem starkcoins suficiente");
+                return;
+            }
+        }
+        
         _iaEnabled = !_iaEnabled;
         _commandProcessor.IaEnabled = _iaEnabled;
 
@@ -1967,9 +1986,81 @@ public partial class MainForm : Form
         form.ShowDialog();
     }
 
+    private void LoadDocumentacao()
+    {
+        try
+        {
+            // Obter o caminho do arquivo HTML de documentação
+            var appDirectory = Path.GetDirectoryName(Application.ExecutablePath) ?? AppDomain.CurrentDomain.BaseDirectory;
+            var documentacaoPath = Path.Combine(appDirectory, "documentacao.html");
+
+            // Verificar se o arquivo existe
+            if (!File.Exists(documentacaoPath))
+            {
+                MessageBox.Show(
+                    "Arquivo de documentação não encontrado.\n\n" +
+                    $"Procurando em: {documentacaoPath}",
+                    "Documentação não encontrada",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Abrir o arquivo HTML no navegador padrão
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = documentacaoPath,
+                UseShellExecute = true
+            };
+
+            Process.Start(processInfo);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Erro ao abrir documentação:\n\n{ex.Message}",
+                "Erro",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+    }
+
     private void WebSocketService_ComandoDispositivoReceived(object? sender, (string nome, string ip, int porta, string comando) e)
     {
         System.Diagnostics.Debug.WriteLine($"WebSocketService_ComandoDispositivoReceived: {e.nome} - {e.ip}:{e.porta} - {e.comando}");
+        
+        // Criar chave única para o comando (IP:Porta:Comando)
+        var commandKey = $"{e.ip}:{e.porta}:{e.comando}";
+        
+        // Verificar se já processamos este comando recentemente (dentro de 2 segundos)
+        lock (_commandLock)
+        {
+            // Limpar comandos antigos se o HashSet ficar muito grande
+            if (_processedCommands.Count > 100)
+            {
+                _processedCommands.Clear();
+            }
+            
+            // Se já processamos este comando recentemente, ignorar
+            if (_processedCommands.Contains(commandKey))
+            {
+                System.Diagnostics.Debug.WriteLine($"[UDP] ⚠️ Comando duplicado ignorado: {commandKey}");
+                return;
+            }
+            
+            // Adicionar comando atual
+            _processedCommands.Add(commandKey);
+            
+            // Remover após 2 segundos
+            _ = Task.Delay(2000).ContinueWith(_ =>
+            {
+                lock (_commandLock)
+                {
+                    _processedCommands.Remove(commandKey);
+                }
+            });
+        }
+        
         this.Invoke((MethodInvoker)delegate
         {
             System.Diagnostics.Debug.WriteLine($"Enviando comando UDP via handler: {e.ip}:{e.porta} - {e.comando}");
@@ -2072,6 +2163,8 @@ public partial class MainForm : Form
     {
         try
         {
+            // Adicionar delay visual
+            await Task.Delay(1000);
             // Limpar configurações temporárias de cache
             _database.SaveSetting("CacheCleared", DateTime.UtcNow.ToString());
             
@@ -2179,6 +2272,9 @@ public partial class MainForm : Form
     {
         try
         {
+            // Adicionar delay visual para simular processamento
+            await Task.Delay(1500);
+            
             // Forçar atualização de dispositivos
             // Você pode adicionar outras atualizações aqui
             
@@ -2245,15 +2341,24 @@ public partial class MainForm : Form
     {
         try
         {
-            var token = _database.GetSetting("AuthToken");
+            var token = _apiService.GetAuthToken();
             if (string.IsNullOrEmpty(token))
             {
                 System.Diagnostics.Debug.WriteLine("Token não encontrado para enviar resposta de suporte");
-                return;
+                // Tentar obter do database como fallback
+                token = _database.GetSetting("AuthToken");
+                if (string.IsNullOrEmpty(token))
+                {
+                    System.Diagnostics.Debug.WriteLine("Token também não encontrado no database");
+                    return;
+                }
             }
 
             // Conectar ao hub de suporte e enviar resposta
             var baseUrl = _apiService.GetBaseUrl();
+            System.Diagnostics.Debug.WriteLine($"[Suporte] Conectando ao hub: {baseUrl}/hubs/support-chat?origem=software");
+            System.Diagnostics.Debug.WriteLine($"[Suporte] Token presente: {!string.IsNullOrEmpty(token)}");
+            
             await using var hubConnection = new Microsoft.AspNetCore.SignalR.Client.HubConnectionBuilder()
                 .WithUrl($"{baseUrl}/hubs/support-chat?origem=software", options =>
                 {
@@ -2262,12 +2367,15 @@ public partial class MainForm : Form
                 .Build();
 
             await hubConnection.StartAsync();
+            System.Diagnostics.Debug.WriteLine($"[Suporte] Hub conectado, enviando resposta: {acao}, sucesso: {sucesso}");
             await hubConnection.InvokeAsync("AcaoExecutada", acao, sucesso, mensagem);
+            System.Diagnostics.Debug.WriteLine($"[Suporte] Resposta enviada com sucesso");
             await hubConnection.StopAsync();
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Erro ao enviar resposta de ação de suporte: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
         }
     }
 
@@ -2275,31 +2383,47 @@ public partial class MainForm : Form
     {
         try
         {
-            System.Diagnostics.Debug.WriteLine($"[UDP] Resposta recebida na porta 1495: {resposta}");
+            System.Diagnostics.Debug.WriteLine($"[UDP] 🎯 Processando resposta UDP recebida: {resposta}");
             
             // IMPORTANTE: Respostas UDP devem manter acentuação e pontuação originais para fala natural
             // NÃO aplicar NormalizeText nas respostas que serão faladas
             
-            // Falar a resposta
+            if (string.IsNullOrWhiteSpace(resposta))
+            {
+                System.Diagnostics.Debug.WriteLine($"[UDP] ⚠️ Resposta UDP vazia, ignorando...");
+                return;
+            }
+            
+            // Falar a resposta REAL do dispositivo
             if (this.InvokeRequired)
             {
                 this.Invoke((MethodInvoker)delegate
                 {
+                    System.Diagnostics.Debug.WriteLine($"[UDP] 🔊 Falando resposta do dispositivo: {resposta}");
                     _speechService.Speak(resposta);
                 });
             }
             else
             {
+                System.Diagnostics.Debug.WriteLine($"[UDP] 🔊 Falando resposta do dispositivo: {resposta}");
                 _speechService.Speak(resposta);
             }
             
-            // Enviar resposta via WebSocket para o app
-            await _webSocketService.SendRespostaAsync("", "", 0, resposta);
-            System.Diagnostics.Debug.WriteLine($"[UDP] Resposta enviada via WebSocket para o app: {resposta}");
+            // Enviar resposta via WebSocket para o app com prefixo toApp:
+            if (_webSocketService != null && _webSocketService.IsConnected)
+            {
+                await _webSocketService.SendRespostaAsync("", "", 0, resposta);
+                System.Diagnostics.Debug.WriteLine($"[UDP] 📤 Resposta enviada via WebSocket (toApp:) para o app: {resposta}");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"[UDP] ⚠️ WebSocket não conectado, não foi possível enviar resposta para o app");
+            }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Erro ao processar resposta UDP: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[UDP] ❌ Erro ao processar resposta UDP: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[UDP] Stack trace: {ex.StackTrace}");
             LocalDatabase.LogError(_database, ex, "ERR_007", "Erro ao processar resposta UDP recebida.", null, resposta, null);
         }
     }
@@ -2533,7 +2657,7 @@ public partial class MainForm : Form
             // Navegar apenas se ainda não navegou ou se não está pronto
             if (!_webViewReady || string.IsNullOrEmpty(WB.CoreWebView2.Source) || !WB.CoreWebView2.Source.Contains("recognizer.html"))
             {
-                WB.CoreWebView2.Navigate("https://starkaid.runasp.net/recognizer.html");
+                WB.CoreWebView2.Navigate($"{ApiConfig.WebBaseUrl}/recognizer.html");
             }
             
             // Registrar handler apenas uma vez para evitar processamento duplicado
@@ -2721,7 +2845,9 @@ public partial class MainForm : Form
             _ = SyncDataAsync(); // Executar em background sem bloquear
 
             // Inicializar outros serviços
+            System.Diagnostics.Debug.WriteLine("[MainForm] Iniciando listener UDP...");
             _udpService.StartListening();
+            System.Diagnostics.Debug.WriteLine($"[MainForm] Listener UDP iniciado. Status: {(_udpService.IsListening ? "Ativo" : "Inativo")}");
             
             // Verificar se está em processo de resolução de suporte
             _ = VerificarResolvendoSuporteAsync();

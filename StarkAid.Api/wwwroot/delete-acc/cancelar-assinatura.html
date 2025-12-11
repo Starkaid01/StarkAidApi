@@ -215,7 +215,7 @@
 
             try {
                 // Buscar assinaturas do usuário
-                const response = await fetch('https://starkaid.vbweb.com.b/api/assinaturas/status', {
+                const response = await fetch('https://starkaid.vbweb.com.b/api/v1/assinaturas/status', {
                     method: 'GET',
                     headers: {
                         'Authorization': 'Bearer ' + localStorage.getItem('authToken'),
@@ -280,7 +280,7 @@
                     cancelAllBtn.textContent = 'Cancelando...';
 
                     try {
-                        const response = await fetch('https://starkaid.vbweb.com.b/api/assinaturas/cancelar', {
+                        const response = await fetch('https://starkaid.vbweb.com.b/api/v1/assinaturas/cancelar', {
                             method: 'POST',
                             headers: {
                                 'Authorization': 'Bearer ' + localStorage.getItem('authToken'),

@@ -5,7 +5,7 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 
 interface ProtectedApi {
-    @GET("api/Protected/secreto")
+    @GET("api/v1/Protected/secreto")
     suspend fun acessarSecreto(
         @Header("Authorization") authHeader: String,
         @Header("Api-Key") apiKey: String

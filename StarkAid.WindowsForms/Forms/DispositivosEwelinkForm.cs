@@ -1,6 +1,7 @@
 using StarkAid.WindowsForms.Models;
 using StarkAid.WindowsForms.Services;
 using StarkAid.WindowsForms.Utils;
+using StarkAid.WindowsForms.Config;
 using Newtonsoft.Json.Linq;
 using System.Linq;
 
@@ -26,7 +27,14 @@ public partial class DispositivosEwelinkForm : Form
         _webSocketService = webSocketService;
         _speechService = speechService;
         InitializeComponent();
+        this.Load += DispositivosEwelinkForm_Load;
         _ = CheckEwelinkStatus(); // Fire and forget no construtor
+    }
+
+    private async void DispositivosEwelinkForm_Load(object? sender, EventArgs e)
+    {
+        // Atualizar sessão com nome do form
+        _ = _apiService.SetUserOnlineAsync("DispositivosEwelinkForm");
     }
 
     private void InitializeComponent()
@@ -250,7 +258,7 @@ public partial class DispositivosEwelinkForm : Form
 
         var linkLabel = new LinkLabel
         {
-            Text = "https://starkaid.runasp.net/automacao.html",
+            Text = $"{ApiConfig.WebBaseUrl}/automacao.html",
             Font = new Font("Segoe UI", 10, FontStyle.Underline),
             ForeColor = Color.Cyan,
             AutoSize = true,
@@ -261,7 +269,7 @@ public partial class DispositivosEwelinkForm : Form
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "https://starkaid.runasp.net/automacao.html",
+                FileName = $"{ApiConfig.WebBaseUrl}/automacao.html",
                 UseShellExecute = true
             });
         };
@@ -390,6 +398,10 @@ public partial class DispositivosEwelinkForm : Form
                     await _webSocketService.SendRespostaAsync(device.Name ?? "", "", 0, resposta);
                     System.Diagnostics.Debug.WriteLine($"[EWELINK] Resposta enviada via WebSocket (botão): {resposta}");
                 }
+                
+                // Atualizar atividade do usuário
+                var comandoTexto = ligar ? $"ligar {device.Name}" : $"desligar {device.Name}";
+                _ = _apiService.UpdateUserActivityAsync(ultimoComandoEwelink: comandoTexto);
                 
                 // Atualizar estado do dispositivo na lista
                 await LoadDispositivos();

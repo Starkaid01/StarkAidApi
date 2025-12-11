@@ -166,7 +166,8 @@ public class CommandProcessor
             }
         }
         
-        // Comandos para parar de falar
+        // IMPORTANTE: Comandos para parar de falar devem ser processados PRIMEIRO,
+        // mesmo quando TTS está falando, para permitir interrupção
         if (normalized.Contains("cala a boca") || normalized.Contains("pare de falar") || 
             normalized.Contains("para de falar") || normalized.Contains("parar de falar"))
         {
@@ -176,9 +177,11 @@ public class CommandProcessor
             return;
         }
         
-        // Se estiver falando, não processar outros comandos
+        // Se estiver falando, não processar outros comandos (exceto os de parar acima)
+        // Isso evita que o TTS processe sua própria fala como comando
         if (_speechService.IsSpeaking)
         {
+            System.Diagnostics.Debug.WriteLine($"[CommandProcessor] Comando ignorado - TTS está falando: '{comando}'");
             return;
         }
         
@@ -636,39 +639,54 @@ public class CommandProcessor
                 }
                 else
                 {
-                    try
+                    // Verificar se contém "Erro" antes de parsear (verificação rápida)
+                    if (cmd.RespostasAleatorias.Contains("Erro", StringComparison.OrdinalIgnoreCase) ||
+                        cmd.RespostasAleatorias.Contains("erro", StringComparison.OrdinalIgnoreCase))
                     {
-                        // Parsear JSON de respostas aleatórias
-                        var json = JObject.Parse(cmd.RespostasAleatorias);
-                        var alternativas = json["alternativas"]?.ToObject<List<string>>() ?? new List<string>();
-                        
-                        // Verificar se a primeira alternativa começa com "Erro"
-                        bool isErro = alternativas.Count > 0 && 
-                                     alternativas[0].TrimStart().StartsWith("Erro", StringComparison.OrdinalIgnoreCase);
-                        
-                        if (isErro)
+                        // Se contém "Erro", usar apenas a resposta padrão
+                        respostaFinal = cmd.Resposta;
+                    }
+                    else
+                    {
+                        try
                         {
-                            // Se for erro, usar apenas a resposta padrão
+                            // Parsear JSON de respostas aleatórias
+                            var json = JObject.Parse(cmd.RespostasAleatorias);
+                            var alternativas = json["alternativas"]?.ToObject<List<string>>() ?? new List<string>();
+                            
+                            // Verificar se alguma alternativa contém "Erro" (verificação adicional)
+                            bool isErro = alternativas.Any(a => 
+                                !string.IsNullOrEmpty(a) && 
+                                a.TrimStart().StartsWith("Erro", StringComparison.OrdinalIgnoreCase));
+                            
+                            if (isErro || alternativas.Count == 0)
+                            {
+                                // Se for erro ou lista vazia, usar apenas a resposta padrão
+                                respostaFinal = cmd.Resposta;
+                            }
+                            else
+                            {
+                                // Adicionar a resposta padrão à lista
+                                alternativas.Add(cmd.Resposta);
+                                
+                                // Selecionar uma resposta aleatória
+                                var random = new Random();
+                                respostaFinal = alternativas[random.Next(alternativas.Count)];
+                            }
+                        }
+                        catch
+                        {
+                            // Se houver erro ao parsear, usar apenas a resposta padrão
                             respostaFinal = cmd.Resposta;
                         }
-                        else
-                        {
-                            // Adicionar a resposta padrão à lista
-                            alternativas.Add(cmd.Resposta);
-                            
-                            // Selecionar uma resposta aleatória
-                            var random = new Random();
-                            respostaFinal = alternativas[random.Next(alternativas.Count)];
-                        }
-                    }
-                    catch
-                    {
-                        // Se houver erro ao parsear, usar apenas a resposta padrão
-                        respostaFinal = cmd.Resposta;
                     }
                 }
                 
                 _speechService.Speak(respostaFinal);
+                
+                // Atualizar atividade do usuário
+                _ = _apiService.UpdateUserActivityAsync(ultimoComandoSocial: cmd.Comando, ultimaRespostaSocial: respostaFinal);
+                
                 return true;
             }
         }
@@ -762,39 +780,16 @@ public class CommandProcessor
                 {
                     if (System.Net.IPAddress.TryParse(parts[0], out _) && int.TryParse(parts[1], out var porta))
                     {
+                        System.Diagnostics.Debug.WriteLine($"[ESP] Enviando comando UDP para {parts[0]}:{porta} - Comando: {parts[2]}");
                         _udpService.SendCommand(parts[0], porta, parts[2]);
                         
-                        // Resposta aleatória
-                        string? nomeDispositivo = null;
-                        if (dispositivoEncontrado != null)
-                        {
-                            nomeDispositivo = dispositivoEncontrado.Nome;
-                            var respostasAleatorias = new[]
-                            {
-                                $"{nomeDispositivo} acionado, posso ajudar em algo mais?",
-                                $"{nomeDispositivo} acionado, mais alguma coisa?",
-                                $"{nomeDispositivo} acionado, está tudo certo!",
-                                $"{nomeDispositivo} acionado, precisa de mais alguma coisa?",
-                                $"{nomeDispositivo} acionado, pronto!"
-                            };
-                            var random = new Random();
-                            var resposta = respostasAleatorias[random.Next(respostasAleatorias.Length)];
-                            _speechService.Speak(resposta);
-                        }
-                        else
-                        {
-                            var respostasAleatorias = new[]
-                            {
-                                "Comando enviado, posso ajudar em algo mais?",
-                                "Comando enviado, mais alguma coisa?",
-                                "Comando enviado, está tudo certo!",
-                                "Comando enviado, precisa de mais alguma coisa?",
-                                "Comando enviado, pronto!"
-                            };
-                            var random = new Random();
-                            var resposta = respostasAleatorias[random.Next(respostasAleatorias.Length)];
-                            _speechService.Speak(resposta);
-                        }
+                        // NÃO falar resposta genérica aqui - aguardar resposta UDP real do dispositivo
+                        // A resposta será falada pelo handler UdpService_ResponseReceived quando chegar
+                        System.Diagnostics.Debug.WriteLine($"[ESP] Comando UDP enviado, aguardando resposta do dispositivo...");
+                        
+                        // Atualizar atividade do usuário
+                        _ = _apiService.UpdateUserActivityAsync(ultimoComandoEsp: comando);
+                        
                         return true;
                     }
                 }
@@ -997,12 +992,25 @@ public class CommandProcessor
                 
                 // Enviar resposta via WebSocket com prefixo toApp:
                 await _webSocketService.SendRespostaAsync(dispositivoEncontrado.Name ?? "", "", 0, resposta);
+                
+                // Atualizar atividade do usuário
+                _ = _apiService.UpdateUserActivityAsync(ultimoComandoEwelink: comando);
+                
                 return true;
             }
             else
             {
                 var resposta = "Erro ao controlar dispositivo Ewelink";
                 _speechService.Speak(resposta);
+                
+                // Registrar log de falha
+                _ = _apiService.AddLogFalhaSoftAsync(
+                    tipoFalha: "DispositivoNaoAcionado",
+                    descricao: "Falha ao controlar dispositivo Ewelink",
+                    comandoTentado: comando,
+                    dispositivoNome: dispositivoEncontrado?.Name,
+                    erroDetalhado: "Dispositivo não respondeu ao comando"
+                );
                 
                 // Enviar resposta de erro via WebSocket com prefixo toApp:
                 await _webSocketService.SendRespostaAsync(dispositivoEncontrado.Name ?? "", "", 0, resposta);
@@ -1012,6 +1020,15 @@ public class CommandProcessor
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Erro ao processar comando Ewelink: {ex.Message}");
+            
+            // Registrar log de falha
+            _ = _apiService.AddLogFalhaSoftAsync(
+                tipoFalha: "ErroComandoEwelink",
+                descricao: "Erro ao processar comando de dispositivo Ewelink",
+                comandoTentado: comando,
+                erroDetalhado: ex.Message
+            );
+            
             LocalDatabase.LogError(_database, ex, "ERR_003", "ao processar comando de dispositivo Ewelink", 
                 null, null, null);
             return false;
@@ -1140,17 +1157,40 @@ public class CommandProcessor
                 var random = new Random();
                 var resposta = respostasAleatorias[random.Next(respostasAleatorias.Length)];
                 _speechService.Speak(resposta);
+                
+                // Atualizar atividade do usuário
+                _ = _apiService.UpdateUserActivityAsync(ultimoComandoStarkSwitch: comando);
+                
                 return true;
             }
             else
             {
                 _speechService.Speak("Erro ao controlar dispositivo StarkSwitch");
+                
+                // Registrar log de falha
+                _ = _apiService.AddLogFalhaSoftAsync(
+                    tipoFalha: "DispositivoNaoAcionado",
+                    descricao: "Falha ao controlar dispositivo StarkSwitch",
+                    comandoTentado: comando,
+                    dispositivoNome: dispositivoEncontrado?.Name,
+                    erroDetalhado: "Dispositivo não respondeu ao comando MQTT"
+                );
+                
                 return false;
             }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Erro ao processar comando StarkSwitch: {ex.Message}");
+            
+            // Registrar log de falha
+            _ = _apiService.AddLogFalhaSoftAsync(
+                tipoFalha: "ErroComandoStarkSwitch",
+                descricao: "Erro ao processar comando de dispositivo StarkSwitch",
+                comandoTentado: comando,
+                erroDetalhado: ex.Message
+            );
+            
             LocalDatabase.LogError(_database, ex, "ERR_004", "ao processar comando de dispositivo StarkSwitch", 
                 null, null, null);
             return false;
@@ -1540,30 +1580,197 @@ public class CommandProcessor
                     // Executar comando CMD
                     try
                     {
-                        var processInfo = new System.Diagnostics.ProcessStartInfo
-                        {
-                            FileName = "cmd.exe",
-                            Arguments = $"/c {comandoShell.ComandoCMD}",
-                            UseShellExecute = false,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            CreateNoWindow = true
-                        };
+                        var cmdLower = comandoShell.ComandoCMD.ToLower().Trim();
+                        
+                        // Verificar se é um comando complexo (timeout, powershell, etc) - sempre executar via cmd.exe
+                        bool isComplexCommand = cmdLower.StartsWith("timeout") || 
+                                               cmdLower.StartsWith("powershell") ||
+                                               cmdLower.Contains("&&") ||
+                                               cmdLower.Contains("||") ||
+                                               cmdLower.Contains(">nul") ||
+                                               cmdLower.Contains(">");
 
-                        using var process = System.Diagnostics.Process.Start(processInfo);
-                        if (process != null)
-                        {
-                            var output = await process.StandardOutput.ReadToEndAsync();
-                            var error = await process.StandardError.ReadToEndAsync();
-                            await process.WaitForExitAsync();
+                        // Verificar se o comando é para abrir arquivo/programa (usa start ou caminho direto)
+                        bool isOpenFile = !isComplexCommand && (
+                                        cmdLower.StartsWith("start") || 
+                                        (cmdLower.Contains(".exe") && !cmdLower.Contains(" ")) || 
+                                        (cmdLower.Contains(".png") && !cmdLower.Contains(" ")) || 
+                                        (cmdLower.Contains(".jpg") && !cmdLower.Contains(" ")) || 
+                                        (cmdLower.Contains(".jpeg") && !cmdLower.Contains(" ")) || 
+                                        (cmdLower.Contains(".pdf") && !cmdLower.Contains(" ")) || 
+                                        (cmdLower.Contains(".txt") && !cmdLower.Contains(" ")) ||
+                                        (cmdLower.Contains(".doc") && !cmdLower.Contains(" ")) ||
+                                        (cmdLower.Contains(".mp4") && !cmdLower.Contains(" ")) ||
+                                        (cmdLower.Contains(".mp3") && !cmdLower.Contains(" ")));
 
-                            if (!string.IsNullOrEmpty(error))
+                        if (isComplexCommand)
+                        {
+                            // Verificar se é um comando com timeout seguido de start
+                            var timeoutMatch = System.Text.RegularExpressions.Regex.Match(
+                                comandoShell.ComandoCMD, 
+                                @"timeout\s+/t\s+(\d+)\s+/nobreak\s*>nul\s*&&\s*start\s+""[^""]*""\s+""([^""]+)""",
+                                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                            
+                            if (timeoutMatch.Success)
                             {
-                                System.Diagnostics.Debug.WriteLine($"Erro ao executar comando shell: {error}");
+                                // Comando com timeout - executar delay em C# e depois abrir arquivo/programa
+                                int delaySeconds = int.Parse(timeoutMatch.Groups[1].Value);
+                                string fileOrProgram = timeoutMatch.Groups[2].Value;
+                                
+                                System.Diagnostics.Debug.WriteLine($"Comando com timeout detectado: {delaySeconds}s, arquivo/programa: {fileOrProgram}");
+                                
+                                // Executar delay e abrir arquivo/programa em background
+                                System.Threading.Tasks.Task.Run(async () =>
+                                {
+                                    await System.Threading.Tasks.Task.Delay(delaySeconds * 1000);
+                                    
+                                    try
+                                    {
+                                        var fileProcessInfo = new System.Diagnostics.ProcessStartInfo
+                                        {
+                                            FileName = fileOrProgram,
+                                            UseShellExecute = true
+                                        };
+                                        
+                                        System.Diagnostics.Process.Start(fileProcessInfo);
+                                        System.Diagnostics.Debug.WriteLine($"Arquivo/programa aberto após delay: {fileOrProgram}");
+                                    }
+                                    catch (Exception fileEx)
+                                    {
+                                        System.Diagnostics.Debug.WriteLine($"Erro ao abrir arquivo/programa após delay: {fileEx.Message}");
+                                    }
+                                });
+                            }
+                            else if (cmdLower.StartsWith("powershell"))
+                            {
+                                // Para PowerShell, executar diretamente sem cmd.exe
+                                string psArgs = comandoShell.ComandoCMD.Substring("powershell".Length).TrimStart();
+                                
+                                var processInfo = new System.Diagnostics.ProcessStartInfo
+                                {
+                                    FileName = "powershell.exe",
+                                    Arguments = psArgs,
+                                    UseShellExecute = true,
+                                    CreateNoWindow = true,
+                                    WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                                };
+
+                                try
+                                {
+                                    System.Diagnostics.Process.Start(processInfo);
+                                    System.Diagnostics.Debug.WriteLine($"Comando PowerShell executado: {comandoShell.ComandoCMD}");
+                                    System.Diagnostics.Debug.WriteLine($"Argumentos PowerShell: {psArgs}");
+                                }
+                                catch (Exception psEx)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"Erro ao executar PowerShell: {psEx.Message}");
+                                }
+                            }
+                            else
+                            {
+                                // Outros comandos complexos via cmd.exe
+                                // Criar um arquivo batch temporário para executar comandos complexos
+                                string tempBatchFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"starkaid_cmd_{Guid.NewGuid()}.bat");
+                                try
+                                {
+                                    // Escrever comando no arquivo batch
+                                    System.IO.File.WriteAllText(tempBatchFile, $"@echo off\r\n{comandoShell.ComandoCMD}\r\n");
+                                    
+                                    var processInfo = new System.Diagnostics.ProcessStartInfo
+                                    {
+                                        FileName = tempBatchFile,
+                                        UseShellExecute = true,
+                                        CreateNoWindow = true,
+                                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
+                                        WorkingDirectory = System.IO.Path.GetTempPath()
+                                    };
+
+                                    var process = System.Diagnostics.Process.Start(processInfo);
+                                    if (process != null)
+                                    {
+                                        // Não aguardar o processo - deixar rodar em background
+                                        process.EnableRaisingEvents = false;
+                                        
+                                        // Agendar exclusão do arquivo batch após 30 segundos
+                                        System.Threading.Tasks.Task.Run(async () =>
+                                        {
+                                            await System.Threading.Tasks.Task.Delay(30000);
+                                            try
+                                            {
+                                                if (System.IO.File.Exists(tempBatchFile))
+                                                    System.IO.File.Delete(tempBatchFile);
+                                            }
+                                            catch { }
+                                        });
+                                    }
+                                    System.Diagnostics.Debug.WriteLine($"Comando complexo executado via batch: {comandoShell.ComandoCMD}");
+                                }
+                                catch (Exception cmdEx)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"Erro ao executar comando CMD: {cmdEx.Message}");
+                                    // Tentar limpar arquivo batch em caso de erro
+                                    try
+                                    {
+                                        if (System.IO.File.Exists(tempBatchFile))
+                                            System.IO.File.Delete(tempBatchFile);
+                                    }
+                                    catch { }
+                                }
+                            }
+                        }
+                        else if (isOpenFile)
+                        {
+                            // Extrair o caminho do arquivo se usar "start"
+                            string filePath = comandoShell.ComandoCMD;
+                            if (cmdLower.StartsWith("start"))
+                            {
+                                // Extrair caminho entre aspas ou após "start"
+                                var match = System.Text.RegularExpressions.Regex.Match(comandoShell.ComandoCMD, @"start\s+""[^""]*""\s+""([^""]+)""|start\s+""([^""]+)""|start\s+([^\s]+)");
+                                if (match.Success)
+                                {
+                                    filePath = match.Groups[1].Success ? match.Groups[1].Value : 
+                                              (match.Groups[2].Success ? match.Groups[2].Value : match.Groups[3].Value);
+                                }
                             }
 
-                            System.Diagnostics.Debug.WriteLine($"Comando shell executado: {comandoShell.ComandoCMD}");
-                            System.Diagnostics.Debug.WriteLine($"Saída: {output}");
+                            // Abrir arquivo diretamente usando Process.Start
+                            var processInfo = new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = filePath,
+                                UseShellExecute = true
+                            };
+
+                            System.Diagnostics.Process.Start(processInfo);
+                            System.Diagnostics.Debug.WriteLine($"Arquivo aberto: {filePath}");
+                        }
+                        else
+                        {
+                            // Para comandos que precisam capturar saída, usar UseShellExecute = false
+                            var processInfo = new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "cmd.exe",
+                                Arguments = $"/c {comandoShell.ComandoCMD}",
+                                UseShellExecute = false,
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                CreateNoWindow = true
+                            };
+
+                            using var process = System.Diagnostics.Process.Start(processInfo);
+                            if (process != null)
+                            {
+                                var output = await process.StandardOutput.ReadToEndAsync();
+                                var error = await process.StandardError.ReadToEndAsync();
+                                await process.WaitForExitAsync();
+
+                                if (!string.IsNullOrEmpty(error))
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"Erro ao executar comando shell: {error}");
+                                }
+
+                                System.Diagnostics.Debug.WriteLine($"Comando shell executado: {comandoShell.ComandoCMD}");
+                                System.Diagnostics.Debug.WriteLine($"Saída: {output}");
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -1621,11 +1828,47 @@ public class CommandProcessor
                 
                 // Notificar que comando de IA foi executado (para atualizar StarkCoins)
                 IaCommandExecuted?.Invoke(this, EventArgs.Empty);
+                
+                // Atualizar atividade do usuário
+                _ = _apiService.UpdateUserActivityAsync(ultimoComandoIA: comando, ultimaRespostaIA: response.Texto);
             }
+            else
+            {
+                // Registrar log de falha se não houve resposta
+                _ = _apiService.AddLogFalhaSoftAsync(
+                    tipoFalha: "ErroComandoIA",
+                    descricao: "Falha ao processar comando de IA",
+                    comandoTentado: comando,
+                    erroDetalhado: "Resposta vazia ou nula da API"
+                );
+            }
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("Saldo insuficiente") || ex.Message.Contains("StarkCoins"))
+        {
+            System.Diagnostics.Debug.WriteLine($"Erro: Saldo insuficiente para IA: {ex.Message}");
+            
+            // Registrar log de falha por saldo insuficiente
+            _ = _apiService.AddLogFalhaSoftAsync(
+                tipoFalha: "StarkCoinsInsuficiente",
+                descricao: "Saldo insuficiente para usar IA",
+                comandoTentado: comando,
+                erroDetalhado: ex.Message
+            );
+            
+            _speechService.Speak("Você não tem StarkCoins suficientes para usar a inteligência artificial. Por favor, adicione mais créditos.");
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Erro ao processar comando IA: {ex.Message}");
+            
+            // Registrar log de falha genérica
+            _ = _apiService.AddLogFalhaSoftAsync(
+                tipoFalha: "ErroComandoIA",
+                descricao: "Erro ao processar comando de IA",
+                comandoTentado: comando,
+                erroDetalhado: ex.Message
+            );
+            
             LocalDatabase.LogError(_database, ex, "ERR_001", "ao processar comando de IA", 
                 _ultimoComandoUser, _ultimaRespostaIa, null);
         }

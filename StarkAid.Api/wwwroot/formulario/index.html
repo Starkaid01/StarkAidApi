@@ -725,7 +725,7 @@
             statusEl.className = 'status-message';
 
             try {
-                const resp = await fetch('/api/PerssistirForm', {
+                const resp = await fetch('/api/v1/PerssistirForm', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -748,7 +748,7 @@
         // Carregar dados do JSON
         async function carregarDados() {
             try {
-                const resp = await fetch('/api/PerssistirForm');
+                const resp = await fetch('/api/v1/PerssistirForm');
                 
                 if (!resp.ok) {
                     throw new Error(`HTTP error! status: ${resp.status}`);

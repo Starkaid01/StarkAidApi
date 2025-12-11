@@ -47,25 +47,25 @@ data class MensagemResponse(
 
 interface WhatsappApi {
 
-    @POST("/api/wpp/status-session")
+    @POST("api/v1/wpp/status-session")
     suspend fun statusSessao(
         @Body body: StatusSessaoRequest,
         @Header("Authorization") token: String
     ): Response<StatusSessaoResponse>
 
-    @POST("/api/wpp/session")
+    @POST("api/v1/wpp/session")
     suspend fun criarSessao(
         @Body body: CriarSessaoRequest,
         @Header("Authorization") token: String
     ): Response<CriarSessaoResponse>
 
-    @POST("/api/wpp/listar-contatos-salvos")
+    @POST("api/v1/wpp/listar-contatos-salvos")
     suspend fun listarContatos(
         @Body body: ListarContatosRequest,
         @Header("Authorization") token: String
     ): Response<ListarContatosResponse>
 
-    @POST("/api/wpp/enviar-mensagem")
+    @POST("api/v1/wpp/enviar-mensagem")
     suspend fun enviarMensagem(
         @Body body: EnviarMensagemRequest,
         @Header("Authorization") token: String

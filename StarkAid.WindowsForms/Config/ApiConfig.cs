@@ -1,0 +1,50 @@
+namespace StarkAid.WindowsForms.Config;
+
+/// <summary>
+/// Configuração centralizada da API.
+/// Para mudar entre desenvolvimento e produção, altere apenas o valor de IsDevelopment.
+/// </summary>
+public static class ApiConfig
+{
+    // ============================================
+    // CONFIGURAÇÃO DE AMBIENTE
+    // ============================================
+    // Altere este valor para true (desenvolvimento) ou false (produção)
+    private const bool IsDevelopment = false; // PRODUÇÃO
+    
+    // ============================================
+    // URLs DE DESENVOLVIMENTO
+    // ============================================
+    private const string DevApiBaseUrl = "https://localhost:5001/api";
+    private const string DevWebBaseUrl = "https://localhost:5001";
+    
+    // ============================================
+    // URLs DE PRODUÇÃO
+    // ============================================
+    private const string ProdApiBaseUrl = "https://starkaid.runasp.net/api";
+    private const string ProdWebBaseUrl = "https://starkaid.runasp.net";
+    
+    // ============================================
+    // PROPRIEDADES PÚBLICAS
+    // ============================================
+    /// <summary>
+    /// URL base da API (com /api no final)
+    /// </summary>
+    public static string ApiBaseUrl => IsDevelopment ? DevApiBaseUrl : ProdApiBaseUrl;
+    
+    /// <summary>
+    /// URL base da web (sem /api)
+    /// </summary>
+    public static string WebBaseUrl => IsDevelopment ? DevWebBaseUrl : ProdWebBaseUrl;
+    
+    /// <summary>
+    /// URL base da API com barra final (para compatibilidade)
+    /// </summary>
+    public static string ApiBaseUrlWithSlash => ApiBaseUrl.EndsWith("/") ? ApiBaseUrl : ApiBaseUrl + "/";
+    
+    /// <summary>
+    /// URL para buscar configuração da API
+    /// </summary>
+    public static string ConfigUrl => $"{ApiBaseUrl}/v1/Config/app-config";
+}
+

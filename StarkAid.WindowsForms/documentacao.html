@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentação StarkAid - Windows Forms</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0A0A0A 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+
+        /* Menu lateral fixo */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: rgba(20, 20, 30, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .sidebar h2 {
+            color: #00fff7;
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-align: center;
+            border-bottom: 2px solid #00fff7;
+            padding-bottom: 10px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar ul li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar ul li a {
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar ul li a:hover {
+            background: rgba(0, 255, 247, 0.2);
+            color: #00fff7;
+            transform: translateX(5px);
+        }
+
+        /* Conteúdo principal */
+        .content {
+            margin-left: 280px;
+            padding: 40px;
+            max-width: 1200px;
+        }
+
+        .section {
+            margin-bottom: 60px;
+            background: rgba(20, 20, 30, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 247, 0.2);
+        }
+
+        .section h1 {
+            color: #00fff7;
+            font-size: 32px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #00fff7;
+        }
+
+        .section h2 {
+            color: #00fff7;
+            font-size: 24px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .section h3 {
+            color: #00d4ff;
+            font-size: 20px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .section p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .section ul, .section ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+
+        .section ul li, .section ol li {
+            margin-bottom: 10px;
+        }
+
+        /* Cards de comandos */
+        .command-card {
+            background: rgba(0, 255, 247, 0.1);
+            border: 1px solid rgba(0, 255, 247, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .command-card:hover {
+            background: rgba(0, 255, 247, 0.2);
+            border-color: #00fff7;
+            transform: translateX(5px);
+        }
+
+        .command-card h4 {
+            color: #00fff7;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .command-card .command-example {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            color: #00d4ff;
+            border-left: 3px solid #00fff7;
+        }
+
+        .command-card .description {
+            color: #ccc;
+            margin-top: 8px;
+        }
+
+        /* Tabelas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        table th {
+            background: rgba(0, 255, 247, 0.2);
+            color: #00fff7;
+            padding: 15px;
+            text-align: left;
+            border: 1px solid rgba(0, 255, 247, 0.3);
+        }
+
+        table td {
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        table tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        table tr:hover {
+            background: rgba(0, 255, 247, 0.1);
+        }
+
+        /* Código */
+        code {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #00d4ff;
+            font-family: 'Courier New', monospace;
+        }
+
+        pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border-left: 4px solid #00fff7;
+            margin: 15px 0;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: #00d4ff;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge-predefined {
+            background: #00fff7;
+            color: #000;
+        }
+
+        .badge-custom {
+            background: #ff6b6b;
+            color: #fff;
+        }
+
+        /* Scrollbar personalizada */
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 247, 0.5);
+            border-radius: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 247, 0.8);
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .content {
+                margin-left: 0;
+                padding: 20px;
+            }
+        }
+
+        /* Animações */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section {
+            animation: fadeIn 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- Menu lateral -->
+    <nav class="sidebar">
+        <h2>📚 Menu</h2>
+        <ul>
+            <li><a href="#introducao">Introdução</a></li>
+            <li><a href="#instalacao">Instalação</a></li>
+            <li><a href="#configuracao-inicial">Configuração Inicial</a></li>
+            <li><a href="#comandos-predefinidos">Comandos Predefinidos</a></li>
+            <li><a href="#comandos-sociais">Comandos Sociais</a></li>
+            <li><a href="#comandos-shell">Comandos Shell</a></li>
+            <li><a href="#dispositivos">Dispositivos</a></li>
+            <li><a href="#agendamentos">Agendamentos</a></li>
+            <li><a href="#inteligencia-artificial">Inteligência Artificial</a></li>
+            <li><a href="#aprendizado">Sistema de Aprendizado</a></li>
+            <li><a href="#alarmes">Alarmes</a></li>
+            <li><a href="#starkcoins">StarkCoins</a></li>
+            <li><a href="#troubleshooting">Solução de Problemas</a></li>
+        </ul>
+    </nav>
+
+    <!-- Conteúdo principal -->
+    <div class="content">
+        <!-- Introdução -->
+        <section id="introducao" class="section">
+            <h1>Introdução ao StarkAid</h1>
+            <p>
+                O <strong>StarkAid</strong> é um assistente virtual inteligente para Windows que permite controlar 
+                seu computador e dispositivos através de comandos de voz. Com recursos avançados de automação, 
+                integração com dispositivos IoT, e inteligência artificial, o StarkAid transforma sua experiência 
+                de uso do computador.
+            </p>
+            <h2>Principais Funcionalidades</h2>
+            <ul>
+                <li>🎤 <strong>Reconhecimento de Voz:</strong> Controle total através de comandos de voz</li>
+                <li>🤖 <strong>Inteligência Artificial:</strong> Respostas inteligentes e contextualizadas</li>
+                <li>🔌 <strong>Controle de Dispositivos:</strong> Gerencie dispositivos ESP, Ewelink e StarkSwitch</li>
+                <li>⏰ <strong>Agendamentos:</strong> Automatize tarefas e comandos</li>
+                <li>📚 <strong>Aprendizado:</strong> O sistema aprende com suas interações</li>
+                <li>⏰ <strong>Alarmes e Lembretes:</strong> Nunca mais esqueça compromissos importantes</li>
+                <li>💰 <strong>StarkCoins:</strong> Sistema de créditos para uso de recursos premium</li>
+            </ul>
+        </section>
+
+        <!-- Instalação -->
+        <section id="instalacao" class="section">
+            <h1>Instalação</h1>
+            <h2>Requisitos do Sistema</h2>
+            <ul>
+                <li>Windows 10 ou superior</li>
+                <li>.NET 8.0 Runtime</li>
+                <li>WebView2 Runtime (instalado automaticamente se necessário)</li>
+                <li>Microfone funcional</li>
+                <li>Conexão com internet (para recursos de IA e sincronização)</li>
+            </ul>
+            <h2>Processo de Instalação</h2>
+            <ol>
+                <li>Execute o instalador do StarkAid</li>
+                <li>Siga as instruções do assistente de instalação</li>
+                <li>Após a instalação, o aplicativo será iniciado automaticamente</li>
+                <li>Na primeira execução, você precisará fazer login ou criar uma conta</li>
+            </ol>
+        </section>
+
+        <!-- Configuração Inicial -->
+        <section id="configuracao-inicial" class="section">
+            <h1>Configuração Inicial</h1>
+            <h2>1. Login e Conta</h2>
+            <p>
+                Ao iniciar o aplicativo pela primeira vez, você precisará fazer login com suas credenciais. 
+                Se não tiver uma conta, você pode criar uma através da interface de login.
+            </p>
+
+            <h2>2. Configurar Assistente</h2>
+            <p>
+                Acesse <strong>🤖 Configurar Assistente</strong> no menu lateral para personalizar:
+            </p>
+            <ul>
+                <li><strong>Nome do Assistente:</strong> O nome que você usará para ativar o assistente</li>
+                <li><strong>Resposta Padrão:</strong> Mensagem que o assistente fala quando você chama apenas pelo nome</li>
+                <li><strong>Voz:</strong> Selecione a voz do assistente (disponível conforme sistema operacional)</li>
+                <li><strong>Velocidade de Fala:</strong> Ajuste a velocidade da voz</li>
+            </ul>
+
+            <h3>Exemplo de Configuração:</h3>
+            <div class="command-card">
+                <h4>Nome do Assistente</h4>
+                <div class="command-example">Jarvis</div>
+                <div class="description">
+                    Quando você disser apenas "Jarvis", o assistente responderá com a resposta padrão configurada.
+                </div>
+            </div>
+
+            <h2>3. Configurar Conta</h2>
+            <p>
+                Em <strong>⚙️ Configurar Conta</strong>, você pode:
+            </p>
+            <ul>
+                <li>Atualizar informações pessoais</li>
+                <li>Configurar endereço para agendamentos</li>
+                <li>Gerenciar preferências de notificação</li>
+            </ul>
+        </section>
+
+        <!-- Comandos Predefinidos -->
+        <section id="comandos-predefinidos" class="section">
+            <h1>Comandos Predefinidos <span class="badge badge-predefined">Sistema</span></h1>
+            <p>
+                Os comandos predefinidos são comandos do sistema que não precisam ser configurados pelo usuário. 
+                Eles estão sempre disponíveis e funcionam imediatamente após a instalação.
+            </p>
+
+            <h2>Saudações</h2>
+            <div class="command-card">
+                <h4>Bom Dia</h4>
+                <div class="command-example">"Bom dia"</div>
+                <div class="description">
+                    O assistente responde com uma saudação apropriada. Se já for tarde ou noite, 
+                    ele corrige automaticamente.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Boa Tarde</h4>
+                <div class="command-example">"Boa tarde"</div>
+                <div class="description">
+                    Saudação para o período da tarde. O assistente verifica o horário e responde adequadamente.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Boa Noite</h4>
+                <div class="command-example">"Boa noite"</div>
+                <div class="description">
+                    Saudação para o período noturno. O assistente verifica o horário e responde adequadamente.
+                </div>
+            </div>
+
+            <h2>Data e Hora</h2>
+            <div class="command-card">
+                <h4>Que Horas São</h4>
+                <div class="command-example">"Que horas são"</div>
+                <div class="description">
+                    O assistente informa a hora atual no formato 24 horas (HH:mm).
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Que Dia É Hoje</h4>
+                <div class="command-example">"Que dia é hoje"</div>
+                <div class="description">
+                    O assistente informa a data completa atual, incluindo dia da semana, dia, mês e ano.
+                </div>
+            </div>
+
+            <h2>Previsão do Tempo</h2>
+            <div class="command-card">
+                <h4>Previsão do Tempo</h4>
+                <div class="command-example">"Como está o tempo"<br>"Qual a previsão do tempo"<br>"Tempo hoje"</div>
+                <div class="description">
+                    O assistente busca e informa a previsão do tempo atual, incluindo temperatura, 
+                    condições climáticas e informações sobre vento. Requer conexão com a internet.
+                </div>
+            </div>
+
+            <h2>Abrir Sites</h2>
+            <p>Você pode abrir os seguintes sites através de comandos de voz:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Site</th>
+                        <th>Comando de Exemplo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>YouTube</td>
+                        <td>"Abrir YouTube" ou "Abrir o YouTube"</td>
+                    </tr>
+                    <tr>
+                        <td>Facebook</td>
+                        <td>"Abrir Facebook" ou "Abrir o Facebook"</td>
+                    </tr>
+                    <tr>
+                        <td>Instagram</td>
+                        <td>"Abrir Instagram" ou "Abrir o Instagram"</td>
+                    </tr>
+                    <tr>
+                        <td>Google</td>
+                        <td>"Abrir Google" ou "Abrir o Google"</td>
+                    </tr>
+                    <tr>
+                        <td>WhatsApp Web</td>
+                        <td>"Abrir WhatsApp" ou "Abrir o WhatsApp"</td>
+                    </tr>
+                    <tr>
+                        <td>Gmail</td>
+                        <td>"Abrir Gmail" ou "Abrir o Gmail"</td>
+                    </tr>
+                    <tr>
+                        <td>Twitter/X</td>
+                        <td>"Abrir Twitter" ou "Abrir o Twitter" ou "Abrir X"</td>
+                    </tr>
+                    <tr>
+                        <td>LinkedIn</td>
+                        <td>"Abrir LinkedIn" ou "Abrir o LinkedIn"</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Aplicativos do Windows</h2>
+            <div class="command-card">
+                <h4>Abrir Calculadora</h4>
+                <div class="command-example">"Abrir calculadora" ou "Abra calculadora"</div>
+                <div class="description">
+                    Abre a calculadora padrão do Windows.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Abrir Meus Documentos</h4>
+                <div class="command-example">"Abrir meus documentos" ou "Abra meus documentos"</div>
+                <div class="description">
+                    Abre a pasta "Meus Documentos" no explorador de arquivos do Windows.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Esvaziar Lixeira</h4>
+                <div class="command-example">"Esvaziar lixeira" ou "Esvazie a lixeira"</div>
+                <div class="description">
+                    Abre a ferramenta de limpeza de disco do Windows para esvaziar a lixeira.
+                </div>
+            </div>
+
+            <h2>Controle de Fala</h2>
+            <div class="command-card">
+                <h4>Parar de Falar</h4>
+                <div class="command-example">"Cala a boca"<br>"Pare de falar"<br>"Para de falar"<br>"Parar de falar"</div>
+                <div class="description">
+                    Interrompe imediatamente a fala do assistente. Útil quando você quer parar uma resposta longa.
+                </div>
+            </div>
+
+            <h2>Controle de Inteligência Artificial</h2>
+            <div class="command-card">
+                <h4>Ativar Inteligência</h4>
+                <div class="command-example">"Ativar inteligência"<br>"Ligar inteligência"<br>"Ativa inteligência"</div>
+                <div class="description">
+                    Ativa o modo de inteligência artificial. Quando ativado, comandos não reconhecidos 
+                    serão processados pela IA. Requer conexão com a internet e StarkCoins.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Desativar Inteligência</h4>
+                <div class="command-example">"Desativar inteligência"<br>"Desligar inteligência"<br>"Desativa inteligência"</div>
+                <div class="description">
+                    Desativa o modo de inteligência artificial. Apenas comandos configurados serão processados.
+                </div>
+            </div>
+        </section>
+
+        <!-- Comandos Sociais -->
+        <section id="comandos-sociais" class="section">
+            <h1>Comandos Sociais <span class="badge badge-custom">Personalizável</span></h1>
+            <p>
+                Os comandos sociais são comandos personalizados que você pode criar para interações específicas. 
+                Eles permitem que você configure respostas personalizadas para comandos de voz.
+            </p>
+
+            <h2>Criar um Comando Social</h2>
+            <ol>
+                <li>Acesse <strong>💬 Comandos Sociais</strong> no menu lateral</li>
+                <li>Clique em <strong>CRIAR</strong></li>
+                <li>Preencha os campos:
+                    <ul>
+                        <li><strong>Comando:</strong> O texto que você dirá (ex: "me conte uma piada")</li>
+                        <li><strong>Resposta:</strong> O que o assistente responderá</li>
+                        <li><strong>Respostas Aleatórias (opcional):</strong> Múltiplas respostas que serão escolhidas aleatoriamente</li>
+                    </ul>
+                </li>
+                <li>Clique em <strong>SALVAR</strong></li>
+            </ol>
+
+            <h3>Exemplo de Configuração:</h3>
+            <div class="command-card">
+                <h4>Comando</h4>
+                <div class="command-example">me conte uma piada</div>
+            </div>
+            <div class="command-card">
+                <h4>Resposta Padrão</h4>
+                <div class="command-example">Por que o programador não dorme? Porque ele tem bugs na cabeça!</div>
+            </div>
+            <div class="command-card">
+                <h4>Respostas Aleatórias (JSON)</h4>
+                <pre><code>{
+  "alternativas": [
+    "Por que o programador não dorme? Porque ele tem bugs na cabeça!",
+    "O que é um terapeuta? 1024 gigaterapeutas!",
+    "Por que os programadores preferem o modo escuro? Porque bugs são atraídos pela luz!"
+  ]
+}</code></pre>
+            </div>
+        </section>
+
+        <!-- Comandos Shell -->
+        <section id="comandos-shell" class="section">
+            <h1>Comandos Shell <span class="badge badge-custom">Personalizável</span></h1>
+            <p>
+                Os comandos shell permitem executar comandos do Windows (CMD/PowerShell) através de comandos de voz. 
+                Use com cuidado, pois comandos shell podem afetar o sistema.
+            </p>
+
+            <h2>Criar um Comando Shell</h2>
+            <ol>
+                <li>Acesse <strong>💻 Comandos Shell</strong> no menu lateral</li>
+                <li>Clique em <strong>CRIAR</strong></li>
+                <li>Preencha os campos:
+                    <ul>
+                        <li><strong>Comando de Entrada:</strong> O que você dirá (ex: "reiniciar computador")</li>
+                        <li><strong>Comando CMD:</strong> O comando que será executado (ex: "shutdown /r /t 0")</li>
+                        <li><strong>Resposta:</strong> O que o assistente dirá após executar</li>
+                    </ul>
+                </li>
+                <li>Clique em <strong>SALVAR</strong></li>
+            </ol>
+
+            <h3>Exemplos de Comandos Shell:</h3>
+            <div class="command-card">
+                <h4>Reiniciar Computador</h4>
+                <div class="command-example">
+                    <strong>Comando de Entrada:</strong> reiniciar computador<br>
+                    <strong>Comando CMD:</strong> shutdown /r /t 0<br>
+                    <strong>Resposta:</strong> Reiniciando o computador agora
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Abrir Arquivo</h4>
+                <div class="command-example">
+                    <strong>Comando de Entrada:</strong> abrir notepad<br>
+                    <strong>Comando CMD:</strong> notepad.exe<br>
+                    <strong>Resposta:</strong> Bloco de notas aberto
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Comando com Delay</h4>
+                <div class="command-example">
+                    <strong>Comando de Entrada:</strong> abrir programa depois<br>
+                    <strong>Comando CMD:</strong> timeout /t 5 /nobreak >nul && start "" "C:\Programas\MeuApp.exe"<br>
+                    <strong>Resposta:</strong> Abrindo programa em 5 segundos
+                </div>
+                <div class="description">
+                    Este comando aguarda 5 segundos antes de abrir o programa.
+                </div>
+            </div>
+
+            <h2>⚠️ Avisos Importantes</h2>
+            <ul>
+                <li>Comandos shell executam com as permissões do usuário atual</li>
+                <li>Teste comandos em ambiente seguro antes de usar em produção</li>
+                <li>Comandos maliciosos podem danificar o sistema</li>
+                <li>Use apenas comandos que você entende completamente</li>
+            </ul>
+        </section>
+
+        <!-- Dispositivos -->
+        <section id="dispositivos" class="section">
+            <h1>Dispositivos</h1>
+            <p>
+                O StarkAid suporta três tipos de dispositivos IoT que podem ser controlados por voz:
+            </p>
+
+            <h2>1. Dispositivos ESP</h2>
+            <p>
+                Dispositivos ESP são controlados via UDP. Você precisa configurar o IP, porta e comandos.
+            </p>
+            <h3>Configuração:</h3>
+            <ol>
+                <li>Acesse <strong>📡 Dispositivos ESP</strong> no menu</li>
+                <li>Clique em <strong>CRIAR</strong></li>
+                <li>Preencha:
+                    <ul>
+                        <li><strong>Nome:</strong> Nome do dispositivo (ex: "Luz da Sala")</li>
+                        <li><strong>IP:</strong> Endereço IP do dispositivo</li>
+                        <li><strong>Porta:</strong> Porta UDP (geralmente 80 ou 8080)</li>
+                        <li><strong>Comando:</strong> Comando de voz (ex: "ligar luz da sala")</li>
+                        <li><strong>Comando para ESP:</strong> Comando que será enviado via UDP</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h2>2. Dispositivos Ewelink</h2>
+            <p>
+                Dispositivos Ewelink são controlados através da API Ewelink. Requer login na plataforma Ewelink.
+            </p>
+            <h3>Configuração:</h3>
+            <ol>
+                <li>Acesse <strong>🔌 Dispositivos Ewelink</strong> no menu</li>
+                <li>Os dispositivos são sincronizados automaticamente após login</li>
+                <li>Use comandos como "ligar [nome do dispositivo]" ou "desligar [nome do dispositivo]"</li>
+            </ol>
+
+            <h2>3. Dispositivos StarkSwitch</h2>
+            <p>
+                Dispositivos StarkSwitch são controlados via MQTT através da API StarkAid.
+            </p>
+            <h3>Configuração:</h3>
+            <ol>
+                <li>Acesse <strong>🔌 Dispositivos StarkSwitch</strong> no menu</li>
+                <li>Os dispositivos são sincronizados automaticamente</li>
+                <li>Use comandos como "ligar [nome do dispositivo]" ou "desligar [nome do dispositivo]"</li>
+            </ol>
+
+            <h2>Comandos de Voz para Dispositivos</h2>
+            <p>Você pode usar variações de comandos:</p>
+            <ul>
+                <li>"Ligar [nome do dispositivo]"</li>
+                <li>"Desligar [nome do dispositivo]"</li>
+                <li>"Acender [nome do dispositivo]"</li>
+                <li>"Apagar [nome do dispositivo]"</li>
+                <li>"Liga [nome do dispositivo]"</li>
+                <li>"Desliga [nome do dispositivo]"</li>
+            </ul>
+        </section>
+
+        <!-- Agendamentos -->
+        <section id="agendamentos" class="section">
+            <h1>Agendamentos</h1>
+            <p>
+                Os agendamentos permitem automatizar ações em horários específicos. Você pode agendar:
+            </p>
+            <ul>
+                <li>Comandos para dispositivos</li>
+                <li>Execução de arquivos</li>
+                <li>Ações recorrentes</li>
+            </ul>
+
+            <h2>Agendamentos de Dispositivos</h2>
+            <ol>
+                <li>Acesse <strong>⏰ Agendamentos</strong> no menu</li>
+                <li>Clique em <strong>CRIAR</strong></li>
+                <li>Selecione o tipo de dispositivo (ESP, Ewelink ou StarkSwitch)</li>
+                <li>Configure:
+                    <ul>
+                        <li>Dispositivo a ser controlado</li>
+                        <li>Ação (ligar/desligar)</li>
+                        <li>Data e hora</li>
+                        <li>Recorrência (diário, semanal, etc.)</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h2>Agendamentos de Arquivos</h2>
+            <ol>
+                <li>Acesse <strong>📅 Agendamentos Arquivos</strong> no menu</li>
+                <li>Clique em <strong>CRIAR</strong></li>
+                <li>Configure:
+                    <ul>
+                        <li>Caminho do arquivo a ser executado</li>
+                        <li>Data e hora</li>
+                        <li>Recorrência</li>
+                    </ul>
+                </li>
+            </ol>
+        </section>
+
+        <!-- Inteligência Artificial -->
+        <section id="inteligencia-artificial" class="section">
+            <h1>Inteligência Artificial</h1>
+            <p>
+                O StarkAid possui um sistema de inteligência artificial integrado que pode responder a perguntas 
+                e executar tarefas complexas. A IA é ativada quando nenhum comando predefinido ou configurado 
+                corresponde ao que você disse.
+            </p>
+
+            <h2>Como Funciona</h2>
+            <ol>
+                <li>Ative a IA através do botão no dashboard ou comando de voz</li>
+                <li>Quando você fizer uma pergunta ou comando que não está configurado, a IA processará</li>
+                <li>A resposta será falada pelo assistente</li>
+                <li>Cada uso consome StarkCoins</li>
+            </ol>
+
+            <h2>Requisitos</h2>
+            <ul>
+                <li>Conexão com a internet</li>
+                <li>StarkCoins suficientes na conta</li>
+                <li>IA ativada no dashboard</li>
+            </ul>
+
+            <h2>Exemplos de Uso</h2>
+            <div class="command-card">
+                <h4>Perguntas Gerais</h4>
+                <div class="command-example">
+                    "Qual a capital do Brasil?"<br>
+                    "Me explique o que é inteligência artificial"<br>
+                    "Como fazer um bolo de chocolate?"
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Tarefas Complexas</h4>
+                <div class="command-example">
+                    "Me dê dicas para melhorar minha produtividade"<br>
+                    "Qual a melhor forma de organizar arquivos no computador?"
+                </div>
+            </div>
+        </section>
+
+        <!-- Sistema de Aprendizado -->
+        <section id="aprendizado" class="section">
+            <h1>Sistema de Aprendizado</h1>
+            <p>
+                O sistema de aprendizado permite que o StarkAid aprenda novas respostas baseadas nas interações 
+                com a inteligência artificial. Quando ativado, o sistema salva automaticamente comandos e respostas 
+                da IA para uso futuro.
+            </p>
+
+            <h2>Ativar Aprendizado</h2>
+            <ol>
+                <li>Acesse <strong>📚 Configurar Aprendizado</strong> no menu</li>
+                <li>Ative a opção "Aprendizado Habilitado"</li>
+                <li>O sistema começará a salvar interações automaticamente</li>
+            </ol>
+
+            <h2>Como Funciona</h2>
+            <ul>
+                <li>Quando você faz uma pergunta à IA, o sistema salva o comando e a resposta</li>
+                <li>Na próxima vez que você disser algo similar, o sistema usará a resposta aprendida</li>
+                <li>Isso economiza StarkCoins, pois não precisa consultar a IA novamente</li>
+                <li>Você pode visualizar e gerenciar os aprendizados em <strong>📚 Aprendizado</strong></li>
+            </ul>
+
+            <h2>Gerenciar Aprendizados</h2>
+            <p>
+                Em <strong>📚 Aprendizado</strong>, você pode:
+            </p>
+            <ul>
+                <li>Ver todos os comandos aprendidos</li>
+                <li>Editar respostas aprendidas</li>
+                <li>Deletar aprendizados indesejados</li>
+            </ul>
+        </section>
+
+        <!-- Alarmes -->
+        <section id="alarmes" class="section">
+            <h1>Alarmes e Lembretes</h1>
+            <p>
+                O sistema de alarmes permite criar lembretes através de comandos de voz ou interface gráfica.
+            </p>
+
+            <h2>Criar Lembrete por Voz</h2>
+            <p>Você pode criar lembretes usando comandos como:</p>
+            <div class="command-card">
+                <h4>Exemplos de Comandos</h4>
+                <div class="command-example">
+                    "Me lembre de fazer compras hoje às 15 horas"<br>
+                    "Me lembre de ligar para João amanhã às 10 e 30"<br>
+                    "Crie um alerta para reunião no dia 25 de dezembro às 14 horas"<br>
+                    "Me lembrando de pagar contas no dia 5 de janeiro"
+                </div>
+            </div>
+
+            <h2>Formato de Data e Hora</h2>
+            <ul>
+                <li><strong>Hoje:</strong> "hoje" ou "agora"</li>
+                <li><strong>Amanhã:</strong> "amanhã"</li>
+                <li><strong>Data específica:</strong> "dia 25 de dezembro" ou "25 de dezembro"</li>
+                <li><strong>Hora:</strong> "às 15 horas", "às 10 e 30", "às 18 e meia"</li>
+            </ul>
+
+            <h2>Gerenciar Alarmes</h2>
+            <ol>
+                <li>Acesse <strong>⏰ Configurar Alarmes</strong> no menu</li>
+                <li>Visualize todos os alarmes criados</li>
+                <li>Crie, edite ou delete alarmes</li>
+                <li>Veja alarmes disparados em <strong>⏰ Alarmes</strong></li>
+            </ol>
+        </section>
+
+        <!-- StarkCoins -->
+        <section id="starkcoins" class="section">
+            <h1>StarkCoins</h1>
+            <p>
+                StarkCoins é o sistema de créditos do StarkAid usado para recursos premium, principalmente 
+                o uso da inteligência artificial.
+            </p>
+
+            <h2>Como Funciona</h2>
+            <ul>
+                <li>Cada uso da IA consome uma quantidade de StarkCoins</li>
+                <li>Você pode adicionar créditos através de planos</li>
+                <li>Alguns planos incluem StarkCoins mensais</li>
+                <li>StarkCoins não expiram</li>
+            </ul>
+
+            <h2>Adicionar StarkCoins</h2>
+            <ol>
+                <li>Acesse <strong>💰 StarkCoins | Planos</strong> no menu</li>
+                <li>Escolha um plano ou adicione créditos diretamente</li>
+                <li>Siga o processo de pagamento</li>
+                <li>Os créditos serão adicionados automaticamente após confirmação</li>
+            </ol>
+
+            <h2>Verificar Saldo</h2>
+            <p>
+                O saldo de StarkCoins é exibido no dashboard principal. Você também pode verificar em 
+                <strong>💰 StarkCoins | Planos</strong>.
+            </p>
+        </section>
+
+        <!-- Troubleshooting -->
+        <section id="troubleshooting" class="section">
+            <h1>Solução de Problemas</h1>
+
+            <h2>O assistente não está ouvindo</h2>
+            <ul>
+                <li>Verifique se o microfone está conectado e funcionando</li>
+                <li>Verifique as permissões de microfone do Windows</li>
+                <li>Reinicie o aplicativo</li>
+                <li>Verifique se o botão de reconhecimento está ativado no dashboard</li>
+            </ul>
+
+            <h2>Comandos não estão funcionando</h2>
+            <ul>
+                <li>Verifique se você está falando claramente</li>
+                <li>Confirme que o comando está configurado corretamente</li>
+                <li>Para comandos de dispositivos, verifique se o dispositivo está online</li>
+                <li>Verifique a conexão com a internet (para IA e sincronização)</li>
+            </ul>
+
+            <h2>IA não está respondendo</h2>
+            <ul>
+                <li>Verifique se a IA está ativada (botão no dashboard)</li>
+                <li>Confirme que você tem StarkCoins suficientes</li>
+                <li>Verifique a conexão com a internet</li>
+                <li>Verifique o status da API no dashboard</li>
+            </ul>
+
+            <h2>Dispositivos não respondem</h2>
+            <ul>
+                <li>Para ESP: Verifique IP, porta e se o dispositivo está na mesma rede</li>
+                <li>Para Ewelink: Verifique se está logado na plataforma</li>
+                <li>Para StarkSwitch: Verifique se o dispositivo está online na API</li>
+                <li>Teste o dispositivo manualmente antes de usar comandos de voz</li>
+            </ul>
+
+            <h2>Erro ao abrir aplicativo</h2>
+            <ul>
+                <li>Verifique se o .NET 8.0 Runtime está instalado</li>
+                <li>Verifique se o WebView2 Runtime está instalado</li>
+                <li>Execute o aplicativo como administrador</li>
+                <li>Verifique os logs de erro (se disponíveis)</li>
+            </ul>
+
+            <h2>Contato com Suporte</h2>
+            <p>
+                Se os problemas persistirem, você pode:
+            </p>
+            <ul>
+                <li>Usar o <strong>💬 Chat Suporte</strong> no menu</li>
+                <li>Verificar os logs de erro do sistema</li>
+                <li>Reportar o problema através da interface de suporte</li>
+            </ul>
+        </section>
+    </div>
+
+    <script>
+        // Smooth scroll para links do menu
+        document.querySelectorAll('.sidebar a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Destacar item do menu ativo durante scroll
+        const sections = document.querySelectorAll('.section');
+        const menuLinks = document.querySelectorAll('.sidebar a');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (window.pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            menuLinks.forEach(link => {
+                link.style.background = 'rgba(255, 255, 255, 0.05)';
+                link.style.color = '#fff';
+                if (link.getAttribute('href') === '#' + current) {
+                    link.style.background = 'rgba(0, 255, 247, 0.2)';
+                    link.style.color = '#00fff7';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

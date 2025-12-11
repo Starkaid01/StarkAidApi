@@ -5,7 +5,7 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 
 interface HealthApi {
-    @GET("api/HealthCheck/mqtt")
+    @GET("api/v1/HealthCheck/mqtt")
     suspend fun checkMqttHealth(
         @Header("Authorization") auth: String,
         @Header("X-API-Key") apiKey: String

@@ -89,7 +89,7 @@ class RefreshTokenInterceptor(context: Context) : Interceptor {
                 .toRequestBody("application/json".toMediaType())
 
             val request = Request.Builder()
-                .url("https://starkaid.runasp.net/api/Auth/refresh-token")
+                .url("https://starkaid.runasp.net/api/v1/Auth/refresh-token")
                 .addHeader("Connection", "close")
                 .post(requestBody)
                 .build()

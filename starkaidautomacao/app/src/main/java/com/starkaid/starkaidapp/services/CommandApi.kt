@@ -6,7 +6,7 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface CommandApi {
-    @POST("api/Commands/publish")
+    @POST("api/v1/Commands/publish")
     suspend fun sendCommand(
         @Body command: CommandRequest,
         @Header("Authorization") authHeader: String,

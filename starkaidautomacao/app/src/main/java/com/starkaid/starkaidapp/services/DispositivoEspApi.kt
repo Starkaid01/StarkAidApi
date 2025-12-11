@@ -4,7 +4,7 @@ import retrofit2.Response
 import retrofit2.http.GET
 
 interface DispositivoEspApi {
-    @GET("api/DispositivosEsp")
+    @GET("api/v1/DispositivosEsp")
     suspend fun listarDispositivosEsp(): Response<List<DispositivoEspResponse>>
 }
 

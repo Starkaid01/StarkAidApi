@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using StarkAid.Api.Data;
-using StarkAid.Api.DTOs.Suporte;
+using StarkAid.Api.DTOs.V1.Suporte;
 using StarkAid.Api.Entities;
-using StarkAid.Api.Services.Suporte;
+using StarkAid.Api.Services.V1.Suporte;
 using System.Security.Claims;
 
 namespace StarkAid.Api.Hubs;
@@ -192,7 +192,9 @@ public class SupportChatHub : Hub
         }
         else
         {
-            // Mensagem subsequente
+            // Mensagem subsequente - adicionar delay para efeito visual
+            await Task.Delay(500); // Pequeno delay para dar tempo da mensagem do usuário aparecer
+            
             string resposta;
             try
             {
@@ -205,6 +207,9 @@ public class SupportChatHub : Hub
                 _logger.LogError(ex, "Erro ao processar mensagem do usuário {UserId}", userId);
                 resposta = "Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.";
             }
+            
+            // Adicionar delay adicional para simular processamento
+            await Task.Delay(800);
             
             // Verificar se resposta contém comando
             var respostaFinal = await ProcessarComandoNaResposta(resposta ?? "Desculpe, não consegui processar sua mensagem. Por favor, tente novamente.", userId, origem);
@@ -244,15 +249,48 @@ public class SupportChatHub : Hub
             var comando = comandoMatch.Groups[1].Value;
             var comandoCompleto = origem == "software" ? $"suporteToSoft:{comando}" : $"suporteToApp:{comando}";
 
+            // Remover [COMANDO:...] da resposta antes de enviar ao usuário
+            var respostaSemComando = System.Text.RegularExpressions.Regex.Replace(resposta, @"\[COMANDO:[^\]]+\]", "").Trim();
+            
+            // Se há texto antes do comando, enviar primeiro
+            if (!string.IsNullOrEmpty(respostaSemComando))
+            {
+                await Clients.Caller.SendAsync("ReceiveMessage", new ChatMessageDto
+                {
+                    Message = respostaSemComando,
+                    Sender = "ia",
+                    Timestamp = DateTime.UtcNow,
+                    UserId = userId,
+                    Origem = origem
+                });
+            }
+            
+            // Enviar mensagem de processamento
+            var acaoNome = comando switch
+            {
+                "limparcache" => "Limpando cache",
+                "atualizardados" => "Atualizando dados",
+                "logout" => "Desconectando",
+                "limpardados" => "Limpando dados",
+                _ => "Processando"
+            };
+            
+            await Clients.Caller.SendAsync("ReceiveMessage", new ChatMessageDto
+            {
+                Message = $"⏳ {acaoNome}...",
+                Sender = "ia",
+                Timestamp = DateTime.UtcNow,
+                UserId = userId,
+                Origem = origem
+            });
+
             // Enviar comando via SignalR
             if (origem == "software")
             {
-                // Enviar via DispositivoEspHub para software Windows Forms
                 await _dispositivoEspHubContext.Clients.Group("type_software").SendAsync("SuporteComando", comandoCompleto);
             }
             else
             {
-                // Enviar via DeviceHub para app
                 await _deviceHubContext.Clients.Group(userId.ToString()).SendAsync("SuporteComando", comandoCompleto);
             }
 
@@ -267,8 +305,30 @@ public class SupportChatHub : Hub
             _context.SuporteAcoes.Add(acao);
             await _context.SaveChangesAsync();
 
-            // Remover [COMANDO:...] da resposta antes de enviar ao usuário
-            resposta = System.Text.RegularExpressions.Regex.Replace(resposta, @"\[COMANDO:[^\]]+\]", "").Trim();
+            // Aguardar alguns segundos para simular processamento
+            await Task.Delay(2500);
+            
+            // Enviar confirmação
+            var acaoNomeCompleto = comando switch
+            {
+                "limparcache" => "limpeza de cache",
+                "atualizardados" => "atualização de dados",
+                "logout" => "logout",
+                "limpardados" => "limpeza de dados",
+                _ => comando
+            };
+            
+            await Clients.Caller.SendAsync("ReceiveMessage", new ChatMessageDto
+            {
+                Message = $"✅ {acaoNomeCompleto} concluída!\n\nPor favor, verifique se o problema foi resolvido. Se ainda não estiver funcionando, me avise e vou tentar outra solução.",
+                Sender = "ia",
+                Timestamp = DateTime.UtcNow,
+                UserId = userId,
+                Origem = origem
+            });
+            
+            // Retornar string vazia para não enviar mensagem duplicada
+            return "";
         }
 
         return resposta;
@@ -297,19 +357,9 @@ public class SupportChatHub : Hub
                 await _context.SaveChangesAsync();
             }
 
-            // Enviar mensagem de confirmação
-            var mensagem = sucesso 
-                ? $"Ação '{acao}' executada com sucesso. Teste novamente e veja se resolveu?" 
-                : $"Ação '{acao}' executada. Teste novamente e veja se resolveu?";
-
-            await Clients.Caller.SendAsync("ReceiveMessage", new ChatMessageDto
-            {
-                Message = mensagem,
-                Sender = "ia",
-                Timestamp = DateTime.UtcNow,
-                UserId = userId,
-                Origem = origem
-            });
+            // Não enviar mensagem duplicada - a confirmação já foi enviada em ProcessarComandoNaResposta
+            // Apenas atualizar o status da ação no banco
+            _logger.LogInformation("Ação {Acao} executada pelo usuário {UserId} com sucesso: {Sucesso}", acao, userId, sucesso);
         }
     }
 

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using StarkAid.Api.Data;
 using StarkAid.Api.Entities;
-using StarkAid.Api.Services.Email;
+using StarkAid.Api.Services.V1.Email;
 
 namespace StarkAid.Api.Services.Notifications;
 

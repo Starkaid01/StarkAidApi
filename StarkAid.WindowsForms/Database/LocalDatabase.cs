@@ -244,6 +244,9 @@ public class LocalDatabase
             command.CommandText = createComandosShell;
             command.ExecuteNonQuery();
 
+            // Inserir comandos de exemplo se a tabela estiver vazia
+            InitializeComandosShellExemplos(connection);
+
             command.CommandText = createUser;
             command.ExecuteNonQuery();
 
@@ -1015,6 +1018,46 @@ public class LocalDatabase
         command.CommandText = "DELETE FROM ComandosShell WHERE Id = @Id";
         command.Parameters.AddWithValue("@Id", id);
         command.ExecuteNonQuery();
+    }
+
+    private void InitializeComandosShellExemplos(SqliteConnection connection)
+    {
+        try
+        {
+            // Verificar se já existem comandos
+            using var checkCommand = connection.CreateCommand();
+            checkCommand.CommandText = "SELECT COUNT(*) FROM ComandosShell";
+            var count = Convert.ToInt32(checkCommand.ExecuteScalar());
+            
+            // Se não houver comandos, inserir exemplos
+            if (count == 0)
+            {
+                using var insertCommand = connection.CreateCommand();
+                
+                // Comando 1: Abrir calculadora
+                insertCommand.CommandText = @"
+                    INSERT INTO ComandosShell (ComandoInput, Resposta, ComandoCMD)
+                    VALUES (@ComandoInput1, @Resposta1, @ComandoCMD1)";
+                insertCommand.Parameters.AddWithValue("@ComandoInput1", "abrir calculadora");
+                insertCommand.Parameters.AddWithValue("@Resposta1", "Ok, abrindo");
+                insertCommand.Parameters.AddWithValue("@ComandoCMD1", "start \"\" \"calc\"");
+                insertCommand.ExecuteNonQuery();
+                
+                // Comando 2: Abrir calculadora daqui 1 minuto
+                insertCommand.Parameters.Clear();
+                insertCommand.CommandText = @"
+                    INSERT INTO ComandosShell (ComandoInput, Resposta, ComandoCMD)
+                    VALUES (@ComandoInput2, @Resposta2, @ComandoCMD2)";
+                insertCommand.Parameters.AddWithValue("@ComandoInput2", "abrir calculadora daqui 1 minuto");
+                insertCommand.Parameters.AddWithValue("@Resposta2", "Ok, abrindo");
+                insertCommand.Parameters.AddWithValue("@ComandoCMD2", "timeout /t 60 /nobreak >nul && start \"\" \"calc\"");
+                insertCommand.ExecuteNonQuery();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Erro ao inicializar comandos shell de exemplo: {ex.Message}");
+        }
     }
 
     // User

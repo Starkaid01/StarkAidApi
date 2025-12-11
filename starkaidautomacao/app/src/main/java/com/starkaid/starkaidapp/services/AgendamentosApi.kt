@@ -5,37 +5,37 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface AgendamentosApi {
-    @GET("api/Agendamentos")
+    @GET("api/v1/Agendamentos")
     suspend fun listarAgendamentos(): Response<List<AgendamentoResponse>>
 
-    @POST("api/Agendamentos")
+    @POST("api/v1/Agendamentos")
     suspend fun criarAgendamento(
         @Body request: CriarAgendamentoRequest
     ): Response<AgendamentoResponse>
 
-    @PUT("api/Agendamentos/{id}")
+    @PUT("api/v1/Agendamentos/{id}")
     suspend fun atualizarAgendamento(
         @Path("id") id: String,
         @Body request: AtualizarAgendamentoRequest
     ): Response<String>
 
-    @DELETE("api/Agendamentos/{id}")
+    @DELETE("api/v1/Agendamentos/{id}")
     suspend fun deletarAgendamento(
         @Path("id") id: String
     ): Response<ResponseBody>
 
     // Novos endpoints para tipos específicos de agendamento
-    @POST("api/Agendamentos/esp")
+    @POST("api/v1/Agendamentos/esp")
     suspend fun criarAgendamentoEsp(
         @Body request: CriarAgendamentoEspRequest
     ): Response<AgendamentoResponse>
 
-    @POST("api/Agendamentos/starkswitch")
+    @POST("api/v1/Agendamentos/starkswitch")
     suspend fun criarAgendamentoStarkswitch(
         @Body request: CriarAgendamentoStarkswitchRequest
     ): Response<AgendamentoResponse>
 
-    @POST("api/Agendamentos/ewelink")
+    @POST("api/v1/Agendamentos/ewelink")
     suspend fun criarAgendamentoEwelink(
         @Body request: CriarAgendamentoEwelinkRequest
     ): Response<AgendamentoResponse>

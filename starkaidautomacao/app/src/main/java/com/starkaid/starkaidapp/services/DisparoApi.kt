@@ -12,45 +12,45 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface DisparoApi {
-    @GET("api/DispositivosDisparo")
+    @GET("api/v1/DispositivosDisparo")
     suspend fun listarDispositivos(): Response<List<DispositivoDisparoResponse>>
 
-    @POST("api/DispositivosDisparo")
+    @POST("api/v1/DispositivosDisparo")
     suspend fun cadastrarDispositivo(
         @Body dispositivo: DispositivoRequest
     ): Response<DispositivoDisparoResponse>
 
-    @PUT("api/DispositivosDisparo/{id}")
+    @PUT("api/v1/DispositivosDisparo/{id}")
     suspend fun atualizarDispositivo(
         @Path("id") id: String,
         @Body dispositivo: DispositivoRequest
     ): Response<Void>
 
-    @DELETE("api/DispositivosDisparo/{id}")
+    @DELETE("api/v1/DispositivosDisparo/{id}")
     suspend fun deletarDispositivo(
         @Path("id") id: String,
     ): Response<Void>
 
-    @GET("api/Disparos")
+    @GET("api/v1/Disparos")
     suspend fun listarDisparos(): Response<List<DisparoResponse>>
 
-    @POST("api/Disparos")
+    @POST("api/v1/Disparos")
     suspend fun criarDisparo(
         @Body request: CriarDisparoRequest
     ): Response<DisparoResponse>
 
-    @PUT("api/Disparos/{id}/confirmar")
+    @PUT("api/v1/Disparos/{id}/confirmar")
     suspend fun confirmarDisparo(
         @Path("id") disparoId: String
     ): Response<Void>
 
 
-    @DELETE("api/Disparos/{id}")
+    @DELETE("api/v1/Disparos/{id}")
     suspend fun deletarDisparo(
         @Path("id") id: String
     ): Response<Void>
 
-    @GET("api/DispositivosDisparo/{id}")
+    @GET("api/v1/DispositivosDisparo/{id}")
     suspend fun buscarDispositivo(
         @Path("id") id: String
     ): Response<DispositivoDisparoResponse>

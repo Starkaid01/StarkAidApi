@@ -1,0 +1,687 @@
+<div class="content">
+        <!-- Introdução -->
+        <section id="introducao" class="section">
+            <h1>Introdução ao StarkAid Android</h1>
+            <p>
+                O <strong>StarkAid Android</strong> é um assistente virtual inteligente para dispositivos Android que permite controlar 
+                seu smartphone e dispositivos IoT através de comandos de voz. Com recursos avançados de automação, 
+                integração com dispositivos ESP, Ewelink e StarkSwitch, e inteligência artificial, o StarkAid transforma sua experiência 
+                de uso do celular.
+            </p>
+            <h2>Principais Funcionalidades</h2>
+            <ul>
+                <li>🎤 <strong>Reconhecimento de Voz:</strong> Controle total através de comandos de voz</li>
+                <li>🤖 <strong>Inteligência Artificial:</strong> Respostas inteligentes e contextualizadas</li>
+                <li>🔌 <strong>Controle de Dispositivos:</strong> Gerencie dispositivos ESP, Ewelink e StarkSwitch</li>
+                <li>📱 <strong>Controle de Apps:</strong> Abra aplicativos e controle funcionalidades do Android</li>
+                <li>🎵 <strong>Integração Spotify:</strong> Controle música através de comandos de voz</li>
+                <li>💬 <strong>WhatsApp:</strong> Envie mensagens via WhatsApp por voz</li>
+                <li>⏰ <strong>Agendamentos:</strong> Automatize tarefas e comandos</li>
+                <li>💰 <strong>StarkCoins:</strong> Sistema de créditos para uso de recursos premium</li>
+            </ul>
+        </section>
+
+        <!-- Instalação -->
+        <section id="instalacao" class="section">
+            <h1>Instalação</h1>
+            <h2>Requisitos do Sistema</h2>
+            <ul>
+                <li>Android 6.0 (Marshmallow) ou superior</li>
+                <li>Microfone funcional</li>
+                <li>Permissões de microfone e localização (quando necessário)</li>
+                <li>Conexão com internet (para recursos de IA e sincronização)</li>
+                <li>Conta Google (para alguns recursos)</li>
+            </ul>
+            <h2>Processo de Instalação</h2>
+            <ol>
+                <li>Baixe o arquivo APK do StarkAid Android</li>
+                <li>Ative a instalação de fontes desconhecidas nas configurações do Android</li>
+                <li>Execute o arquivo APK e siga as instruções de instalação</li>
+                <li>Após a instalação, abra o aplicativo</li>
+                <li>Na primeira execução, você precisará fazer login ou criar uma conta</li>
+                <li>Conceda as permissões necessárias (microfone, localização, etc.)</li>
+            </ol>
+        </section>
+
+        <!-- Configuração Inicial -->
+        <section id="configuracao-inicial" class="section">
+            <h1>Configuração Inicial</h1>
+            <h2>1. Login e Conta</h2>
+            <p>
+                Ao iniciar o aplicativo pela primeira vez, você precisará fazer login com suas credenciais. 
+                Se não tiver uma conta, você pode criar uma através da interface de login.
+            </p>
+
+            <h2>2. Configurar Assistente</h2>
+            <p>
+                Acesse as configurações do assistente para personalizar:
+            </p>
+            <ul>
+                <li><strong>Nome do Assistente:</strong> O nome que você usará para ativar o assistente</li>
+                <li><strong>Resposta Padrão:</strong> Mensagem que o assistente fala quando você chama apenas pelo nome</li>
+                <li><strong>Personalidade:</strong> Escolha o estilo de resposta do assistente</li>
+            </ul>
+
+            <h3>Exemplo de Configuração:</h3>
+            <div class="command-card">
+                <h4>Nome do Assistente</h4>
+                <div class="command-example">Jarvis</div>
+                <div class="description">
+                    Quando você disser apenas "Jarvis", o assistente responderá com a resposta padrão configurada.
+                </div>
+            </div>
+
+            <h2>3. Configurar Integrações</h2>
+            <p>
+                O app permite configurar várias integrações:
+            </p>
+            <ul>
+                <li><strong>Spotify:</strong> Conecte sua conta Spotify para controle de música</li>
+                <li><strong>WhatsApp:</strong> Configure o WhatsApp para envio de mensagens</li>
+                <li><strong>Ewelink:</strong> Faça login na plataforma Ewelink para controlar dispositivos</li>
+                <li><strong>Inteligência Artificial:</strong> Ative/desative a IA conforme necessário</li>
+            </ul>
+
+            <h2>4. Permissões Necessárias</h2>
+            <p>
+                O aplicativo precisa das seguintes permissões:
+            </p>
+            <ul>
+                <li><strong>Microfone:</strong> Para reconhecimento de voz</li>
+                <li><strong>Localização:</strong> Para previsão do tempo e outras funcionalidades</li>
+                <li><strong>Armazenamento:</strong> Para salvar dados e cache</li>
+                <li><strong>Notificações:</strong> Para alertas e lembretes</li>
+            </ul>
+        </section>
+
+        <!-- Comandos Predefinidos -->
+        <section id="comandos-predefinidos" class="section">
+            <h1>Comandos Predefinidos <span class="badge badge-predefined">Sistema</span></h1>
+            <p>
+                Os comandos predefinidos são comandos do sistema que não precisam ser configurados pelo usuário. 
+                Eles estão sempre disponíveis e funcionam imediatamente após a instalação.
+            </p>
+
+            <h2>Saudações</h2>
+            <div class="command-card">
+                <h4>Bom Dia</h4>
+                <div class="command-example">"Bom dia"</div>
+                <div class="description">
+                    O assistente responde com uma saudação apropriada. Se já for tarde ou noite, 
+                    ele corrige automaticamente baseado no horário atual.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Boa Tarde</h4>
+                <div class="command-example">"Boa tarde"</div>
+                <div class="description">
+                    Saudação para o período da tarde. O assistente verifica o horário e responde adequadamente.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Boa Noite</h4>
+                <div class="command-example">"Boa noite"</div>
+                <div class="description">
+                    Saudação para o período noturno. O assistente verifica o horário e responde adequadamente.
+                </div>
+            </div>
+
+            <h2>Data e Hora</h2>
+            <div class="command-card">
+                <h4>Que Horas São</h4>
+                <div class="command-example">"Que horas são"<br>"Que horas é agora"<br>"Quantas horas"</div>
+                <div class="description">
+                    O assistente informa a hora atual no formato 24 horas (HH:mm).
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Que Dia É Hoje</h4>
+                <div class="command-example">"Que dia é hoje"<br>"Que dia é"<br>"Hoje é que dia"</div>
+                <div class="description">
+                    O assistente informa a data completa atual, incluindo dia da semana, dia, mês e ano.
+                </div>
+            </div>
+
+            <h2>Previsão do Tempo</h2>
+            <div class="command-card">
+                <h4>Previsão do Tempo</h4>
+                <div class="command-example">"Como está o tempo"<br>"Qual a previsão do tempo"<br>"Tempo hoje"<br>"Como o tempo está"</div>
+                <div class="description">
+                    O assistente busca e informa a previsão do tempo atual, incluindo temperatura, 
+                    condições climáticas e informações sobre vento. Requer conexão com a internet e permissão de localização.
+                </div>
+            </div>
+
+            <h2>Abrir Aplicativos</h2>
+            <p>Você pode abrir os seguintes aplicativos através de comandos de voz:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Aplicativo</th>
+                        <th>Comando de Exemplo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Facebook</td>
+                        <td>"Abrir Facebook"</td>
+                    </tr>
+                    <tr>
+                        <td>WhatsApp</td>
+                        <td>"Abrir WhatsApp"</td>
+                    </tr>
+                    <tr>
+                        <td>YouTube</td>
+                        <td>"Abrir YouTube" ou "Abrir o YouTube"</td>
+                    </tr>
+                    <tr>
+                        <td>Instagram</td>
+                        <td>"Abrir Instagram"</td>
+                    </tr>
+                    <tr>
+                        <td>TikTok</td>
+                        <td>"Abrir TikTok"</td>
+                    </tr>
+                    <tr>
+                        <td>Mercado Livre</td>
+                        <td>"Abrir Mercado Livre"</td>
+                    </tr>
+                    <tr>
+                        <td>Shopee</td>
+                        <td>"Abrir Shopee"</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Controle de Música</h2>
+            <div class="command-card">
+                <h4>Tocar Música</h4>
+                <div class="command-example">"Tocar [nome da música]"<br>"Toca [nome da música]"<br>"Toque [nome da música]"</div>
+                <div class="description">
+                    Toca uma música no Spotify. Requer conta Spotify conectada e StarkCoins (0.2 por música).
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Parar Música</h4>
+                <div class="command-example">"Parar música"<br>"Pare a música"<br>"Desligar música"<br>"Pausar música"</div>
+                <div class="description">
+                    Para a reprodução de música atual.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Aumentar Volume</h4>
+                <div class="command-example">"Aumentar volume"<br>"Aumentar música"<br>"Aumentar som"</div>
+                <div class="description">
+                    Aumenta o volume da música no Spotify.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Diminuir Volume</h4>
+                <div class="command-example">"Diminuir volume"<br>"Diminuir música"<br>"Diminuir som"</div>
+                <div class="description">
+                    Diminui o volume da música no Spotify.
+                </div>
+            </div>
+
+            <h2>WhatsApp</h2>
+            <div class="command-card">
+                <h4>Enviar Mensagem</h4>
+                <div class="command-example">"Manda mensagem para [nome] dizendo [mensagem]"<br>"Enviar mensagem para [nome] [mensagem]"</div>
+                <div class="description">
+                    Envia uma mensagem via WhatsApp para um contato. Requer WhatsApp ativado e contato na lista.
+                </div>
+            </div>
+
+            <h2>Controle de Dispositivos</h2>
+            <div class="command-card">
+                <h4>Ligar Dispositivo</h4>
+                <div class="command-example">"Ligar [nome do dispositivo]"<br>"Liga [nome]"<br>"Acender [nome]"<br>"Acende [nome]"</div>
+                <div class="description">
+                    Liga um dispositivo ESP, Ewelink ou StarkSwitch configurado.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Desligar Dispositivo</h4>
+                <div class="command-example">"Desligar [nome do dispositivo]"<br>"Desliga [nome]"<br>"Apagar [nome]"<br>"Apaga [nome]"</div>
+                <div class="description">
+                    Desliga um dispositivo ESP, Ewelink ou StarkSwitch configurado.
+                </div>
+            </div>
+
+            <h2>Controle de Fala</h2>
+            <div class="command-card">
+                <h4>Parar de Falar</h4>
+                <div class="command-example">"Cala a boca"<br>"Pare de falar"<br>"Para de falar"<br>"Parar de falar"<br>"Silêncio"</div>
+                <div class="description">
+                    Interrompe imediatamente a fala do assistente. Útil quando você quer parar uma resposta longa.
+                </div>
+            </div>
+
+            <h2>Controle de Inteligência Artificial</h2>
+            <div class="command-card">
+                <h4>Ativar Inteligência</h4>
+                <div class="command-example">"Ativar inteligência"<br>"Ligar inteligência"<br>"Ativa IA"<br>"Ligar IA"</div>
+                <div class="description">
+                    Ativa o modo de inteligência artificial completo. Quando ativado, todos os comandos não reconhecidos 
+                    serão processados pela IA. Requer conexão com a internet e StarkCoins.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Desativar Inteligência</h4>
+                <div class="command-example">"Desativar inteligência"<br>"Desligar inteligência"<br>"Desativa IA"<br>"Desligar IA"</div>
+                <div class="description">
+                    Desativa o modo de inteligência artificial completo. Apenas comandos configurados e perguntas serão processados.
+                </div>
+            </div>
+
+            <h2>Comandos do Sistema</h2>
+            <div class="command-card">
+                <h4>Limpar Cache</h4>
+                <div class="command-example">"Limpar cache"<br>"Limpar memória"<br>"Limpar dados"</div>
+                <div class="description">
+                    Limpa o cache e dados temporários do aplicativo.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Atualizar</h4>
+                <div class="command-example">"Atualizar"<br>"Atualiza"<br>"Atualize"</div>
+                <div class="description">
+                    Atualiza os dados do aplicativo, sincronizando com o servidor.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Otimizar</h4>
+                <div class="command-example">"Otimizar"<br>"Otimiza"<br>"Otimize"</div>
+                <div class="description">
+                    Otimiza o desempenho do dispositivo Android.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Sair para Frente</h4>
+                <div class="command-example">"Sair para frente"<br>"Sair da frente"</div>
+                <div class="description">
+                    Minimiza o aplicativo, enviando-o para segundo plano.
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Cadê Você / Trazer para Frente</h4>
+                <div class="command-example">"Cadê você"<br>"Onde está você"<br>"[Nome do assistente] aparece"</div>
+                <div class="description">
+                    Traz o aplicativo para primeiro plano, útil quando ele está em segundo plano.
+                </div>
+            </div>
+        </section>
+
+        <!-- Comandos Sociais -->
+        <section id="comandos-sociais" class="section">
+            <h1>Comandos Sociais <span class="badge badge-custom">Personalizável</span></h1>
+            <p>
+                Os comandos sociais são comandos personalizados que você pode criar para interações específicas. 
+                Eles permitem que você configure respostas personalizadas para comandos de voz.
+            </p>
+
+            <h2>Criar um Comando Social</h2>
+            <ol>
+                <li>Acesse <strong>💬 Comandos Sociais</strong> no menu do aplicativo</li>
+                <li>Toque no botão de adicionar (➕)</li>
+                <li>Preencha os campos:
+                    <ul>
+                        <li><strong>Comando:</strong> O texto que você dirá (ex: "me conte uma piada")</li>
+                        <li><strong>Resposta:</strong> O que o assistente responderá</li>
+                        <li><strong>Respostas Aleatórias (opcional):</strong> Múltiplas respostas que serão escolhidas aleatoriamente</li>
+                    </ul>
+                </li>
+                <li>Salve o comando</li>
+            </ol>
+
+            <h3>Exemplo de Configuração:</h3>
+            <div class="command-card">
+                <h4>Comando</h4>
+                <div class="command-example">me conte uma piada</div>
+            </div>
+            <div class="command-card">
+                <h4>Resposta Padrão</h4>
+                <div class="command-example">Por que o programador não dorme? Porque ele tem bugs na cabeça!</div>
+            </div>
+            <div class="command-card">
+                <h4>Respostas Aleatórias (JSON)</h4>
+                <pre><code>{
+  "alternativas": [
+    "Por que o programador não dorme? Porque ele tem bugs na cabeça!",
+    "O que é um terapeuta? 1024 gigaterapeutas!",
+    "Por que os programadores preferem o modo escuro? Porque bugs são atraídos pela luz!"
+  ]
+}</code></pre>
+            </div>
+        </section>
+
+        <!-- Dispositivos -->
+        <section id="dispositivos" class="section">
+            <h1>Dispositivos</h1>
+            <p>
+                O StarkAid Android suporta três tipos de dispositivos IoT que podem ser controlados por voz:
+            </p>
+
+            <h2>1. Dispositivos ESP</h2>
+            <p>
+                Dispositivos ESP são controlados via UDP ou através da API. Você precisa configurar o dispositivo na API.
+            </p>
+            <h3>Configuração:</h3>
+            <ol>
+                <li>Acesse a seção de dispositivos ESP no aplicativo</li>
+                <li>Os dispositivos são sincronizados automaticamente da API</li>
+                <li>Use comandos como "ligar [nome do dispositivo]" ou "desligar [nome do dispositivo]"</li>
+            </ol>
+
+            <h2>2. Dispositivos Ewelink</h2>
+            <p>
+                Dispositivos Ewelink são controlados através da API Ewelink. Requer login na plataforma Ewelink.
+            </p>
+            <h3>Configuração:</h3>
+            <ol>
+                <li>Acesse a seção de dispositivos Ewelink no aplicativo</li>
+                <li>Faça login na plataforma Ewelink</li>
+                <li>Os dispositivos são sincronizados automaticamente após login</li>
+                <li>Use comandos como "ligar [nome do dispositivo]" ou "desligar [nome do dispositivo]"</li>
+            </ol>
+
+            <h2>3. Dispositivos StarkSwitch</h2>
+            <p>
+                Dispositivos StarkSwitch são controlados via MQTT através da API StarkAid.
+            </p>
+            <h3>Configuração:</h3>
+            <ol>
+                <li>Acesse a seção de dispositivos StarkSwitch no aplicativo</li>
+                <li>Os dispositivos são sincronizados automaticamente</li>
+                <li>Use comandos como "ligar [nome do dispositivo]" ou "desligar [nome do dispositivo]"</li>
+            </ol>
+
+            <h2>Comandos de Voz para Dispositivos</h2>
+            <p>Você pode usar variações de comandos:</p>
+            <ul>
+                <li>"Ligar [nome do dispositivo]"</li>
+                <li>"Desligar [nome do dispositivo]"</li>
+                <li>"Acender [nome do dispositivo]"</li>
+                <li>"Apagar [nome do dispositivo]"</li>
+                <li>"Liga [nome do dispositivo]"</li>
+                <li>"Desliga [nome do dispositivo]"</li>
+                <li>"Abrir [nome do dispositivo]" (para portas, cortinas, etc.)</li>
+                <li>"Fechar [nome do dispositivo]"</li>
+            </ul>
+        </section>
+
+        <!-- Agendamentos -->
+        <section id="agendamentos" class="section">
+            <h1>Agendamentos</h1>
+            <p>
+                Os agendamentos permitem automatizar ações em horários específicos. Você pode agendar:
+            </p>
+            <ul>
+                <li>Comandos para dispositivos</li>
+                <li>Ações recorrentes</li>
+            </ul>
+
+            <h2>Criar um Agendamento</h2>
+            <ol>
+                <li>Acesse <strong>⏰ Agendamentos</strong> no menu</li>
+                <li>Toque no botão de adicionar (➕)</li>
+                <li>Configure:
+                    <ul>
+                        <li>Tipo de dispositivo (ESP, Ewelink ou StarkSwitch)</li>
+                        <li>Dispositivo a ser controlado</li>
+                        <li>Ação (ligar/desligar)</li>
+                        <li>Data e hora</li>
+                        <li>Recorrência (diário, semanal, etc.)</li>
+                    </ul>
+                </li>
+                <li>Salve o agendamento</li>
+            </ol>
+        </section>
+
+        <!-- Inteligência Artificial -->
+        <section id="inteligencia-artificial" class="section">
+            <h1>Inteligência Artificial</h1>
+            <p>
+                O StarkAid Android possui um sistema de inteligência artificial integrado que pode responder a perguntas 
+                e executar tarefas complexas. A IA funciona em dois modos:
+            </p>
+
+            <h2>Modo Pergunta</h2>
+            <p>
+                Quando a IA está desativada, apenas perguntas são processadas pela IA. Comandos não reconhecidos que não sejam perguntas 
+                não serão processados.
+            </p>
+
+            <h2>Modo Completo</h2>
+            <p>
+                Quando a IA está ativada, todos os comandos não reconhecidos serão processados pela IA, não apenas perguntas.
+            </p>
+
+            <h2>Como Funciona</h2>
+            <ol>
+                <li>Ative a IA através do switch no dashboard ou comando de voz</li>
+                <li>Quando você fizer uma pergunta ou comando que não está configurado, a IA processará</li>
+                <li>A resposta será falada pelo assistente</li>
+                <li>Cada uso consome StarkCoins</li>
+                <li>A IA se desativa automaticamente após 2 minutos de inatividade (modo completo)</li>
+            </ol>
+
+            <h2>Requisitos</h2>
+            <ul>
+                <li>Conexão com a internet</li>
+                <li>StarkCoins suficientes na conta</li>
+                <li>IA ativada no dashboard (para modo completo)</li>
+            </ul>
+
+            <h2>Exemplos de Uso</h2>
+            <div class="command-card">
+                <h4>Perguntas Gerais</h4>
+                <div class="command-example">
+                    "Qual a capital do Brasil?"<br>
+                    "Me explique o que é inteligência artificial"<br>
+                    "Como fazer um bolo de chocolate?"
+                </div>
+            </div>
+
+            <div class="command-card">
+                <h4>Tarefas Complexas (Modo Completo)</h4>
+                <div class="command-example">
+                    "Me dê dicas para melhorar minha produtividade"<br>
+                    "Qual a melhor forma de organizar arquivos no celular?"
+                </div>
+            </div>
+        </section>
+
+        <!-- Spotify -->
+        <section id="spotify" class="section">
+            <h1>Integração Spotify</h1>
+            <p>
+                O StarkAid Android possui integração completa com Spotify, permitindo controlar música através de comandos de voz.
+            </p>
+
+            <h2>Configuração</h2>
+            <ol>
+                <li>Ative o switch do Spotify no dashboard</li>
+                <li>Conecte sua conta Spotify (se necessário)</li>
+                <li>Certifique-se de ter StarkCoins suficientes (0.2 por música)</li>
+            </ol>
+
+            <h2>Comandos Disponíveis</h2>
+            <ul>
+                <li><strong>Tocar música:</strong> "Tocar [nome da música]"</li>
+                <li><strong>Parar música:</strong> "Parar música" ou "Pausar música"</li>
+                <li><strong>Aumentar volume:</strong> "Aumentar volume"</li>
+                <li><strong>Diminuir volume:</strong> "Diminuir volume"</li>
+            </ul>
+
+            <h2>Requisitos</h2>
+            <ul>
+                <li>Conta Spotify Premium (recomendado)</li>
+                <li>Spotify instalado no dispositivo</li>
+                <li>StarkCoins (0.2 por música tocada)</li>
+                <li>Spotify ativado no dashboard</li>
+            </ul>
+        </section>
+
+        <!-- WhatsApp -->
+        <section id="whatsapp" class="section">
+            <h1>Integração WhatsApp</h1>
+            <p>
+                O StarkAid Android permite enviar mensagens via WhatsApp através de comandos de voz.
+            </p>
+
+            <h2>Configuração</h2>
+            <ol>
+                <li>Ative o switch do WhatsApp no dashboard</li>
+                <li>Certifique-se de que o WhatsApp está instalado</li>
+                <li>Os contatos são sincronizados automaticamente</li>
+            </ol>
+
+            <h2>Enviar Mensagem</h2>
+            <p>
+                Use comandos como:
+            </p>
+            <div class="command-card">
+                <h4>Formato do Comando</h4>
+                <div class="command-example">
+                    "Manda mensagem para [nome do contato] dizendo [mensagem]"<br>
+                    "Enviar mensagem para [nome] [mensagem]"
+                </div>
+            </div>
+
+            <h3>Exemplos:</h3>
+            <ul>
+                <li>"Manda mensagem para João dizendo oi, tudo bem?"</li>
+                <li>"Enviar mensagem para Maria cheguei em casa"</li>
+            </ul>
+
+            <h2>Requisitos</h2>
+            <ul>
+                <li>WhatsApp instalado no dispositivo</li>
+                <li>WhatsApp ativado no dashboard</li>
+                <li>Contato deve estar na lista de contatos sincronizados</li>
+            </ul>
+        </section>
+
+        <!-- StarkCoins -->
+        <section id="starkcoins" class="section">
+            <h1>StarkCoins</h1>
+            <p>
+                StarkCoins é o sistema de créditos do StarkAid usado para recursos premium, principalmente 
+                o uso da inteligência artificial e controle de música no Spotify.
+            </p>
+
+            <h2>Como Funciona</h2>
+            <ul>
+                <li>Cada uso da IA consome uma quantidade de StarkCoins</li>
+                <li>Tocar música no Spotify consome 0.2 StarkCoins por música</li>
+                <li>Você pode adicionar créditos através de planos</li>
+                <li>Alguns planos incluem StarkCoins mensais</li>
+                <li>StarkCoins não expiram</li>
+            </ul>
+
+            <h2>Adicionar StarkCoins</h2>
+            <ol>
+                <li>Acesse <strong>💰 StarkCoins | Planos</strong> no menu</li>
+                <li>Escolha um plano ou adicione créditos diretamente</li>
+                <li>Siga o processo de pagamento</li>
+                <li>Os créditos serão adicionados automaticamente após confirmação</li>
+            </ol>
+
+            <h2>Verificar Saldo</h2>
+            <p>
+                O saldo de StarkCoins é exibido no dashboard principal. Você também pode verificar em 
+                <strong>💰 StarkCoins | Planos</strong>.
+            </p>
+        </section>
+
+        <!-- Troubleshooting -->
+        <section id="troubleshooting" class="section">
+            <h1>Solução de Problemas</h1>
+
+            <h2>O assistente não está ouvindo</h2>
+            <ul>
+                <li>Verifique se o microfone está funcionando</li>
+                <li>Verifique as permissões de microfone nas configurações do Android</li>
+                <li>Reinicie o aplicativo</li>
+                <li>Verifique se o reconhecimento de voz está ativado no dashboard</li>
+                <li>Certifique-se de que o assistente não está "dormindo" (chame pelo nome do assistente primeiro)</li>
+            </ul>
+
+            <h2>Comandos não estão funcionando</h2>
+            <ul>
+                <li>Verifique se você está falando claramente</li>
+                <li>Confirme que o comando está configurado corretamente</li>
+                <li>Para comandos de dispositivos, verifique se o dispositivo está online</li>
+                <li>Verifique a conexão com a internet (para IA e sincronização)</li>
+                <li>Certifique-se de que o assistente está "escutando" (não dormindo)</li>
+            </ul>
+
+            <h2>IA não está respondendo</h2>
+            <ul>
+                <li>Verifique se a IA está ativada (switch no dashboard)</li>
+                <li>Confirme que você tem StarkCoins suficientes</li>
+                <li>Verifique a conexão com a internet</li>
+                <li>Verifique o status da API no dashboard</li>
+                <li>Lembre-se: se a IA estiver desativada, apenas perguntas serão processadas</li>
+            </ul>
+
+            <h2>Dispositivos não respondem</h2>
+            <ul>
+                <li>Para ESP: Verifique se o dispositivo está na mesma rede e online</li>
+                <li>Para Ewelink: Verifique se está logado na plataforma e se o dispositivo está online</li>
+                <li>Para StarkSwitch: Verifique se o dispositivo está online na API</li>
+                <li>Teste o dispositivo manualmente antes de usar comandos de voz</li>
+                <li>Verifique a conexão com a internet</li>
+            </ul>
+
+            <h2>Spotify não está funcionando</h2>
+            <ul>
+                <li>Verifique se o Spotify está instalado</li>
+                <li>Confirme que o switch do Spotify está ativado</li>
+                <li>Verifique se você tem StarkCoins suficientes (0.2 por música)</li>
+                <li>Certifique-se de que sua conta Spotify está conectada</li>
+                <li>Verifique a conexão com a internet</li>
+            </ul>
+
+            <h2>WhatsApp não está enviando mensagens</h2>
+            <ul>
+                <li>Verifique se o WhatsApp está instalado</li>
+                <li>Confirme que o switch do WhatsApp está ativado</li>
+                <li>Verifique se o contato está na lista de contatos sincronizados</li>
+                <li>Certifique-se de que o nome do contato está correto</li>
+            </ul>
+
+            <h2>Erro ao abrir aplicativo</h2>
+            <ul>
+                <li>Verifique se você tem a versão mais recente do aplicativo</li>
+                <li>Reinicie o dispositivo</li>
+                <li>Desinstale e reinstale o aplicativo</li>
+                <li>Verifique se todas as permissões foram concedidas</li>
+                <li>Verifique os logs de erro (se disponíveis)</li>
+            </ul>
+
+            <h2>Contato com Suporte</h2>
+            <p>
+                Se os problemas persistirem, você pode:
+            </p>
+            <ul>
+                <li>Usar o <strong>💬 Chat Suporte</strong> no menu</li>
+                <li>Verificar os logs de erro do sistema</li>
+                <li>Reportar o problema através da interface de suporte</li>
+            </ul>
+        </section>
+    </div>
+

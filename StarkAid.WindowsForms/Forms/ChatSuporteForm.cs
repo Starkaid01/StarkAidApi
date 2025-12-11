@@ -180,10 +180,17 @@ public partial class ChatSuporteForm : Form
             }
 
             var baseUrl = _apiService.GetBaseUrl();
+            var hubUrl = $"{baseUrl}/hubs/support-chat?origem=software";
+            
+            System.Diagnostics.Debug.WriteLine($"[ChatSuporte] Conectando ao hub: {hubUrl}");
+            System.Diagnostics.Debug.WriteLine($"[ChatSuporte] Token presente: {!string.IsNullOrEmpty(token)}");
+            
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl($"{baseUrl}/hubs/support-chat?origem=software", options =>
+                .WithUrl(hubUrl, options =>
                 {
                     options.AccessTokenProvider = () => Task.FromResult<string?>(token);
+                    // Adicionar headers adicionais se necessário
+                    options.Headers.Add("X-From-Software", "true");
                 })
                 .WithAutomaticReconnect()
                 .Build();
@@ -221,6 +228,9 @@ public partial class ChatSuporteForm : Form
                     {
                         try
                         {
+                            // Ocultar "digitando..." antes de mostrar a resposta
+                            OcultarDigitando();
+                            
                             var json = System.Text.Json.JsonSerializer.Serialize(data);
                             var dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(json);
                             var message = dict?.ContainsKey("message") == true ? dict["message"]?.ToString() : json;
@@ -229,6 +239,7 @@ public partial class ChatSuporteForm : Form
                         }
                         catch
                         {
+                            OcultarDigitando();
                             // Se falhar, tentar como string direta
                             AdicionarMensagem(data?.ToString() ?? "Mensagem vazia", "ia");
                         }
@@ -238,6 +249,9 @@ public partial class ChatSuporteForm : Form
                 {
                     try
                     {
+                        // Ocultar "digitando..." antes de mostrar a resposta
+                        OcultarDigitando();
+                        
                         var json = System.Text.Json.JsonSerializer.Serialize(data);
                         var dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(json);
                         var message = dict?.ContainsKey("message") == true ? dict["message"]?.ToString() : json;
@@ -246,6 +260,7 @@ public partial class ChatSuporteForm : Form
                     }
                     catch
                     {
+                        OcultarDigitando();
                         // Se falhar, tentar como string direta
                         AdicionarMensagem(data?.ToString() ?? "Mensagem vazia", "ia");
                     }
@@ -380,13 +395,57 @@ public partial class ChatSuporteForm : Form
 
         try
         {
-            await _hubConnection.InvokeAsync("SendMessage", mensagem);
+            // Adicionar mensagem do usuário PRIMEIRO
             AdicionarMensagem(mensagem, "user");
+            
+            // Mostrar indicador "digitando..."
+            MostrarDigitando();
+            
+            // Enviar mensagem para o servidor
+            await _hubConnection.InvokeAsync("SendMessage", mensagem);
         }
         catch (Exception ex)
         {
+            OcultarDigitando();
             MessageBox.Show($"Erro ao enviar mensagem: {ex.Message}", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
+    
+    private string? _digitandoId = null;
+    
+    private void MostrarDigitando()
+    {
+        if (_rtbChat == null) return;
+        
+        var timestamp = DateTime.Now.ToString("HH:mm:ss");
+        _digitandoId = $"[{timestamp}] Assistente: ";
+        
+        _rtbChat.SelectionColor = Color.LightGreen;
+        _rtbChat.AppendText(_digitandoId);
+        _rtbChat.SelectionColor = Color.Gray;
+        _rtbChat.AppendText("digitando...");
+        _rtbChat.AppendText(Environment.NewLine);
+        _rtbChat.SelectionStart = _rtbChat.Text.Length;
+        _rtbChat.ScrollToCaret();
+    }
+    
+    private void OcultarDigitando()
+    {
+        if (_rtbChat == null || string.IsNullOrEmpty(_digitandoId)) return;
+        
+        // Remover linha "digitando..."
+        var texto = _rtbChat.Text;
+        var index = texto.LastIndexOf(_digitandoId);
+        if (index >= 0)
+        {
+            var endIndex = texto.IndexOf(Environment.NewLine, index);
+            if (endIndex >= 0)
+            {
+                _rtbChat.Text = texto.Substring(0, index) + texto.Substring(endIndex + Environment.NewLine.Length);
+            }
+        }
+        
+        _digitandoId = null;
     }
 
     private void AdicionarMensagem(string mensagem, string sender)

@@ -24,7 +24,7 @@ let appConfig = {
 // Carregar configuração do app na inicialização
 (async function loadAppConfig() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/Config/app-config`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/Config/app-config`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -78,7 +78,7 @@ async function fetchWithAuth(url, options = {}) {
     if (response.status === 401 && refreshToken) {
         console.log('Token expirado, tentando refresh...');
         try {
-            const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh-token`, {
+            const refreshResponse = await fetch(`${API_BASE_URL}/api/v1/Auth/refresh-token`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ refreshToken })
@@ -192,7 +192,7 @@ async function processEwelinkLogin(code, region = null) {
             requestBody.region = region;
         }
         
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/Ewelink/login`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -305,7 +305,7 @@ async function handleLogin(e) {
     const password = document.getElementById('login-password').value;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/Auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -358,7 +358,7 @@ async function handleRegister(e) {
     const password = document.getElementById('register-password').value;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/Auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -431,7 +431,7 @@ async function loadNotifications() {
     } else {
         // Se não tem role no currentUser, verifica pela API
         try {
-            const roleResponse = await fetchWithAuth(`${API_BASE_URL}/api/users/nivel`);
+            const roleResponse = await fetchWithAuth(`${API_BASE_URL}/api/v1/users/nivel`);
             if (roleResponse.ok) {
                 const roleData = await roleResponse.json();
                 const role = roleData.nivel;
@@ -460,7 +460,7 @@ async function loadNotifications() {
     console.log('Container de notificações exibido');
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/notifications/unread-count`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/notifications/unread-count`);
         if (response.ok) {
             const data = await response.json();
             const count = data.count || 0;
@@ -490,7 +490,7 @@ async function loadNotificationsList() {
     notificationsList.innerHTML = '<div class="notification-loading">Carregando notificações...</div>';
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/notifications`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/notifications`);
         if (response.ok) {
             const notifications = await response.json();
             
@@ -564,7 +564,7 @@ function toggleNotifications() {
 
 async function markNotificationAsRead(notificationId) {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/notifications/${notificationId}/mark-as-read`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/notifications/${notificationId}/mark-as-read`, {
             method: 'POST'
         });
         
@@ -580,7 +580,7 @@ async function markNotificationAsRead(notificationId) {
 
 async function markAllAsRead() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/notifications/mark-all-as-read`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/notifications/mark-all-as-read`, {
             method: 'POST'
         });
         
@@ -600,7 +600,7 @@ async function removeNotification(notificationId) {
     }
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/notifications/${notificationId}`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/notifications/${notificationId}`, {
             method: 'DELETE'
         });
         
@@ -634,7 +634,7 @@ document.addEventListener('click', (e) => {
 // Check user role and show appropriate dashboard
 async function checkUserRole() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/users/nivel`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/users/nivel`);
 
         if (!response.ok) {
             throw new Error('Erro ao verificar role');
@@ -894,7 +894,7 @@ function setupAdminTabs() {
 // Load Stats (Admin only)
 async function loadStats() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/stats`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/admin/stats`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
@@ -925,7 +925,7 @@ async function loadStats() {
 // Load Users
 async function loadUsers() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/admin/users`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
@@ -980,7 +980,7 @@ function refreshUsers() {
 // Edit User
 async function editUser(userId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
@@ -1022,7 +1022,7 @@ async function deleteUser(userId) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${authToken}`
@@ -1122,7 +1122,7 @@ function setupModal() {
         };
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1157,20 +1157,40 @@ async function viewUserDetails(userId) {
     const content = document.getElementById('user-details-content');
     
     modal.style.display = 'block';
-    content.innerHTML = '<div class="loading-spinner">Carregando detalhes do usuário...</div>';
+    content.innerHTML = '<div class="loading-spinner">Carregando dashboard do usuário...</div>';
     
     try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/details`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        // Buscar detalhes e dashboard em paralelo
+        const [detailsResponse, dashboardResponse] = await Promise.all([
+            fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}/details`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            }),
+            fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}/dashboard`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            })
+        ]);
 
-        if (!response.ok) {
+        if (!detailsResponse.ok) {
             throw new Error('Erro ao carregar detalhes do usuário');
         }
 
-        const data = await response.json();
+        if (!dashboardResponse.ok) {
+            throw new Error('Erro ao carregar dashboard do usuário');
+        }
+
+        const detailsData = await detailsResponse.json();
+        const dashboardData = await dashboardResponse.json();
+        
+        // Combinar dados
+        const data = {
+            ...detailsData,
+            dashboard: dashboardData
+        };
+        
         userDetailsCache = data; // Armazenar cache
         displayUserDetails(data);
     } catch (error) {
@@ -1179,6 +1199,198 @@ async function viewUserDetails(userId) {
                 Erro ao carregar detalhes: ${error.message}
             </div>
         `;
+    }
+}
+
+// Função para atualizar apenas a seção do Dashboard Completo
+async function refreshDashboardSection(userId) {
+    const content = document.getElementById('user-details-content');
+    const dashboardSection = content.querySelector('.dashboard-section:first-of-type');
+    
+    if (!dashboardSection) return;
+    
+    const refreshBtn = dashboardSection.querySelector('.refresh-btn');
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<span>⏳</span> Atualizando...';
+    }
+    
+    try {
+        const dashboardResponse = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}/dashboard`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!dashboardResponse.ok) {
+            throw new Error('Erro ao atualizar dashboard');
+        }
+
+        const dashboardData = await dashboardResponse.json();
+        
+        // Atualizar apenas os valores do dashboard
+        const dashboardGrid = dashboardSection.querySelector('.dashboard-grid');
+        if (dashboardGrid) {
+            dashboardGrid.innerHTML = `
+                <div class="dashboard-card">
+                    <div class="dashboard-icon">📡</div>
+                    <div class="dashboard-value">${dashboardData.quantidadeDispositivosEsp || 0}</div>
+                    <div class="dashboard-label">Dispositivos ESP</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-icon">🔌</div>
+                    <div class="dashboard-value">${dashboardData.quantidadeDispositivosEwelink || 0}</div>
+                    <div class="dashboard-label">Dispositivos Ewelink</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-icon">⚡</div>
+                    <div class="dashboard-value">${dashboardData.quantidadeDispositivosStarkSwitch || 0}</div>
+                    <div class="dashboard-label">Dispositivos StarkSwitch</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-icon">💬</div>
+                    <div class="dashboard-value">${dashboardData.totalComandosSociais || 0}</div>
+                    <div class="dashboard-label">Comandos Sociais</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-icon">${dashboardData.usuarioOnline ? '🟢' : '🔴'}</div>
+                    <div class="dashboard-value">${dashboardData.usuarioOnline ? 'Online' : 'Offline'}</div>
+                    <div class="dashboard-label">Status</div>
+                </div>
+            `;
+        }
+        
+        // Atualizar informações de form e activity
+        const infoGrid = dashboardSection.querySelector('.dashboard-info-grid');
+        if (infoGrid) {
+            const formatDate = (dateString) => {
+                if (!dateString) return 'N/A';
+                return new Date(dateString).toLocaleString('pt-BR');
+            };
+            
+            infoGrid.innerHTML = `
+                ${dashboardData.ultimoFormAcessado ? `
+                <div class="dashboard-info-card" style="background: var(--dark-bg); padding: 1.25rem; border-radius: 10px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.9rem; color: var(--light-text); margin-bottom: 0.5rem;">Último Form Acessado</div>
+                    <div style="font-weight: 600; color: var(--dark-text);">${dashboardData.ultimoFormAcessado}</div>
+                </div>
+                ` : ''}
+                ${dashboardData.ultimaActivityAcessada ? `
+                <div class="dashboard-info-card" style="background: var(--dark-bg); padding: 1.25rem; border-radius: 10px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.9rem; color: var(--light-text); margin-bottom: 0.5rem;">Última Activity Acessada</div>
+                    <div style="font-weight: 600; color: var(--dark-text);">${formatDate(dashboardData.ultimaActivityAcessada)}</div>
+                </div>
+                ` : ''}
+            `;
+        }
+        
+        // Atualizar cache
+        if (userDetailsCache) {
+            userDetailsCache.dashboard = dashboardData;
+        }
+        
+    } catch (error) {
+        console.error('Erro ao atualizar dashboard:', error);
+        alert('Erro ao atualizar dashboard: ' + error.message);
+    } finally {
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '<span>🔄</span> Atualizar';
+        }
+    }
+}
+
+// Função para atualizar apenas a seção de Últimos Comandos
+async function refreshLastCommandsSection(userId) {
+    const content = document.getElementById('user-details-content');
+    const commandsSection = content.querySelectorAll('.dashboard-section')[1]; // Segunda seção
+    
+    if (!commandsSection) return;
+    
+    const refreshBtn = commandsSection.querySelector('.refresh-btn');
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<span>⏳</span> Atualizando...';
+    }
+    
+    try {
+        const dashboardResponse = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}/dashboard`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!dashboardResponse.ok) {
+            throw new Error('Erro ao atualizar últimos comandos');
+        }
+
+        const dashboardData = await dashboardResponse.json();
+        
+        // Atualizar apenas os últimos comandos
+        const commandsGrid = commandsSection.querySelector('.last-commands-grid');
+        if (commandsGrid) {
+            commandsGrid.innerHTML = `
+                <div class="last-command-card">
+                    <div class="last-command-header">
+                        <span class="last-command-icon">📡</span>
+                        <span class="last-command-title">Último Comando ESP</span>
+                    </div>
+                    <div class="last-command-value">${dashboardData.ultimoComandoEsp || 'Nenhum comando'}</div>
+                </div>
+                <div class="last-command-card">
+                    <div class="last-command-header">
+                        <span class="last-command-icon">🔌</span>
+                        <span class="last-command-title">Último Comando Ewelink</span>
+                    </div>
+                    <div class="last-command-value">${dashboardData.ultimoComandoEwelink || 'Nenhum comando'}</div>
+                </div>
+                <div class="last-command-card">
+                    <div class="last-command-header">
+                        <span class="last-command-icon">⚡</span>
+                        <span class="last-command-title">Último Comando StarkSwitch</span>
+                    </div>
+                    <div class="last-command-value">${dashboardData.ultimoComandoStarkSwitch || 'Nenhum comando'}</div>
+                </div>
+                <div class="last-command-card">
+                    <div class="last-command-header">
+                        <span class="last-command-icon">💬</span>
+                        <span class="last-command-title">Último Comando Social</span>
+                    </div>
+                    <div class="last-command-value">${dashboardData.ultimoComandoSocial || 'Nenhum comando'}</div>
+                    ${dashboardData.ultimaRespostaSocial ? `
+                        <div class="last-command-response">
+                            <span class="detail-label">Resposta:</span> ${dashboardData.ultimaRespostaSocial}
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="last-command-card">
+                    <div class="last-command-header">
+                        <span class="last-command-icon">🤖</span>
+                        <span class="last-command-title">Último Comando IA</span>
+                    </div>
+                    <div class="last-command-value">${dashboardData.ultimoComandoIA || 'Nenhum comando'}</div>
+                    ${dashboardData.ultimaRespostaIA ? `
+                        <div class="last-command-response">
+                            <span class="detail-label">Resposta:</span> ${dashboardData.ultimaRespostaIA}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        // Atualizar cache
+        if (userDetailsCache) {
+            userDetailsCache.dashboard = dashboardData;
+        }
+        
+    } catch (error) {
+        console.error('Erro ao atualizar últimos comandos:', error);
+        alert('Erro ao atualizar últimos comandos: ' + error.message);
+    } finally {
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '<span>🔄</span> Atualizar';
+        }
     }
 }
 
@@ -1220,6 +1432,128 @@ function displayUserDetails(data) {
                 <div class="info-box">
                     <div class="info-box-label">Cadastrado em</div>
                     <div class="info-box-value">${formatDate(data.user.createdAt)}</div>
+                </div>
+                ${data.user.cidade ? `
+                <div class="info-box">
+                    <div class="info-box-label">Cidade</div>
+                    <div class="info-box-value">${data.user.cidade}</div>
+                </div>
+                ` : ''}
+                ${data.user.bairro ? `
+                <div class="info-box">
+                    <div class="info-box-label">Bairro</div>
+                    <div class="info-box-value">${data.user.bairro}</div>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+
+        <!-- Dashboard Stats -->
+        <div class="dashboard-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h4 style="margin: 0;">📊 Dashboard Completo</h4>
+                <button class="refresh-btn" onclick="refreshDashboardSection('${data.user.id}')" title="Atualizar Dashboard">
+                    <span>🔄</span> Atualizar
+                </button>
+            </div>
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="dashboard-icon">📡</div>
+                    <div class="dashboard-value">${data.dashboard?.quantidadeDispositivosEsp || 0}</div>
+                    <div class="dashboard-label">Dispositivos ESP</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-icon">🔌</div>
+                    <div class="dashboard-value">${data.dashboard?.quantidadeDispositivosEwelink || 0}</div>
+                    <div class="dashboard-label">Dispositivos Ewelink</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-icon">⚡</div>
+                    <div class="dashboard-value">${data.dashboard?.quantidadeDispositivosStarkSwitch || 0}</div>
+                    <div class="dashboard-label">Dispositivos StarkSwitch</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-icon">💬</div>
+                    <div class="dashboard-value">${data.dashboard?.totalComandosSociais || 0}</div>
+                    <div class="dashboard-label">Comandos Sociais</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-icon">${data.dashboard?.usuarioOnline ? '🟢' : '🔴'}</div>
+                    <div class="dashboard-value">${data.dashboard?.usuarioOnline ? 'Online' : 'Offline'}</div>
+                    <div class="dashboard-label">Status</div>
+                </div>
+            </div>
+            ${data.dashboard?.ultimoFormAcessado || data.dashboard?.ultimaActivityAcessada ? `
+            <div class="dashboard-info-grid" style="margin-top: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                ${data.dashboard?.ultimoFormAcessado ? `
+                <div class="dashboard-info-card" style="background: var(--dark-bg); padding: 1.25rem; border-radius: 10px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.9rem; color: var(--light-text); margin-bottom: 0.5rem;">Último Form Acessado</div>
+                    <div style="font-weight: 600; color: var(--dark-text);">${data.dashboard.ultimoFormAcessado}</div>
+                </div>
+                ` : ''}
+                ${data.dashboard?.ultimaActivityAcessada ? `
+                <div class="dashboard-info-card" style="background: var(--dark-bg); padding: 1.25rem; border-radius: 10px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.9rem; color: var(--light-text); margin-bottom: 0.5rem;">Última Activity Acessada</div>
+                    <div style="font-weight: 600; color: var(--dark-text);">${formatDate(data.dashboard.ultimaActivityAcessada)}</div>
+                </div>
+                ` : ''}
+            </div>
+            ` : ''}
+        </div>
+
+        <!-- Últimos Comandos Dashboard -->
+        <div class="dashboard-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h4 style="margin: 0;">🕐 Últimos Comandos</h4>
+                <button class="refresh-btn" onclick="refreshLastCommandsSection('${data.user.id}')" title="Atualizar Últimos Comandos">
+                    <span>🔄</span> Atualizar
+                </button>
+            </div>
+            <div class="last-commands-grid">
+                <div class="last-command-card">
+                    <div class="last-command-header">
+                        <span class="last-command-icon">📡</span>
+                        <span class="last-command-title">Último Comando ESP</span>
+                    </div>
+                    <div class="last-command-value">${data.dashboard?.ultimoComandoEsp || 'Nenhum comando'}</div>
+                </div>
+                <div class="last-command-card">
+                    <div class="last-command-header">
+                        <span class="last-command-icon">🔌</span>
+                        <span class="last-command-title">Último Comando Ewelink</span>
+                    </div>
+                    <div class="last-command-value">${data.dashboard?.ultimoComandoEwelink || 'Nenhum comando'}</div>
+                </div>
+                <div class="last-command-card">
+                    <div class="last-command-header">
+                        <span class="last-command-icon">⚡</span>
+                        <span class="last-command-title">Último Comando StarkSwitch</span>
+                    </div>
+                    <div class="last-command-value">${data.dashboard?.ultimoComandoStarkSwitch || 'Nenhum comando'}</div>
+                </div>
+                <div class="last-command-card">
+                    <div class="last-command-header">
+                        <span class="last-command-icon">💬</span>
+                        <span class="last-command-title">Último Comando Social</span>
+                    </div>
+                    <div class="last-command-value">${data.dashboard?.ultimoComandoSocial || 'Nenhum comando'}</div>
+                    ${data.dashboard?.ultimaRespostaSocial ? `
+                        <div class="last-command-response">
+                            <span class="detail-label">Resposta:</span> ${data.dashboard.ultimaRespostaSocial}
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="last-command-card">
+                    <div class="last-command-header">
+                        <span class="last-command-icon">🤖</span>
+                        <span class="last-command-title">Último Comando IA</span>
+                    </div>
+                    <div class="last-command-value">${data.dashboard?.ultimoComandoIA || 'Nenhum comando'}</div>
+                    ${data.dashboard?.ultimaRespostaIA ? `
+                        <div class="last-command-response">
+                            <span class="detail-label">Resposta:</span> ${data.dashboard.ultimaRespostaIA}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         </div>
@@ -1333,24 +1667,7 @@ function displayUserDetails(data) {
             `}
         </div>
 
-        <!-- Último Comando Section -->
-        <div class="details-section">
-            <h4>🤖 Último Comando de IA</h4>
-            ${data.ultimoComando ? `
-                <div class="detail-card">
-                    <p><span class="detail-label">Usuário disse:</span> ${data.ultimoComando.textoUsuario}</p>
-                    <p><span class="detail-label">IA respondeu:</span> ${data.ultimoComando.textoIa}</p>
-                    <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--light-text);">
-                        <span class="detail-label">Data:</span> ${formatDate(data.ultimoComando.criadoEm)}
-                    </p>
-                </div>
-            ` : `
-                <div class="empty-state">
-                    <div class="empty-state-icon">🤖</div>
-                    <p>Nenhum comando de IA registrado</p>
-                </div>
-            `}
-        </div>
+       
     `;
     
     // Setup event listeners for dynamically created buttons
@@ -1470,7 +1787,7 @@ function editDevice(deviceId, name, comando) {
 function deleteDevice(deviceId) {
     if (!confirm('Tem certeza que deseja deletar este dispositivo?')) return;
 
-    fetch(`${API_BASE_URL}/api/admin/devices/${deviceId}`, {
+    fetch(`${API_BASE_URL}/api/v1/admin/devices/${deviceId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${authToken}` }
     })
@@ -1501,7 +1818,7 @@ function editComandoSocial(comandoId, comando, resposta, respostasAleatorias) {
 function deleteComandoSocial(comandoId) {
     if (!confirm('Tem certeza que deseja deletar este comando social?')) return;
 
-    fetch(`${API_BASE_URL}/api/admin/comandos-sociais/${comandoId}`, {
+    fetch(`${API_BASE_URL}/api/v1/admin/comandos-sociais/${comandoId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${authToken}` }
     })
@@ -1532,7 +1849,7 @@ function editAgendamento(agendamentoId, comando, agendadoPara, recorrencia, exec
 function deleteAgendamento(agendamentoId) {
     if (!confirm('Tem certeza que deseja deletar este agendamento?')) return;
 
-    fetch(`${API_BASE_URL}/api/admin/agendamentos/${agendamentoId}`, {
+    fetch(`${API_BASE_URL}/api/v1/admin/agendamentos/${agendamentoId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${authToken}` }
     })
@@ -1558,7 +1875,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/devices/${deviceId}`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/admin/devices/${deviceId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1591,7 +1908,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/comandos-sociais/${comandoId}`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/admin/comandos-sociais/${comandoId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1628,7 +1945,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/agendamentos/${agendamentoId}`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/admin/agendamentos/${agendamentoId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1742,7 +2059,7 @@ async function loadUserDashboard() {
 async function loadUserStats() {
     try {
         console.log('Carregando estatísticas do usuário...');
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/users/stats`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/users/stats`);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -1777,7 +2094,7 @@ async function loadUserStats() {
 // Load User Info
 async function loadUserInfo() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/users/me`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/users/me`);
 
         if (!response.ok) throw new Error('Erro ao carregar informações do usuário');
 
@@ -1798,7 +2115,7 @@ async function loadUserInfo() {
 // Verificar endereço e redirecionar se necessário
 async function checkAddressAndRedirect() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/users/me`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/users/me`);
         if (!response.ok) {
             // Se houver erro 500, pode ser que a migration não foi aplicada ainda
             // Tentar novamente após um delay maior
@@ -1854,7 +2171,7 @@ async function checkAddressAndRedirect() {
 // Load User Devices
 async function loadUserDevices() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/devices`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/devices`);
 
         if (!response.ok) throw new Error('Erro ao carregar dispositivos');
 
@@ -1866,6 +2183,8 @@ async function loadUserDevices() {
             return;
         }
 
+        // Preservar classes ao atualizar conteúdo
+        const wasExpanded = devicesList.classList.contains('expanded');
         devicesList.innerHTML = devices.map(device => `
             <div class="item-card">
                 <div class="item-card-header">
@@ -1885,9 +2204,25 @@ async function loadUserDevices() {
                 </div>
             </div>
         `).join('');
+        
+        // Restaurar estado expandido/recolhido após carregar conteúdo
+        if (wasExpanded) {
+            devicesList.classList.remove('collapsed');
+            devicesList.classList.add('expanded');
+            devicesList.style.cssText = 'max-height: 600px !important; overflow-y: auto !important; overflow-x: hidden !important; opacity: 1 !important; margin-top: 1rem !important; display: flex !important; flex-direction: column !important; gap: 1rem !important;';
+        } else {
+            devicesList.classList.remove('expanded');
+            devicesList.classList.add('collapsed');
+            devicesList.style.cssText = 'max-height: 0 !important; overflow: hidden !important; opacity: 0 !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; gap: 0 !important;';
+        }
     } catch (error) {
         console.error('Erro ao carregar dispositivos:', error);
-        document.getElementById('devices-list').innerHTML = '<div class="error-message show">Erro ao carregar dispositivos</div>';
+        const devicesList = document.getElementById('devices-list');
+        devicesList.innerHTML = '<div class="error-message show">Erro ao carregar dispositivos</div>';
+        // Manter classes
+        if (!devicesList.classList.contains('collapsible-list')) {
+            devicesList.classList.add('collapsible-list', 'collapsed');
+        }
     }
 }
 
@@ -1896,12 +2231,12 @@ async function loadUserComandos() {
     try {
         console.log('Carregando comandos sociais...');
         // Tenta primeiro com ComandosSociais (padrão ASP.NET Core)
-        let response = await fetchWithAuth(`${API_BASE_URL}/api/ComandosSociais`);
+        let response = await fetchWithAuth(`${API_BASE_URL}/api/v1/ComandosSociais`);
 
         // Se 404, tenta com kebab-case
         if (response.status === 404) {
             console.log('Tentando com kebab-case...');
-            response = await fetchWithAuth(`${API_BASE_URL}/api/comandos-sociais`);
+            response = await fetchWithAuth(`${API_BASE_URL}/api/v1/comandos-sociais`);
         }
 
         if (!response.ok) {
@@ -1918,6 +2253,8 @@ async function loadUserComandos() {
             return;
         }
 
+        // Preservar classes ao atualizar conteúdo
+        const wasExpanded = comandosList.classList.contains('expanded');
         comandosList.innerHTML = comandos.map(comando => {
             let variacoes = 'N/A';
             try {
@@ -1947,9 +2284,25 @@ async function loadUserComandos() {
                 </div>
             `;
         }).join('');
+        
+        // Restaurar estado expandido/recolhido após carregar conteúdo
+        if (wasExpanded) {
+            comandosList.classList.remove('collapsed');
+            comandosList.classList.add('expanded');
+            comandosList.style.cssText = 'max-height: 600px !important; overflow-y: auto !important; overflow-x: hidden !important; opacity: 1 !important; margin-top: 1rem !important; display: flex !important; flex-direction: column !important; gap: 1rem !important;';
+        } else {
+            comandosList.classList.remove('expanded');
+            comandosList.classList.add('collapsed');
+            comandosList.style.cssText = 'max-height: 0 !important; overflow: hidden !important; opacity: 0 !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; gap: 0 !important;';
+        }
     } catch (error) {
         console.error('Erro ao carregar comandos sociais:', error);
-        document.getElementById('comandos-list').innerHTML = '<div class="error-message show">Erro ao carregar comandos sociais</div>';
+        const comandosList = document.getElementById('comandos-list');
+        comandosList.innerHTML = '<div class="error-message show">Erro ao carregar comandos sociais</div>';
+        // Manter classes
+        if (!comandosList.classList.contains('collapsible-list')) {
+            comandosList.classList.add('collapsible-list', 'collapsed');
+        }
     }
 }
 
@@ -2049,44 +2402,130 @@ function loadTabContent(tabName) {
 
 function setupUserTabs() {
     console.log('🔧 [Tabs] Configurando tabs...');
-    const tabButtons = document.querySelectorAll('.user-tab-btn');
-    const tabContents = document.querySelectorAll('.user-tab-content');
-    const toggle = document.getElementById('user-tabs-toggle');
-    const container = document.querySelector('.user-tabs-container');
+    console.log('🔧 [Tabs] Window width:', window.innerWidth);
     
-    console.log('🔧 [Tabs] Encontrados', tabButtons.length, 'botões de tab');
-    console.log('🔧 [Tabs] Encontrados', tabContents.length, 'conteúdos de tab');
+    // Aguardar um pouco para garantir que o DOM está pronto
+    setTimeout(() => {
+        const tabButtons = document.querySelectorAll('.user-tab-btn');
+        const tabContents = document.querySelectorAll('.user-tab-content');
+        const toggle = document.getElementById('user-tabs-toggle');
+        const container = document.querySelector('.user-tabs-container');
+        
+        console.log('🔧 [Tabs] Encontrados', tabButtons.length, 'botões de tab');
+        console.log('🔧 [Tabs] Encontrados', tabContents.length, 'conteúdos de tab');
+        console.log('🔧 [Tabs] Toggle encontrado:', !!toggle);
+        console.log('🔧 [Tabs] Container encontrado:', !!container);
 
-    // Se não houver tabs, não fazer nada
-    if (tabButtons.length === 0) {
-        console.warn('⚠️ [Tabs] Nenhuma tab encontrada!');
-        return;
-    }
+        // Se não houver tabs, não fazer nada
+        if (tabButtons.length === 0) {
+            console.warn('⚠️ [Tabs] Nenhuma tab encontrada!');
+            return;
+        }
+        
+        setupUserTabsInternal(tabButtons, tabContents, toggle, container);
+    }, 100);
+}
+
+function setupUserTabsInternal(tabButtons, tabContents, toggle, container) {
 
     // Configurar botão toggle para mobile
     if (toggle && container) {
-        toggle.addEventListener('click', (e) => {
+        console.log('🔧 [Tabs] Configurando toggle button...', { toggle, container });
+        
+        // Remover event listeners anteriores se existirem
+        const toggleHandler = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            container.classList.toggle('expanded');
-            container.classList.toggle('collapsed');
-        });
+            console.log('🔧 [Tabs] Toggle clicado! Container atual:', container.className);
+            
+            const isExpanded = container.classList.contains('expanded');
+            console.log('🔧 [Tabs] Estado atual - expanded:', isExpanded);
+            
+            if (isExpanded) {
+                container.classList.remove('expanded');
+                container.classList.add('collapsed');
+                console.log('🔧 [Tabs] Recolhendo menu...');
+            } else {
+                container.classList.remove('collapsed');
+                container.classList.add('expanded');
+                console.log('🔧 [Tabs] Expandindo menu...');
+            }
+            
+            console.log('🔧 [Tabs] Container após toggle:', container.className);
+            
+            // Verificar se o grid está visível
+            const grid = document.querySelector('.user-tabs-grid');
+            if (grid) {
+                const computedStyle = window.getComputedStyle(grid);
+                console.log('🔧 [Tabs] Grid display:', computedStyle.display);
+                console.log('🔧 [Tabs] Grid visibility:', computedStyle.visibility);
+                console.log('🔧 [Tabs] Grid height:', computedStyle.height);
+            }
+        };
+        
+        // Remover listener anterior se existir (usando uma flag)
+        if (toggle._toggleHandler) {
+            toggle.removeEventListener('click', toggle._toggleHandler);
+        }
+        toggle._toggleHandler = toggleHandler;
+        toggle.addEventListener('click', toggleHandler);
         
         // Inicializar como collapsed em mobile
         if (window.innerWidth <= 768) {
+            container.classList.remove('expanded');
             container.classList.add('collapsed');
+            console.log('🔧 [Tabs] Inicializado como collapsed (mobile)');
+        } else {
+            container.classList.remove('collapsed');
+            container.classList.remove('expanded');
+            console.log('🔧 [Tabs] Inicializado sem collapsed (desktop)');
         }
+        
+        // Adicionar listener para resize da janela
+        let resizeTimeout;
+        const resizeHandler = () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                console.log('🔧 [Tabs] Window resize detectado, largura:', window.innerWidth);
+                if (window.innerWidth <= 768) {
+                    if (!container.classList.contains('collapsed') && !container.classList.contains('expanded')) {
+                        container.classList.add('collapsed');
+                    }
+                } else {
+                    container.classList.remove('collapsed');
+                    container.classList.remove('expanded');
+                }
+            }, 250);
+        };
+        
+        if (!window._tabsResizeHandler) {
+            window._tabsResizeHandler = resizeHandler;
+            window.addEventListener('resize', resizeHandler);
+        }
+    } else {
+        console.warn('⚠️ [Tabs] Toggle ou container não encontrado!', { toggle, container });
     }
 
     // Configurar botões de tab
-    tabButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    tabButtons.forEach((btn) => {
+        const tab = btn.dataset.tab;
+        
+        // Criar handler único para cada botão
+        const clickHandler = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const tab = btn.dataset.tab;
-            console.log('🔧 [Tabs] Tab clicada:', tab);
+            console.log('🔧 [Tabs] Tab clicada:', tab, 'Elemento:', btn);
             activateTab(tab);
-        });
+        };
+        
+        // Remover listener anterior se existir
+        if (btn._tabClickHandler) {
+            btn.removeEventListener('click', btn._tabClickHandler);
+        }
+        btn._tabClickHandler = clickHandler;
+        btn.addEventListener('click', clickHandler);
+        
+        console.log('🔧 [Tabs] Event listener adicionado ao botão:', tab);
     });
     
     // Ativar tab padrão (Previsão do Tempo)
@@ -2105,6 +2544,69 @@ function setupUserTabs() {
     console.log('✅ [Tabs] Tabs configuradas');
 }
 
+// Função para toggle de listas recolhíveis
+function toggleList(listId, event) {
+    console.log('🔧 [ToggleList] Chamado para:', listId, 'Event:', event);
+    
+    const list = document.getElementById(listId);
+    if (!list) {
+        console.warn('⚠️ [ToggleList] Lista não encontrada:', listId);
+        return;
+    }
+    
+    console.log('🔧 [ToggleList] Lista encontrada, classes atuais:', list.className);
+    
+    const isCollapsed = list.classList.contains('collapsed');
+    console.log('🔧 [ToggleList] Estado atual - collapsed:', isCollapsed);
+    
+    // Encontrar a seta no botão que chamou a função
+    let button = null;
+    if (event && event.target) {
+        button = event.target.closest('.list-toggle-btn');
+    }
+    if (!button) {
+        button = document.querySelector(`[onclick*="toggleList('${listId}')"]`) ||
+                 document.querySelector(`[onclick*='toggleList("${listId}")']`);
+    }
+    
+    const arrow = button?.querySelector('.list-toggle-arrow');
+    console.log('🔧 [ToggleList] Botão encontrado:', !!button, 'Seta encontrada:', !!arrow);
+    
+    if (isCollapsed) {
+        // Expandir - seta aponta para cima (▲)
+        list.classList.remove('collapsed');
+        list.classList.add('expanded');
+        // Forçar estilos inline para garantir que funcione
+        list.style.cssText = 'max-height: 600px !important; overflow-y: auto !important; overflow-x: hidden !important; opacity: 1 !important; margin-top: 1rem !important; display: flex !important; flex-direction: column !important; gap: 1rem !important;';
+        
+        if (arrow) {
+            arrow.textContent = '▲';
+            arrow.style.transform = 'rotate(0deg)';
+        }
+        console.log('🔧 [ToggleList] Lista expandida:', listId, 'Classes após:', list.className);
+        console.log('🔧 [ToggleList] Estilos aplicados:', list.style.cssText);
+    } else {
+        // Recolher - seta aponta para baixo (▼)
+        list.classList.remove('expanded');
+        list.classList.add('collapsed');
+        // Forçar estilos inline para garantir que funcione
+        list.style.cssText = 'max-height: 0 !important; overflow: hidden !important; opacity: 0 !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; gap: 0 !important;';
+        
+        if (arrow) {
+            arrow.textContent = '▼';
+            arrow.style.transform = 'rotate(0deg)';
+        }
+        console.log('🔧 [ToggleList] Lista recolhida:', listId, 'Classes após:', list.className);
+        console.log('🔧 [ToggleList] Estilos aplicados:', list.style.cssText);
+    }
+    
+    // Prevenir propagação do evento
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+}
+
 // Setup User Forms
 function setupUserForms() {
     // Add Device Form
@@ -2116,7 +2618,7 @@ function setupUserForms() {
             const comando = document.getElementById('new-device-comando').value;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/devices`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/devices`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2151,7 +2653,7 @@ function setupUserForms() {
             const comando = document.getElementById('edit-user-device-comando').value;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/devices/${deviceId}`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/devices/${deviceId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2182,7 +2684,7 @@ function setupUserForms() {
 
             try {
                 // Tenta primeiro com ComandosSociais, depois com kebab-case
-                let response = await fetch(`${API_BASE_URL}/api/ComandosSociais`, {
+                let response = await fetch(`${API_BASE_URL}/api/v1/ComandosSociais`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2192,7 +2694,7 @@ function setupUserForms() {
                 });
 
                 if (response.status === 404) {
-                    response = await fetch(`${API_BASE_URL}/api/comandos-sociais`, {
+                    response = await fetch(`${API_BASE_URL}/api/v1/comandos-sociais`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2231,7 +2733,7 @@ function setupUserForms() {
 
             try {
                 // Tenta primeiro com ComandosSociais, depois com kebab-case
-                let response = await fetch(`${API_BASE_URL}/api/ComandosSociais/${comandoId}`, {
+                let response = await fetch(`${API_BASE_URL}/api/v1/ComandosSociais/${comandoId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2241,7 +2743,7 @@ function setupUserForms() {
                 });
 
                 if (response.status === 404) {
-                    response = await fetch(`${API_BASE_URL}/api/comandos-sociais/${comandoId}`, {
+                    response = await fetch(`${API_BASE_URL}/api/v1/comandos-sociais/${comandoId}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2275,7 +2777,7 @@ function setupUserForms() {
             const bairro = document.getElementById('edit-profile-bairro').value;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2311,7 +2813,7 @@ function setupUserForms() {
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/users/add-funds`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/users/add-funds`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2353,7 +2855,7 @@ function setupUserForms() {
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/users/change-password`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/users/change-password`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2388,7 +2890,7 @@ function setupUserForms() {
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2418,7 +2920,7 @@ function openAddDeviceModal() {
 
 function openEditProfileModal() {
     // Load current user data
-    fetch(`${API_BASE_URL}/api/users/me`, {
+    fetch(`${API_BASE_URL}/api/v1/users/me`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
     })
     .then(r => r.json())
@@ -2450,7 +2952,7 @@ function openPlanoModal() {
 
 async function contratarPlano(nivel) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/assinaturas/checkout`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/assinaturas/checkout`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2497,7 +2999,7 @@ function openDeleteAccountModal() {
 
 async function editUserDevice(deviceId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/devices/${deviceId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/devices/${deviceId}`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
@@ -2517,7 +3019,7 @@ async function deleteUserDevice(deviceId) {
     if (!confirm('Tem certeza que deseja excluir este dispositivo?')) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/devices/${deviceId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/devices/${deviceId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
@@ -2534,7 +3036,7 @@ async function deleteUserDevice(deviceId) {
 
 async function acionarDevice(deviceId, comando) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/commands/publish`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/commands/publish`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2560,12 +3062,12 @@ async function acionarDevice(deviceId, comando) {
 async function editUserComando(comandoId) {
     try {
         // Tenta primeiro com ComandosSociais, depois com kebab-case
-        let response = await fetch(`${API_BASE_URL}/api/ComandosSociais`, {
+        let response = await fetch(`${API_BASE_URL}/api/v1/ComandosSociais`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
         if (response.status === 404) {
-            response = await fetch(`${API_BASE_URL}/api/comandos-sociais`, {
+            response = await fetch(`${API_BASE_URL}/api/v1/comandos-sociais`, {
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
         }
@@ -2592,13 +3094,13 @@ async function deleteUserComando(comandoId) {
 
     try {
         // Tenta primeiro com ComandosSociais, depois com kebab-case
-        let response = await fetch(`${API_BASE_URL}/api/ComandosSociais/${comandoId}`, {
+        let response = await fetch(`${API_BASE_URL}/api/v1/ComandosSociais/${comandoId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
         if (response.status === 404) {
-            response = await fetch(`${API_BASE_URL}/api/comandos-sociais/${comandoId}`, {
+            response = await fetch(`${API_BASE_URL}/api/v1/comandos-sociais/${comandoId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
@@ -2709,7 +3211,7 @@ function connectDispositivoEspHub() {
 async function loadOnlineUsers() {
     try {
         console.log('[loadOnlineUsers] Carregando usuários online...');
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/users/online`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/users/online`);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -2771,7 +3273,7 @@ function refreshOnlineUsers() {
 // Load Users with Active Plans
 async function loadUsersWithPlans() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/users-with-plans`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/users-with-plans`);
 
         if (!response.ok) throw new Error('Erro ao carregar usuários com planos ativos');
 
@@ -2828,7 +3330,7 @@ function refreshUsersWithPlans() {
 // Load Starkcoins Vendas
 async function loadStarkcoinsVendas() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/starkcoins-vendas`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/starkcoins-vendas`);
 
         if (!response.ok) throw new Error('Erro ao carregar vendas de StarkCoins');
 
@@ -2898,7 +3400,7 @@ async function deleteStarkcoinsVenda(vendaId) {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/starkcoins-vendas/${vendaId}`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/starkcoins-vendas/${vendaId}`, {
             method: 'DELETE'
         });
 
@@ -2918,7 +3420,7 @@ async function deleteStarkcoinsVenda(vendaId) {
 // Load Pagamentos com Falhas
 async function loadPagamentosFalhas() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/pagamentos-falhas`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/pagamentos-falhas`);
 
         if (!response.ok) throw new Error('Erro ao carregar pagamentos com falhas');
 
@@ -2979,7 +3481,7 @@ async function deletePagamentoFalha(pagamentoId) {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/pagamentos-falhas/${pagamentoId}`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/pagamentos-falhas/${pagamentoId}`, {
             method: 'DELETE'
         });
 
@@ -2999,7 +3501,7 @@ async function deletePagamentoFalha(pagamentoId) {
 // Load Error Logs Users
 async function loadErrorLogsUsers() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/error-logs/users`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/error-logs/users`);
 
         if (!response.ok) throw new Error('Erro ao carregar usuários com logs de erro');
 
@@ -3041,7 +3543,7 @@ function refreshErrorLogs() {
 // View Error Logs Soft
 async function viewErrorLogsSoft(userId) {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/error-logs/soft/${userId}`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/error-logs/soft/${userId}`);
 
         if (!response.ok) throw new Error('Erro ao carregar logs de erro');
 
@@ -3111,7 +3613,7 @@ async function viewErrorLogsSoft(userId) {
 async function viewErrorLogsApp(userId) {
     try {
         console.log('[viewErrorLogsApp] Carregando logs de erro do app para usuário:', userId);
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/error-logs/app/${userId}`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/error-logs/app/${userId}`);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -3192,7 +3694,7 @@ async function deleteErrorLogApp(logId, userId) {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/error-logs/app/${logId}`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/error-logs/app/${logId}`, {
             method: 'DELETE'
         });
 
@@ -3216,7 +3718,7 @@ async function deleteErrorLogSoft(logId, userId) {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/error-logs/soft/${logId}`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/error-logs/soft/${logId}`, {
             method: 'DELETE'
         });
 
@@ -3245,7 +3747,7 @@ async function consultarCodigoErroSoft() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/logs/error-code-soft/${encodeURIComponent(codigo)}`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/logs/error-code-soft/${encodeURIComponent(codigo)}`);
 
         if (!response.ok) throw new Error('Erro ao consultar código de erro');
 
@@ -3300,7 +3802,7 @@ async function consultarCodigoErroApp() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/logs/error-code-app/${encodeURIComponent(codigo)}`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/logs/error-code-app/${encodeURIComponent(codigo)}`);
 
         if (!response.ok) throw new Error('Erro ao consultar código de erro');
 
@@ -3355,7 +3857,7 @@ async function buscarSolucoesSoft() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/logs/error-solutions-soft/${encodeURIComponent(codigo)}`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/logs/error-solutions-soft/${encodeURIComponent(codigo)}`);
 
         if (!response.ok) {
             throw new Error('Erro ao buscar soluções');
@@ -3395,7 +3897,7 @@ async function buscarSolucoesApp() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/logs/error-solutions-app/${encodeURIComponent(codigo)}`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/logs/error-solutions-app/${encodeURIComponent(codigo)}`);
 
         if (!response.ok) {
             throw new Error('Erro ao buscar soluções');
@@ -3430,7 +3932,7 @@ async function disconnectUser(userId) {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/app/logout`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/app/logout`, {
             method: 'POST',
             body: JSON.stringify({ userId: userId })
         });
@@ -3458,7 +3960,7 @@ function sendMessageToUser(userId) {
 // Load User DispositivosESP
 async function loadUserDispositivosEsp() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/DispositivosEsp`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/DispositivosEsp`);
 
         if (!response.ok) throw new Error('Erro ao carregar dispositivos ESP');
 
@@ -3470,6 +3972,8 @@ async function loadUserDispositivosEsp() {
             return;
         }
 
+        // Preservar classes ao atualizar conteúdo
+        const wasExpanded = listEl.classList.contains('expanded');
         listEl.innerHTML = dispositivos.map(d => `
             <div class="item-card">
                 <div class="item-card-header">
@@ -3493,9 +3997,25 @@ async function loadUserDispositivosEsp() {
                 </div>
             </div>
         `).join('');
+        
+        // Restaurar estado expandido/recolhido após carregar conteúdo
+        if (wasExpanded) {
+            listEl.classList.remove('collapsed');
+            listEl.classList.add('expanded');
+            listEl.style.cssText = 'max-height: 600px !important; overflow-y: auto !important; overflow-x: hidden !important; opacity: 1 !important; margin-top: 1rem !important; display: flex !important; flex-direction: column !important; gap: 1rem !important;';
+        } else {
+            listEl.classList.remove('expanded');
+            listEl.classList.add('collapsed');
+            listEl.style.cssText = 'max-height: 0 !important; overflow: hidden !important; opacity: 0 !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; gap: 0 !important;';
+        }
     } catch (error) {
         console.error('Erro ao carregar dispositivos ESP:', error);
-        document.getElementById('dispositivos-esp-list').innerHTML = '<div class="error-message show">Erro ao carregar dispositivos ESP</div>';
+        const listEl = document.getElementById('dispositivos-esp-list');
+        listEl.innerHTML = '<div class="error-message show">Erro ao carregar dispositivos ESP</div>';
+        // Manter classes
+        if (!listEl.classList.contains('collapsible-list')) {
+            listEl.classList.add('collapsible-list', 'collapsed');
+        }
     }
 }
 
@@ -3506,7 +4026,7 @@ function openAddDispositivoEspModal() {
 
 async function editDispositivoEsp(id) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/DispositivosEsp/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/DispositivosEsp/${id}`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
@@ -3531,7 +4051,7 @@ async function deleteDispositivoEsp(id) {
     if (!confirm('Tem certeza que deseja excluir este dispositivo ESP?')) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/DispositivosEsp/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/DispositivosEsp/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
@@ -3547,7 +4067,7 @@ async function deleteDispositivoEsp(id) {
 
 async function pingDispositivoEsp(id) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/DispositivosEsp/${id}/ping`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/DispositivosEsp/${id}/ping`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
@@ -3582,7 +4102,7 @@ function setupDispositivosEspForms() {
             const comandToEsp = document.getElementById('new-esp-comandToEsp').value;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/DispositivosEsp`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/DispositivosEsp`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3621,7 +4141,7 @@ function setupDispositivosEspForms() {
             const ligado = document.getElementById('edit-esp-ligado').checked;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/DispositivosEsp/${id}`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/DispositivosEsp/${id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3649,7 +4169,7 @@ function setupDispositivosEspForms() {
             const comando = document.getElementById('comando-esp-texto').value;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/DispositivosEsp/enviar-comando`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/DispositivosEsp/enviar-comando`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3679,7 +4199,7 @@ function setupDispositivosEspForms() {
 // Load User Agendamentos
 async function loadUserAgendamentos() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/Agendamentos`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Agendamentos`);
         const agendamentosList = document.getElementById('agendamentos-list');
 
         if (!response.ok) {
@@ -3722,6 +4242,8 @@ async function loadUserAgendamentos() {
             agendamentosList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏰</div><p>Nenhum agendamento cadastrado</p></div>';
             return;
         }
+        // Preservar classes ao atualizar conteúdo
+        const wasExpanded = agendamentosList.classList.contains('expanded');
         agendamentosList.innerHTML = agendamentos.map(ag => {
             const dataHora = new Date(ag.agendadoPara);
             const dataFormatada = dataHora.toLocaleDateString('pt-BR');
@@ -3759,9 +4281,25 @@ async function loadUserAgendamentos() {
                 </div>
             `;
         }).join('');
+        
+        // Restaurar estado expandido/recolhido após carregar conteúdo
+        if (wasExpanded) {
+            agendamentosList.classList.remove('collapsed');
+            agendamentosList.classList.add('expanded');
+            agendamentosList.style.cssText = 'max-height: 600px !important; overflow-y: auto !important; overflow-x: hidden !important; opacity: 1 !important; margin-top: 1rem !important; display: flex !important; flex-direction: column !important; gap: 1rem !important;';
+        } else {
+            agendamentosList.classList.remove('expanded');
+            agendamentosList.classList.add('collapsed');
+            agendamentosList.style.cssText = 'max-height: 0 !important; overflow: hidden !important; opacity: 0 !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; gap: 0 !important;';
+        }
     } catch (error) {
         console.error('Erro ao carregar agendamentos:', error);
-        document.getElementById('agendamentos-list').innerHTML = '<div class="error-message show">Erro ao carregar agendamentos</div>';
+        const agendamentosList = document.getElementById('agendamentos-list');
+        agendamentosList.innerHTML = '<div class="error-message show">Erro ao carregar agendamentos</div>';
+        // Manter classes
+        if (!agendamentosList.classList.contains('collapsible-list')) {
+            agendamentosList.classList.add('collapsible-list', 'collapsed');
+        }
     }
 }
 
@@ -3787,7 +4325,7 @@ async function loadPlanosAtivos() {
         }
 
         console.log('🔍 [Planos Ativos] Elemento encontrado, fazendo requisição...');
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/Assinaturas/ativas`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Assinaturas/ativas`);
         console.log('✅ [Planos Ativos] Resposta recebida:', response.status, response.statusText);
 
         if (!response.ok) {
@@ -3823,8 +4361,21 @@ async function loadPlanosAtivos() {
         const planos = JSON.parse(responseText);
         console.log('📋 [Planos Ativos] Planos parseados:', planos);
 
+        // Preservar classes ao atualizar conteúdo
+        const wasExpanded = planosList.classList.contains('expanded');
+
         if (planos.length === 0) {
             planosList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💳</div><p>Nenhum plano ativo encontrado</p><button class="btn btn-primary" onclick="openPlanoModal()" style="margin-top: 1rem;">Contratar Plano</button></div>';
+            // Restaurar estado
+            if (wasExpanded) {
+                planosList.classList.remove('collapsed');
+                planosList.classList.add('expanded');
+                planosList.style.cssText = 'max-height: 600px !important; overflow-y: auto !important; overflow-x: hidden !important; opacity: 1 !important; margin-top: 1rem !important; display: flex !important; flex-direction: column !important; gap: 1rem !important;';
+            } else {
+                planosList.classList.remove('expanded');
+                planosList.classList.add('collapsed');
+                planosList.style.cssText = 'max-height: 0 !important; overflow: hidden !important; opacity: 0 !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; gap: 0 !important;';
+            }
             return;
         }
 
@@ -3881,6 +4432,18 @@ async function loadPlanosAtivos() {
                 </div>
             `;
         }).join('');
+        
+        // Restaurar estado expandido/recolhido após carregar conteúdo
+        if (wasExpanded) {
+            planosList.classList.remove('collapsed');
+            planosList.classList.add('expanded');
+            planosList.style.cssText = 'max-height: 600px !important; overflow-y: auto !important; overflow-x: hidden !important; opacity: 1 !important; margin-top: 1rem !important; display: flex !important; flex-direction: column !important; gap: 1rem !important;';
+        } else {
+            planosList.classList.remove('expanded');
+            planosList.classList.add('collapsed');
+            planosList.style.cssText = 'max-height: 0 !important; overflow: hidden !important; opacity: 0 !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; gap: 0 !important;';
+        }
+        
         console.log('✅ [Planos Ativos] Planos renderizados com sucesso');
     } catch (error) {
         console.error('❌ [Planos Ativos] Erro ao carregar planos ativos:', error);
@@ -3888,6 +4451,10 @@ async function loadPlanosAtivos() {
         const planosList = document.getElementById('planos-ativos-list');
         if (planosList) {
             planosList.innerHTML = `<div class="error-message show">Erro: ${error.message}</div>`;
+            // Manter classes
+            if (!planosList.classList.contains('collapsible-list')) {
+                planosList.classList.add('collapsible-list', 'collapsed');
+            }
         } else {
             console.error('❌ [Planos Ativos] Elemento planos-ativos-list não existe para mostrar erro!');
         }
@@ -3902,7 +4469,7 @@ async function cancelarPlano(assinaturaId) {
 
     try {
         console.log('🛑 [Planos Ativos] Cancelando assinatura:', assinaturaId);
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/Assinaturas/cancelar/${assinaturaId}`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Assinaturas/cancelar/${assinaturaId}`, {
             method: 'POST'
         });
 
@@ -3945,7 +4512,7 @@ async function openCriarAgendamentoEspModal() {
     
     // Carregar dispositivos ESP
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/DispositivosEsp`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/DispositivosEsp`);
         if (response.ok) {
             const dispositivos = await response.json();
             select.innerHTML = '<option value="">Selecione um dispositivo ESP</option>';
@@ -3976,7 +4543,7 @@ async function openCriarAgendamentoStarkswitchModal() {
     
     // Carregar dispositivos Starkswitch
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/devices`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/devices`);
         if (response.ok) {
             const dispositivos = await response.json();
             select.innerHTML = '<option value="">Selecione um dispositivo Starkswitch</option>';
@@ -4007,7 +4574,7 @@ async function openCriarAgendamentoEwelinkModal() {
     
     // Carregar dispositivos Ewelink
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/Ewelink/dispositivos`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/dispositivos`);
         if (response.ok) {
             const dispositivos = await response.json();
             select.innerHTML = '<option value="">Selecione um dispositivo Ewelink</option>';
@@ -4037,7 +4604,7 @@ async function deleteUserAgendamento(agendamentoId) {
     if (!confirm('Tem certeza que deseja excluir este agendamento?')) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/Agendamentos/${agendamentoId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/Agendamentos/${agendamentoId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${authToken}`
@@ -4072,7 +4639,7 @@ function setupAgendamentosForms() {
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/Agendamentos/esp`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/Agendamentos/esp`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4137,7 +4704,7 @@ function setupAgendamentosForms() {
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/Agendamentos/starkswitch`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/Agendamentos/starkswitch`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4203,7 +4770,7 @@ function setupAgendamentosForms() {
             }
 
             try {
-                const response = await fetchWithAuth(`${API_BASE_URL}/api/Agendamentos/ewelink`, {
+                const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Agendamentos/ewelink`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -4244,7 +4811,7 @@ async function requestPasswordReset() {
         if (!emailInput) return;
         
         try {
-            const response = await fetch(`${API_BASE_URL}/api/Users/request-password-reset`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/Users/request-password-reset`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ Email: emailInput })
@@ -4268,7 +4835,7 @@ async function requestPasswordReset() {
     }
     
     try {
-        const response = await fetch(`${API_BASE_URL}/api/Users/request-password-reset`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/Users/request-password-reset`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ Email: email })
@@ -4331,7 +4898,7 @@ async function loadUserLicenses() {
     try {
         licensesListContainer.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--light-text);">Carregando licenças...</div>';
 
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/licenses`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/licenses`);
 
         if (!response.ok) {
             if (response.status === 401) {
@@ -4455,10 +5022,12 @@ async function checkEwelinkStatus() {
     const syncBtn = document.getElementById('ewelink-sync-btn');
     const logoutBtn = document.getElementById('ewelink-logout-btn');
     
+    // Preservar classes ao atualizar conteúdo
+    const wasExpanded = devicesList.classList.contains('expanded');
     devicesList.innerHTML = '<div class="loading-spinner">Verificando status...</div>';
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/Ewelink/status`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/status`);
         
         if (!response.ok) {
             // Se for erro 500 ou outro erro, tratar como não logado
@@ -4514,6 +5083,16 @@ async function checkEwelinkStatus() {
                     </p>
                 </div>
             `;
+            // Restaurar estado
+            if (wasExpanded) {
+                devicesList.classList.remove('collapsed');
+                devicesList.classList.add('expanded');
+                devicesList.style.cssText = 'max-height: 600px !important; overflow-y: auto !important; overflow-x: hidden !important; opacity: 1 !important; margin-top: 1rem !important; display: flex !important; flex-direction: column !important; gap: 1rem !important;';
+            } else {
+                devicesList.classList.remove('expanded');
+                devicesList.classList.add('collapsed');
+                devicesList.style.cssText = 'max-height: 0 !important; overflow: hidden !important; opacity: 0 !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; gap: 0 !important;';
+            }
         }
     } catch (error) {
         console.error('Erro ao verificar status Ewelink:', error);
@@ -4523,6 +5102,12 @@ async function checkEwelinkStatus() {
             statusMessage.style.display = 'block';
             statusMessage.innerHTML = '<div style="color: #ffaa00;">⚠ Não conectado ao Ewelink. Faça login para começar.</div>';
             statusMessage.style.background = 'rgba(255, 170, 0, 0.1)';
+        }
+        
+        // Preservar classes em caso de erro
+        const devicesList = document.getElementById('ewelink-devices-list');
+        if (devicesList && !devicesList.classList.contains('collapsible-list')) {
+            devicesList.classList.add('collapsible-list', 'collapsed');
         }
         
         if (loginBtn) loginBtn.style.display = 'inline-block';
@@ -4550,7 +5135,7 @@ async function loadEwelinkDevices() {
     const devicesList = document.getElementById('ewelink-devices-list');
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/Ewelink/dispositivos`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/dispositivos`);
         
         if (!response.ok) {
             throw new Error('Erro ao carregar dispositivos');
@@ -4558,8 +5143,27 @@ async function loadEwelinkDevices() {
         
         const devices = await response.json();
         
+        // Preservar classes ao atualizar conteúdo
+        const wasExpanded = devicesList.classList.contains('expanded');
+        
         if (devices.length === 0) {
             devicesList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔌</div><p>Nenhum dispositivo encontrado</p><button class="btn btn-primary" onclick="syncEwelinkDevices()" style="margin-top: 1rem;">Sincronizar Dispositivos</button></div>';
+            // Restaurar estado
+            if (wasExpanded) {
+                devicesList.classList.remove('collapsed');
+                devicesList.classList.add('expanded');
+                devicesList.style.maxHeight = '600px';
+                devicesList.style.overflowY = 'auto';
+                devicesList.style.opacity = '1';
+                devicesList.style.marginTop = '1rem';
+            } else {
+                devicesList.classList.remove('expanded');
+                devicesList.classList.add('collapsed');
+                devicesList.style.maxHeight = '0';
+                devicesList.style.overflowY = 'hidden';
+                devicesList.style.opacity = '0';
+                devicesList.style.marginTop = '0';
+            }
             return;
         }
         
@@ -4596,16 +5200,32 @@ async function loadEwelinkDevices() {
                 </div>
             `;
         }).join('');
+        
+        // Restaurar estado expandido/recolhido após carregar conteúdo
+        if (wasExpanded) {
+            devicesList.classList.remove('collapsed');
+            devicesList.classList.add('expanded');
+            devicesList.style.cssText = 'max-height: 600px !important; overflow-y: auto !important; overflow-x: hidden !important; opacity: 1 !important; margin-top: 1rem !important; display: flex !important; flex-direction: column !important; gap: 1rem !important;';
+        } else {
+            devicesList.classList.remove('expanded');
+            devicesList.classList.add('collapsed');
+            devicesList.style.cssText = 'max-height: 0 !important; overflow: hidden !important; opacity: 0 !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; gap: 0 !important;';
+        }
     } catch (error) {
         console.error('Erro ao carregar dispositivos Ewelink:', error);
+        const devicesList = document.getElementById('ewelink-devices-list');
         devicesList.innerHTML = '<div class="error-message show">Erro ao carregar dispositivos: ' + error.message + '</div>';
+        // Manter classes
+        if (!devicesList.classList.contains('collapsible-list')) {
+            devicesList.classList.add('collapsible-list', 'collapsed');
+        }
     }
 }
 
 // Controlar dispositivo Ewelink (ligar/desligar)
 async function controlEwelinkDevice(deviceId, switchOn) {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/Ewelink/dispositivos/${deviceId}/controlar`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/dispositivos/${deviceId}/controlar`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -4635,7 +5255,7 @@ async function controlEwelinkDevice(deviceId, switchOn) {
 // Atualizar status de um dispositivo específico
 async function refreshEwelinkDeviceStatus(deviceId) {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/Ewelink/dispositivos/${deviceId}/status`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/dispositivos/${deviceId}/status`);
         
         if (!response.ok) {
             throw new Error('Erro ao atualizar status');
@@ -4663,7 +5283,7 @@ async function syncEwelinkDevices() {
     devicesList.innerHTML = '<div class="loading-spinner">Sincronizando dispositivos...</div>';
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/Ewelink/sincronizar`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/sincronizar`, {
             method: 'POST'
         });
         
@@ -4775,7 +5395,7 @@ async function logoutEwelink() {
     }
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/Ewelink/logout`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/logout`, {
             method: 'POST'
         });
         
@@ -4866,7 +5486,7 @@ async function loadWeatherForecast() {
     try {
         contentDiv.innerHTML = '<div class="loading-spinner">Carregando previsão do tempo...</div>';
 
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/weather/forecast`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/weather/forecast`);
 
         if (!response.ok) {
             let errorMessage = 'Erro ao carregar previsão do tempo';
@@ -4945,41 +5565,6 @@ function renderWeatherForecast(data) {
         `;
     }
 
-    // Previsão horária (próximas 12 horas)
-    if (data.hourly && data.hourly.length > 0) {
-        html += `
-            <div style="margin-bottom: 2rem;">
-                <h3 style="margin: 0 0 1rem 0; color: var(--text-primary);">📊 Previsão Horária (Próximas 12h)</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; 
-                            overflow-x: auto; padding: 1rem; background: rgba(0, 0, 0, 0.1); border-radius: 12px;">
-        `;
-        
-        data.hourly.slice(0, 12).forEach(hour => {
-            const time = new Date(hour.time);
-            html += `
-                <div style="background: rgba(0, 180, 255, 0.1); padding: 1rem; border-radius: 8px; 
-                            text-align: center; border: 1px solid rgba(0, 180, 255, 0.2);">
-                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                        ${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}
-                    </div>
-                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--accent-color); margin-bottom: 0.5rem;">
-                        ${Math.round(hour.temperature)}°
-                    </div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">
-                        ${hour.weatherDescription}
-                    </div>
-                    ${hour.precipitation > 0 ? `
-                        <div style="font-size: 0.7rem; color: #60a5fa; margin-top: 0.5rem;">
-                            💧 ${hour.precipitation.toFixed(1)}mm
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        });
-        
-        html += `</div></div>`;
-    }
-
     // Previsão diária (próximos 4 dias)
     if (data.daily && data.daily.length > 0) {
         html += `
@@ -5051,7 +5636,7 @@ async function iniciarManutencaoSoftware() {
     if (!userIdInput.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
         // Se for email, buscar userId do usuário atual via API
         try {
-            const userResponse = await fetchWithAuth(`${API_BASE_URL}/api/Users/me`);
+            const userResponse = await fetchWithAuth(`${API_BASE_URL}/api/v1/Users/me`);
             if (userResponse.ok) {
                 const currentUser = await userResponse.json();
                 if (currentUser && currentUser.id) {
@@ -5071,7 +5656,7 @@ async function iniciarManutencaoSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/software/iniciar`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/iniciar`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5107,7 +5692,7 @@ async function finalizarManutencaoSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/software/finalizar`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/finalizar`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5145,7 +5730,7 @@ async function alterarSenhaSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/software/alterar-senha`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/alterar-senha`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5181,7 +5766,7 @@ async function salvarNomeAssistenteSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/software/salvar-nome-assistente`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/salvar-nome-assistente`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5213,7 +5798,7 @@ async function obterUserId(userIdInput) {
     
     // Se for email, buscar userId via API
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/Users/by-email/${encodeURIComponent(userIdInput)}`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Users/by-email/${encodeURIComponent(userIdInput)}`);
         if (response.ok) {
             const user = await response.json();
             return user?.id || user?.Id || null;
@@ -5239,7 +5824,7 @@ async function verDispositivosEspSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/software/dispositivos/${userId}`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/dispositivos/${userId}`);
         if (response.ok) {
             const dispositivos = await response.json();
             // Abrir modal com lista de dispositivos
@@ -5267,7 +5852,7 @@ async function verComandosSociaisSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/software/comandos-sociais/${userId}`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/comandos-sociais/${userId}`);
         if (response.ok) {
             const comandos = await response.json();
             // Abrir modal com lista de comandos
@@ -5295,7 +5880,7 @@ async function carregarUltimosComandosSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/software/ultimos-comandos/${userId}`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/ultimos-comandos/${userId}`);
         if (response.ok) {
             const dados = await response.json();
             document.getElementById('ultimo-comando-ia-soft').textContent = dados.ultimoComandoIA || '-';
@@ -5326,7 +5911,7 @@ async function limparCacheSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/software/limpar-cache`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/limpar-cache`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5363,7 +5948,7 @@ async function limparDadosSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/software/limpar-dados`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/limpar-dados`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5400,7 +5985,7 @@ async function logoutSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/software/logout`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/logout`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5428,7 +6013,7 @@ async function limparCacheApp() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/app/limpar-cache`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/app/limpar-cache`, {
             method: 'POST',
             body: JSON.stringify({ userId })
         });
@@ -5456,7 +6041,7 @@ async function limparDadosApp() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/app/limpar-dados`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/app/limpar-dados`, {
             method: 'POST',
             body: JSON.stringify({ userId })
         });
@@ -5484,7 +6069,7 @@ async function logoutApp() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/app/logout`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/app/logout`, {
             method: 'POST',
             body: JSON.stringify({ userId })
         });
@@ -5508,7 +6093,7 @@ async function carregarUltimosComandosApp() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/manutencao/app/ultimos-comandos/${userId}`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/app/ultimos-comandos/${userId}`);
         if (response.ok) {
             const dados = await response.json();
             document.getElementById('ultimo-comando-ia-app').textContent = dados.ultimoComandoIA || '-';
@@ -5677,7 +6262,7 @@ async function enviarFormularioLimite() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/suporte/enviar-formulario-limite`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/suporte/enviar-formulario-limite`, {
             method: 'POST',
             body: JSON.stringify({ mensagem, detalhes })
         });
@@ -5708,7 +6293,7 @@ async function loadUsersForLicense() {
 
         select.innerHTML = '<option value="">Carregando usuários...</option>';
 
-        const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/admin/users`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
@@ -5770,7 +6355,7 @@ async function createLicenseForUser() {
             requestBody.price = price;
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/licenses/admin/create`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/licenses/admin/create`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${authToken}`,
@@ -5843,6 +6428,221 @@ async function createLicenseForUser() {
             <div style="padding: 1rem; background: rgba(255, 0, 0, 0.1); border: 1px solid #ff0000; border-radius: 8px;">
                 <h4 style="color: #ff0000; margin-bottom: 0.5rem;">❌ Erro ao criar licença</h4>
                 <p style="color: var(--light-text);">${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+// Função para carregar conteúdo de documentação
+async function loadDocContent(docType) {
+    const contentArea = document.getElementById('docs-content');
+    const menuItems = document.querySelectorAll('.docs-menu-item');
+    
+    // Atualizar menu ativo
+    menuItems.forEach(item => {
+        item.style.background = 'rgba(255, 255, 255, 0.05)';
+        item.style.color = '#fff';
+    });
+    
+    const activeItem = document.querySelector(`[data-doc="${docType}"]`);
+    if (activeItem) {
+        activeItem.style.background = 'rgba(0, 255, 247, 0.2)';
+        activeItem.style.color = 'var(--primary-color)';
+    }
+    
+    // Mostrar loading
+    contentArea.innerHTML = `
+        <div style="text-align: center; padding: 50px; color: var(--light-text);">
+            <div class="loading-spinner">Carregando documentação...</div>
+        </div>
+    `;
+    
+    try {
+        if (docType === 'software-windows') {
+            // Carregar documentação do software Windows
+            const response = await fetch('/documentacao.html');
+            if (!response.ok) {
+                throw new Error('Documentação não encontrada');
+            }
+            
+            const html = await response.text();
+            
+            // Extrair apenas o conteúdo da seção (sem head, body, etc)
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const content = doc.querySelector('.content');
+            
+            if (content) {
+                // Criar um container com scroll e estilos
+                contentArea.innerHTML = `
+                    <style>
+                        #docs-content .section {
+                            margin-bottom: 60px;
+                            background: rgba(20, 20, 30, 0.8);
+                            padding: 30px;
+                            border-radius: 15px;
+                            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+                            border: 1px solid rgba(0, 255, 247, 0.2);
+                        }
+                        #docs-content .section h1 {
+                            color: var(--primary-color);
+                            font-size: 32px;
+                            margin-bottom: 20px;
+                            padding-bottom: 15px;
+                            border-bottom: 3px solid var(--primary-color);
+                        }
+                        #docs-content .section h2 {
+                            color: var(--primary-color);
+                            font-size: 24px;
+                            margin-top: 30px;
+                            margin-bottom: 15px;
+                        }
+                        #docs-content .section h3 {
+                            color: #00d4ff;
+                            font-size: 20px;
+                            margin-top: 20px;
+                            margin-bottom: 10px;
+                        }
+                        #docs-content .section p {
+                            margin-bottom: 15px;
+                            text-align: justify;
+                            color: var(--light-text);
+                        }
+                        #docs-content .section ul, #docs-content .section ol {
+                            margin-left: 30px;
+                            margin-bottom: 20px;
+                            color: var(--light-text);
+                        }
+                        #docs-content .section ul li, #docs-content .section ol li {
+                            margin-bottom: 10px;
+                        }
+                        #docs-content .command-card {
+                            background: rgba(0, 255, 247, 0.1);
+                            border: 1px solid rgba(0, 255, 247, 0.3);
+                            border-radius: 10px;
+                            padding: 20px;
+                            margin-bottom: 15px;
+                            transition: all 0.3s ease;
+                        }
+                        #docs-content .command-card:hover {
+                            background: rgba(0, 255, 247, 0.2);
+                            border-color: var(--primary-color);
+                            transform: translateX(5px);
+                        }
+                        #docs-content .command-card h4 {
+                            color: var(--primary-color);
+                            font-size: 18px;
+                            margin-bottom: 10px;
+                        }
+                        #docs-content .command-card .command-example {
+                            background: rgba(0, 0, 0, 0.3);
+                            padding: 10px;
+                            border-radius: 5px;
+                            margin-top: 10px;
+                            font-family: 'Courier New', monospace;
+                            color: #00d4ff;
+                            border-left: 3px solid var(--primary-color);
+                        }
+                        #docs-content .command-card .description {
+                            color: #ccc;
+                            margin-top: 8px;
+                        }
+                        #docs-content table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 20px 0;
+                            background: rgba(0, 0, 0, 0.3);
+                        }
+                        #docs-content table th {
+                            background: rgba(0, 255, 247, 0.2);
+                            color: var(--primary-color);
+                            padding: 15px;
+                            text-align: left;
+                            border: 1px solid rgba(0, 255, 247, 0.3);
+                        }
+                        #docs-content table td {
+                            padding: 12px 15px;
+                            border: 1px solid rgba(255, 255, 255, 0.1);
+                            color: var(--light-text);
+                        }
+                        #docs-content table tr:nth-child(even) {
+                            background: rgba(255, 255, 255, 0.05);
+                        }
+                        #docs-content table tr:hover {
+                            background: rgba(0, 255, 247, 0.1);
+                        }
+                        #docs-content code {
+                            background: rgba(0, 0, 0, 0.5);
+                            padding: 2px 6px;
+                            border-radius: 4px;
+                            color: #00d4ff;
+                            font-family: 'Courier New', monospace;
+                        }
+                        #docs-content pre {
+                            background: rgba(0, 0, 0, 0.5);
+                            padding: 15px;
+                            border-radius: 8px;
+                            overflow-x: auto;
+                            border-left: 4px solid var(--primary-color);
+                            margin: 15px 0;
+                        }
+                        #docs-content pre code {
+                            background: none;
+                            padding: 0;
+                            color: #00d4ff;
+                        }
+                        #docs-content .badge {
+                            display: inline-block;
+                            padding: 4px 10px;
+                            border-radius: 12px;
+                            font-size: 12px;
+                            font-weight: bold;
+                            margin-left: 10px;
+                        }
+                        #docs-content .badge-predefined {
+                            background: var(--primary-color);
+                            color: #000;
+                        }
+                        #docs-content .badge-custom {
+                            background: #ff6b6b;
+                            color: #fff;
+                        }
+                    </style>
+                    ${content.innerHTML}
+                `;
+                
+                // Adicionar scroll suave para links internos
+                contentArea.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                    anchor.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        const targetId = this.getAttribute('href').substring(1);
+                        const target = contentArea.querySelector(`#${targetId}`);
+                        if (target) {
+                            target.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }
+                    });
+                });
+            } else {
+                throw new Error('Conteúdo da documentação não encontrado');
+            }
+        } else {
+            contentArea.innerHTML = `
+                <div style="text-align: center; padding: 50px; color: var(--light-text);">
+                    <h2 style="color: var(--primary-color);">Documentação não encontrada</h2>
+                    <p>Tipo de documentação: ${docType}</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Erro ao carregar documentação:', error);
+        contentArea.innerHTML = `
+            <div style="text-align: center; padding: 50px; color: var(--error-color);">
+                <h2 style="color: var(--error-color);">Erro ao carregar documentação</h2>
+                <p>${error.message}</p>
+                <button class="btn btn-primary" onclick="loadDocContent('software-windows')" style="margin-top: 1rem;">Tentar novamente</button>
             </div>
         `;
     }

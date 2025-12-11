@@ -22,7 +22,14 @@ public partial class DispositivosEspForm : Form
         _apiService = apiService;
         _database = database;
         InitializeComponent();
+        this.Load += DispositivosEspForm_Load;
         LoadDispositivos();
+    }
+
+    private async void DispositivosEspForm_Load(object? sender, EventArgs e)
+    {
+        // Atualizar sessão com nome do form
+        _ = _apiService.SetUserOnlineAsync("Dispositivos ESP");
     }
 
     private void InitializeComponent()

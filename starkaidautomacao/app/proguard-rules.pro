@@ -174,12 +174,17 @@
 -dontwarn com.tuya.**
 
 # Classes específicas do Matter que estão gerando warnings
--keep class com.thingclips.sdk.matterlib.bdqqqpq { *; }
--keep class com.thingclips.sdk.matterlib.qbqppdq { *; }
--keep class com.thingclips.sdk.matterlib.pdbpddd { *; }
--keep class com.thingclips.sdk.matterlib.dbqqppp { *; }
--keep class com.thingclips.sdk.matterlib.qbqppdb { *; }
--keep class com.thingclips.sdk.matterlib.qpqbbpp { *; }
+# Suprimir avisos de classes ofuscadas que podem não existir
+-dontwarn com.thingclips.sdk.matterlib.bdqqqpq
+-dontwarn com.thingclips.sdk.matterlib.qbqppdq
+-dontwarn com.thingclips.sdk.matterlib.pdbpddd
+-dontwarn com.thingclips.sdk.matterlib.dbqqppp
+-dontwarn com.thingclips.sdk.matterlib.qbqppdb
+-dontwarn com.thingclips.sdk.matterlib.qpqbbpp
+
+# Manter todas as classes do matterlib (se existirem)
+-keep class com.thingclips.sdk.matterlib.** { *; }
+-dontwarn com.thingclips.sdk.matterlib.**
 
 # Facebook SoLoader
 -keep class com.facebook.soloader.** { *; }
@@ -280,20 +285,17 @@
 
 # Manter métodos setUserOnline e setUserOffline no MainActivity
 -keepclassmembers class com.starkaid.starkaidapp.ui.MainActivity {
-    private suspend fun setUserOnline();
-    private suspend fun setUserOffline();
+    <methods>;
 }
 
 # Manter métodos da UsuarioApi relacionados a online/offline
 -keepclassmembers interface com.starkaid.starkaidapp.services.UsuarioApi {
-    suspend fun setUserOnline(...);
-    suspend fun setUserOffline(...);
+    <methods>;
 }
 
 # Manter todas as chamadas de corrotinas relacionadas
 -keepclassmembers class * {
-    suspend fun setUserOnline();
-    suspend fun setUserOffline();
+    <methods>;
 }
 
 # Garantir que os métodos sejam chamados corretamente
@@ -310,7 +312,7 @@
 
 # Manter corrotinas e métodos suspend
 -keepclassmembers class * {
-    suspend fun *(...);
+    <methods>;
 }
 
 # Manter métodos que chamam setUserOnline/setUserOffline
@@ -364,6 +366,11 @@
 # Se quiser remover logs para reduzir tamanho do APK, descomente a linha abaixo e comente a acima
 # -assumenosideeffects class android.util.Log {
 #     public static *** d(...);
+#     public static *** v(...);
+#     public static *** i(...);
+#     public static *** w(...);
+#     public static *** e(...);
+# }
 #     public static *** v(...);
 #     public static *** i(...);
 #     public static *** w(...);

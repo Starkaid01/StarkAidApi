@@ -35,7 +35,7 @@ class QrActivityWppConnect : AppCompatActivity() {
             return
         }
 
-        val qrLink = "https://starkaid.runasp.net/api/wpp/$userId"
+        val qrLink = "https://starkaid.runasp.net/api/v1/wpp/$userId"
         txtQrLink.text = qrLink
 
         // Copiar link

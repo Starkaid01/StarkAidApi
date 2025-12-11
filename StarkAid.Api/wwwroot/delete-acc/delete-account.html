@@ -174,7 +174,7 @@
 
             if (confirmation) {
                 try {
-                    const response = await fetch('/api/users/has-active-subscriptions', {
+                    const response = await fetch('/api/v1/users/has-active-subscriptions', {
                         method: 'GET',
                         headers: {
                             'Authorization': 'Bearer ' + localStorage.getItem('authToken'),

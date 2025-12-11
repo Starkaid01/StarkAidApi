@@ -19,62 +19,62 @@ import retrofit2.http.Path
 interface UsuarioApi {
 
     // Endpoint removido da API - usar obterUsuario() ao invés disso
-    // @GET("api/Users/{id}/starkcoins")
+    // @GET("api/v1/v1/Users/{id}/starkcoins")
     // suspend fun obterStarkCoins(
     //     @Path("id") userId: String,
     //     @Header("Authorization") token: String
     // ): Response<UsuarioResponse>
 
-    @PATCH("api/Users/{id}/update-starkcoins-ads")
+    @PATCH("api/v1/Users/{id}/update-starkcoins-ads")
     suspend fun updateStarkCoinsAds(
         @Path("id") userId: String,
         @Header("Authorization") token: String
     ): Response<UpdateStarkCoinsResponse>
 
-    @PATCH("api/Users/{id}/update-starkcoins-ia")
+    @PATCH("api/v1/Users/{id}/update-starkcoins-ia")
     suspend fun updateStarkCoinsIa(
         @Path("id") userId: String,
         @Header("Authorization") token: String
     ): Response<UpdateStarkCoinsResponse>
 
-    @GET("api/Users/{id}")
+    @GET("api/v1/Users/{id}")
     suspend fun obterUsuario(
         @Path("id") userId: String
     ): Response<UsuarioResponse>
 
-    @PUT("api/Users/change-password")
+    @PUT("api/v1/Users/change-password")
     suspend fun alterarSenha(
         @Body senhaRequest: SenhaRequest,
         @Header("Authorization") token: String
     ): Response<String>
 
-    @POST("api/Users/request-password-reset")
+    @POST("api/v1/Users/request-password-reset")
     suspend fun solicitarResetSenha(
         @Body resetRequest: ResetSenhaRequest
     ): Response<String>
 
-    @POST("api/Users")
+    @POST("api/v1/Users")
     suspend fun registerUser(@Body request: UserRegisterRequest): Response<UserRegisterResponse>
 
     // 'https://starkaid.vbweb.com.br/api/Users/musica/tocar'
-    @POST("api/Users/musica/tocar")
+    @POST("api/v1/Users/musica/tocar")
     suspend fun tocarMusica(
         @Header("Authorization") token: String,
         @Header("Api-Key") apiKey: String,
         @Body dto: MusicaDto
     ): Response<MusicaResponse>
 
-    @POST("api/Users/ia/super")
+    @POST("api/v1/Users/ia/super")
     suspend fun chamarSuperIA(
         @Body request: IaRequest
     ): Response<IaResponse>
 
-    @POST("api/Users/online")
+    @POST("api/v1/Users/online")
     suspend fun setUserOnline(
         @Body request: SetUserOnlineRequest
     ): Response<SetUserOnlineResponse>
 
-    @POST("api/Users/offline")
+    @POST("api/v1/Users/offline")
     suspend fun setUserOffline(
         @Body request: SetUserOfflineRequest
     ): Response<SetUserOfflineResponse>

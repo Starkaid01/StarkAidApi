@@ -1,5 +1,6 @@
 using StarkAid.WindowsForms.Services;
 using StarkAid.WindowsForms.Utils;
+using StarkAid.WindowsForms.Config;
 
 namespace StarkAid.WindowsForms.Forms;
 
@@ -60,7 +61,7 @@ public partial class LicenseActivationForm : Form
 
         _lnkLicenseUrl = new LinkLabel
         {
-            Text = "https://starkaid.runasp.net/licenses.html",
+            Text = $"{ApiConfig.WebBaseUrl}/licenses.html",
             Font = new Font("Segoe UI", 10, FontStyle.Underline),
             ForeColor = Color.Cyan,
             AutoSize = true,
@@ -75,7 +76,7 @@ public partial class LicenseActivationForm : Form
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "https://starkaid.runasp.net/licenses.html",
+                    FileName = $"{ApiConfig.WebBaseUrl}/licenses.html",
                     UseShellExecute = true
                 });
             }

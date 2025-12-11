@@ -3863,7 +3863,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
     private fun exchangeCodeWithBackend(code: String) {
         val userId = sessionManager.fetchUserId()
-        val url = "https://starkaid.runasp.net/api/spotifyauth/exchange"
+        val url = "https://starkaid.runasp.net/api/v1/spotifyauth/exchange"
 
         val json = JSONObject()
         json.put("code", code)
@@ -4371,13 +4371,38 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         return passouSocial
     }
     fun ComandoSocialEntity.getRespostaAleatoria(): String? {
+        // Verificar se respostasAleatorias está vazio ou null
+        if (respostasAleatorias.isNullOrBlank()) {
+            return null
+        }
+
+        // Verificar se contém "Erro" antes de parsear (verificação rápida)
+        val respostasAleatoriasLower = respostasAleatorias.lowercase()
+        if (respostasAleatoriasLower.contains("erro")) {
+            // Se contém "Erro", usar apenas a resposta padrão
+            return null
+        }
 
         var lista: MutableList<String> = mutableListOf()
         lista = getRespostasAleatoriasList() as MutableList<String>
 
         if (lista.isEmpty()) return null
+
+        // Verificar se alguma alternativa contém "Erro" (verificação adicional)
+        val isErro = lista.any { alternativa ->
+            alternativa.isNotBlank() && 
+            alternativa.trimStart().lowercase().startsWith("erro")
+        }
+
+        if (isErro) {
+            // Se for erro, usar apenas a resposta padrão
+            return null
+        }
+
+        // Adicionar a resposta padrão à lista
         lista.add(resposta)
 
+        // Selecionar uma resposta aleatória
         return lista.random()
     }
     var musicControl = "nada"

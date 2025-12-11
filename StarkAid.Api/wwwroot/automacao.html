@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Starkaid Automação - Sistema de Controle</title>
     <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/automacao.css?v=3">
+    <link rel="stylesheet" href="css/automacao.css?v=4">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -27,6 +27,8 @@
                 <li><a href="index.html">Home</a></li>
                 <li><a href="automacao.html" class="active">Starkaid Automação</a></li>
                 <li><a href="cursos.html">Starkaid Cursos</a></li>
+                <li><a href="documentacao.html">📖 Docs</a></li>
+                <li><a href="desenvolvedores.html">💻 Para Desenvolvedores</a></li>
                 <li><a href="contato.html">Contato</a></li>
                 <li id="auth-menu-item"></li>
             </ul>
@@ -690,10 +692,15 @@
                 <!-- Devices Tab -->
                 <div id="devices-tab" class="user-tab-content">
                     <div class="section-header">
-                        <h3>Meus Dispositivos</h3>
                         <button class="btn btn-primary" onclick="openAddDeviceModal()">+ Adicionar Dispositivo</button>
+                        <div class="section-title-wrapper">
+                            <h3>Starkswitch</h3>
+                            <button class="list-toggle-btn" onclick="toggleList('devices-list', event)" aria-label="Expandir/Recolher lista">
+                                <span class="list-toggle-arrow">▼</span>
+                            </button>
+                        </div>
                     </div>
-                    <div id="devices-list" class="items-list">
+                    <div id="devices-list" class="items-list collapsible-list collapsed">
                         <div class="loading-spinner">Carregando dispositivos...</div>
                     </div>
                 </div>
@@ -701,10 +708,15 @@
                 <!-- DispositivosESP Tab -->
                 <div id="dispositivos-esp-tab" class="user-tab-content">
                     <div class="section-header">
-                        <h3>Meus Dispositivos ESP</h3>
                         <button class="btn btn-primary" onclick="openAddDispositivoEspModal()">+ Adicionar Dispositivo ESP</button>
+                        <div class="section-title-wrapper">
+                            <h3>Meus Dispositivos ESP</h3>
+                            <button class="list-toggle-btn" onclick="toggleList('dispositivos-esp-list', event)" aria-label="Expandir/Recolher lista">
+                                <span class="list-toggle-arrow">▼</span>
+                            </button>
+                        </div>
                     </div>
-                    <div id="dispositivos-esp-list" class="items-list">
+                    <div id="dispositivos-esp-list" class="items-list collapsible-list collapsed">
                         <div class="loading-spinner">Carregando dispositivos ESP...</div>
                     </div>
                 </div>
@@ -721,7 +733,15 @@
                         </div>
                     </div>
                     <div id="ewelink-status-message" style="margin: 1rem 0; padding: 1rem; background: rgba(0, 255, 255, 0.1); border-radius: 8px; display: none;"></div>
-                    <div id="ewelink-devices-list" class="items-list">
+                    <div class="section-header" style="margin-top: 1rem;">
+                        <div class="section-title-wrapper">
+                            <h3 style="margin: 0;">Lista de Dispositivos</h3>
+                            <button class="list-toggle-btn" onclick="toggleList('ewelink-devices-list', event)" aria-label="Expandir/Recolher lista">
+                                <span class="list-toggle-arrow">▼</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="ewelink-devices-list" class="items-list collapsible-list collapsed">
                         <div class="loading-spinner">Verificando status...</div>
                     </div>
                 </div>
@@ -729,10 +749,15 @@
                 <!-- Comandos Sociais Tab -->
                 <div id="comandos-tab" class="user-tab-content">
                     <div class="section-header">
-                        <h3>Meus Comandos Sociais</h3>
                         <button class="btn btn-primary" onclick="openAddComandoModal()">+ Adicionar Comando</button>
+                        <div class="section-title-wrapper">
+                            <h3>Meus Comandos Sociais</h3>
+                            <button class="list-toggle-btn" onclick="toggleList('comandos-list', event)" aria-label="Expandir/Recolher lista">
+                                <span class="list-toggle-arrow">▼</span>
+                            </button>
+                        </div>
                     </div>
-                    <div id="comandos-list" class="items-list">
+                    <div id="comandos-list" class="items-list collapsible-list collapsed">
                         <div class="loading-spinner">Carregando comandos...</div>
                     </div>
                 </div>
@@ -740,14 +765,19 @@
                 <!-- Agendamentos Tab -->
                 <div id="agendamentos-tab" class="user-tab-content">
                     <div class="section-header">
-                        <h3>Meus Agendamentos</h3>
                         <div>
                             <button class="btn btn-primary" onclick="openCriarAgendamentoEspModal()">+ Agendamento ESP</button>
                             <button class="btn btn-primary" onclick="openCriarAgendamentoStarkswitchModal()" style="margin-left: 10px;">+ Agendamento Starkswitch</button>
                             <button class="btn btn-primary" onclick="openCriarAgendamentoEwelinkModal()" style="margin-left: 10px;">+ Agendamento Ewelink</button>
                         </div>
+                        <div class="section-title-wrapper">
+                            <h3>Meus Agendamentos</h3>
+                            <button class="list-toggle-btn" onclick="toggleList('agendamentos-list', event)" aria-label="Expandir/Recolher lista">
+                                <span class="list-toggle-arrow">▼</span>
+                            </button>
+                        </div>
                     </div>
-                    <div id="agendamentos-list" class="items-list">
+                    <div id="agendamentos-list" class="items-list collapsible-list collapsed">
                         <div class="loading-spinner">Carregando agendamentos...</div>
                     </div>
                 </div>
@@ -755,10 +785,15 @@
                 <!-- Planos Ativos Tab -->
                 <div id="planos-ativos-tab" class="user-tab-content ">
                     <div class="section-header">
-                        <h3>Meus Planos Ativos</h3>
                         <button class="btn btn-primary" onclick="openPlanoModal()">+ Contratar Novo Plano</button>
+                        <div class="section-title-wrapper">
+                            <h3>Meus Planos Ativos</h3>
+                            <button class="list-toggle-btn" onclick="toggleList('planos-ativos-list', event)" aria-label="Expandir/Recolher lista">
+                                <span class="list-toggle-arrow">▼</span>
+                            </button>
+                        </div>
                     </div>
-                    <div id="planos-ativos-list" class="items-list">
+                    <div id="planos-ativos-list" class="items-list collapsible-list collapsed">
                         <div class="loading-spinner">Carregando planos ativos...</div>
                     </div>
                 </div>
@@ -1465,7 +1500,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
-    <script src="js/automacao.js?v=9"></script>
+    <script src="js/automacao.js?v=10"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

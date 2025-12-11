@@ -7,12 +7,12 @@ import retrofit2.http.POST
 import retrofit2.http.Query
 
 interface NlpApi {
-    @POST("/api/NlpServer/add-name")
+    @POST("api/v1/ConfiguracaoStarkNlp/add-name")
     suspend fun salvarContatosBackend(
         @Body body: AddNameRequest
     ): Response<SalvarContatosBackendResponse>
 
-    @POST("/api/NlpServer/extract-entities")
+    @POST("api/v1/ConfiguracaoStarkNlp/extract-entities")
     suspend fun extractEntities(
         @Query("id") userId: String,              // ID como query param
         @Header("Authorization") token: String,  // token no header

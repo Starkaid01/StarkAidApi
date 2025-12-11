@@ -21,8 +21,8 @@ android {
         applicationId = "com.starkaid.starkaidapp"
         minSdk = 26
         targetSdk = 35
-        versionCode = 57
-        versionName = "5.7"
+        versionCode = 59
+        versionName = "5.9"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
 

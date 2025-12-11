@@ -5,26 +5,26 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface DeviceApi {
-    @GET("api/Devices")
+    @GET("api/v1/Devices")
     suspend fun getDevices(): Response<List<DeviceResponse>>
 
-    @PUT("api/Devices/{deviceId}")
+    @PUT("api/v1/Devices/{deviceId}")
     suspend fun renameDevice(
         @Path("deviceId") deviceId: String,
         @Body request: RenameRequest
     ): Response<ResponseBody>
 
-    @DELETE("api/Devices/{deviceId}")
+    @DELETE("api/v1/Devices/{deviceId}")
     suspend fun deleteDevice(
         @Path("deviceId") deviceId: String
     ): Response<ResponseBody>
 
-    @POST("api/Devices")
+    @POST("api/v1/Devices")
     suspend fun addDevice(
         @Body request: AddDeviceRequest
     ): Response<DeviceResponse>
 
-    @POST("api/Devices/pair")
+    @POST("api/v1/Devices/pair")
     suspend fun pairDevice(
         @Body request: PairDeviceRequest,
         @Header("apiKey") apiKey: String

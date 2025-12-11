@@ -36,13 +36,40 @@ public class SpeechService
             _synthesizer = new SpeechSynthesizer();
             _synthesizer.SetOutputToDefaultAudioDevice();
             
-            // Eventos para controlar flag IsSpeaking
+            // Eventos para controlar flag IsSpeaking e parar/reiniciar reconhecimento
             _synthesizer.SpeakStarted += (s, e) => 
             { 
                 _isSpeaking = true;
+                System.Diagnostics.Debug.WriteLine("[SpeechService] TTS começou a falar, parando reconhecimento...");
+                // Parar reconhecimento de voz enquanto TTS está falando para evitar capturar a própria fala
+                if (_isListening)
+                {
+                    StopListening();
+                }
                 SpeakStarted?.Invoke(this, EventArgs.Empty);
             };
-            _synthesizer.SpeakCompleted += (s, e) => { _isSpeaking = false; };
+            _synthesizer.SpeakCompleted += (s, e) => 
+            { 
+                _isSpeaking = false;
+                System.Diagnostics.Debug.WriteLine("[SpeechService] TTS terminou de falar, reiniciando reconhecimento...");
+                // Reiniciar reconhecimento de voz após TTS terminar
+                // Usar um pequeno delay para garantir que o áudio foi completamente liberado
+                System.Threading.Tasks.Task.Delay(300).ContinueWith(_ =>
+                {
+                    try
+                    {
+                        if (!_isListening && _recognizer != null)
+                        {
+                            System.Diagnostics.Debug.WriteLine("[SpeechService] Reiniciando reconhecimento após TTS");
+                            StartListening();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[SpeechService] Erro ao reiniciar reconhecimento: {ex.Message}");
+                    }
+                });
+            };
             
             // Tentar carregar voz salva do banco de dados
             if (database != null)

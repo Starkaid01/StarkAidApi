@@ -1,16 +1,18 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StarkAid.WindowsForms.Models;
+using StarkAid.WindowsForms.Config;
 
 namespace StarkAid.WindowsForms.Services;
 
 public class ApiService
 {
     private readonly HttpClient _httpClient;
-    private string _baseUrl = "https://starkaid.runasp.net/api/";
+    private string _baseUrl = ApiConfig.ApiBaseUrlWithSlash;
     private string? _token;
     private bool _configLoaded = false;
     private readonly object _configLock = new object();
@@ -30,30 +32,12 @@ public class ApiService
     {
         try
         {
-            // URL padrão apenas para buscar configuração inicial
-            var configUrl = "https://starkaid.runasp.net/api/Config/app-config";
-            var response = await _httpClient.GetAsync(configUrl);
-            
-            if (response.IsSuccessStatusCode)
+            // Usar sempre ApiConfig, não sobrescrever com resposta da API
+            lock (_configLock)
             {
-                var content = await response.Content.ReadAsStringAsync();
-                var config = JsonConvert.DeserializeObject<AppConfig>(content);
-                
-                if (config != null && !string.IsNullOrEmpty(config.ApiBaseUrl))
-                {
-                    lock (_configLock)
-                    {
-                        // Atualizar base URL com a retornada pela API
-                        var newBaseUrl = config.ApiBaseUrl.TrimEnd('/');
-                        if (!newBaseUrl.EndsWith("/api"))
-                        {
-                            newBaseUrl += "/api";
-                        }
-                        _baseUrl = newBaseUrl + "/";
-                        _configLoaded = true;
-                        System.Diagnostics.Debug.WriteLine($"[ApiService] Base URL atualizada para: {_baseUrl}");
-                    }
-                }
+                _baseUrl = ApiConfig.ApiBaseUrlWithSlash;
+                _configLoaded = true;
+                System.Diagnostics.Debug.WriteLine($"[ApiService] Base URL configurada para: {_baseUrl}");
             }
         }
         catch (Exception ex)
@@ -94,10 +78,18 @@ public class ApiService
         {
             var url = BuildUrl(endpoint);
             var response = await _httpClient.GetAsync(url);
+            
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
                 return JsonConvert.DeserializeObject<T>(content);
+            }
+            
+            // Tratamento específico para Rate Limiting (429)
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                await HandleRateLimitAsync(response);
+                return default(T);
             }
         }
         catch (Exception ex)
@@ -121,10 +113,18 @@ public class ApiService
             }
 
             var response = await _httpClient.PostAsync(url, content);
+            
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
                 return JsonConvert.DeserializeObject<T>(responseContent);
+            }
+            
+            // Tratamento específico para Rate Limiting (429)
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                await HandleRateLimitAsync(response);
+                return default(T);
             }
         }
         catch (Exception ex)
@@ -139,6 +139,12 @@ public class ApiService
         // Remove barra inicial se existir
         if (endpoint.StartsWith("/"))
             endpoint = endpoint.Substring(1);
+        
+        // A baseUrl já inclui "/api", então adicionamos apenas "v1/" se não estiver presente
+        if (!endpoint.StartsWith("v1/") && !endpoint.StartsWith("v{") && !endpoint.Contains("/v1/"))
+        {
+            endpoint = $"v1/{endpoint}";
+        }
         
         // Garante que a base URL não termina com barra
         var baseUrl = _baseUrl.TrimEnd('/');
@@ -616,6 +622,13 @@ public class ApiService
             {
                 return true;
             }
+            
+            // Tratamento específico para Rate Limiting (429)
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                await HandleRateLimitAsync(response);
+                System.Diagnostics.Debug.WriteLine("[PublishCommandAsync] Rate limit excedido. Limite: 5 req/min por usuário para IoT.");
+            }
             else
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
@@ -642,6 +655,13 @@ public class ApiService
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
                 return JsonConvert.DeserializeObject<SuperIaResponse>(responseContent);
+            }
+            
+            // Tratamento específico para Rate Limiting (429)
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                await HandleRateLimitAsync(response);
+                System.Diagnostics.Debug.WriteLine("[CallSuperIaAsync] Rate limit excedido para IA. Limite: 10 req/min por usuário.");
             }
             else
             {
@@ -1232,7 +1252,7 @@ public class ApiService
     }
 
     // User Online/Offline
-    public async Task<bool> SetUserOnlineAsync()
+    public async Task<bool> SetUserOnlineAsync(string? sessionName = null)
     {
         try
         {
@@ -1245,7 +1265,7 @@ public class ApiService
 
             System.Diagnostics.Debug.WriteLine($"[SetUserOnlineAsync] Token presente: {_token.Substring(0, Math.Min(20, _token.Length))}...");
             
-            var request = new { Origem = "soft" };
+            var request = new { Origem = "soft", SessionName = sessionName };
             var json = JsonConvert.SerializeObject(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
@@ -1395,6 +1415,158 @@ public class ApiService
             System.Diagnostics.Debug.WriteLine($"Erro ao verificar status da API: {ex.Message}");
         }
         return false;
+    }
+
+    public async Task<bool> UpdateUserActivityAsync(string? ultimoComandoEsp = null, string? ultimoComandoEwelink = null, 
+        string? ultimoComandoStarkSwitch = null, string? ultimoComandoSocial = null, string? ultimaRespostaSocial = null,
+        string? ultimoComandoIA = null, string? ultimaRespostaIA = null)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_token))
+            {
+                System.Diagnostics.Debug.WriteLine("[UpdateUserActivityAsync] ERRO: Token não está presente!");
+                return false;
+            }
+
+            var request = new
+            {
+                UltimoComandoEsp = ultimoComandoEsp,
+                UltimoComandoEwelink = ultimoComandoEwelink,
+                UltimoComandoStarkSwitch = ultimoComandoStarkSwitch,
+                UltimoComandoSocial = ultimoComandoSocial,
+                UltimaRespostaSocial = ultimaRespostaSocial,
+                UltimoComandoIA = ultimoComandoIA,
+                UltimaRespostaIA = ultimaRespostaIA
+            };
+
+            var json = JsonConvert.SerializeObject(request);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            
+            var url = BuildUrl("Users/activity/update");
+            System.Diagnostics.Debug.WriteLine($"[UpdateUserActivityAsync] Enviando requisição para: {url}");
+            System.Diagnostics.Debug.WriteLine($"[UpdateUserActivityAsync] Request body: {json}");
+            System.Diagnostics.Debug.WriteLine($"[UpdateUserActivityAsync] Token presente: {!string.IsNullOrEmpty(_token)}");
+            
+            var response = await _httpClient.PostAsync(url, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"[UpdateUserActivityAsync] ✅ Atividade atualizada com sucesso: {responseContent}");
+                return true;
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"[UpdateUserActivityAsync] ❌ Erro ao atualizar atividade: {response.StatusCode} - {errorContent}");
+                System.Diagnostics.Debug.WriteLine($"[UpdateUserActivityAsync] URL tentada: {url}");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[UpdateUserActivityAsync] ❌ Exceção: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[UpdateUserActivityAsync] Stack trace: {ex.StackTrace}");
+            return false;
+        }
+    }
+
+    public async Task<bool> AddLogFalhaSoftAsync(string tipoFalha, string? descricao = null, 
+        string? comandoTentado = null, string? dispositivoNome = null, string? erroDetalhado = null)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_token))
+            {
+                System.Diagnostics.Debug.WriteLine("[AddLogFalhaSoftAsync] ERRO: Token não está presente!");
+                return false;
+            }
+
+            var request = new
+            {
+                TipoFalha = tipoFalha,
+                Descricao = descricao,
+                ComandoTentado = comandoTentado,
+                DispositivoNome = dispositivoNome,
+                ErroDetalhado = erroDetalhado
+            };
+
+            var json = JsonConvert.SerializeObject(request);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync(BuildUrl("Users/logs-falhas/soft"), content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                System.Diagnostics.Debug.WriteLine("[AddLogFalhaSoftAsync] Log de falha registrado com sucesso");
+                return true;
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"[AddLogFalhaSoftAsync] Erro ao registrar log de falha: {response.StatusCode} - {errorContent}");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AddLogFalhaSoftAsync] Exceção: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Trata erros de Rate Limiting (429 Too Many Requests)
+    /// </summary>
+    private async Task HandleRateLimitAsync(HttpResponseMessage response)
+    {
+        try
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            System.Diagnostics.Debug.WriteLine($"[RateLimit] ⚠️ Erro 429 - Limite de requisições excedido");
+            
+            // Tentar ler header Retry-After
+            if (response.Headers.TryGetValues("Retry-After", out var retryAfterValues))
+            {
+                var retryAfter = retryAfterValues.FirstOrDefault();
+                if (int.TryParse(retryAfter, out var seconds))
+                {
+                    System.Diagnostics.Debug.WriteLine($"[RateLimit] ⏱️ Retry-After: {seconds} segundos");
+                }
+            }
+            
+            // Tentar ler headers de rate limit
+            if (response.Headers.TryGetValues("X-RateLimit-Remaining", out var remainingValues))
+            {
+                var remaining = remainingValues.FirstOrDefault();
+                System.Diagnostics.Debug.WriteLine($"[RateLimit] 📊 Requisições restantes: {remaining}");
+            }
+            
+            if (response.Headers.TryGetValues("X-RateLimit-Reset", out var resetValues))
+            {
+                var reset = resetValues.FirstOrDefault();
+                System.Diagnostics.Debug.WriteLine($"[RateLimit] 🔄 Reset em: {reset}");
+            }
+            
+            // Log da mensagem de erro se disponível
+            if (!string.IsNullOrWhiteSpace(errorContent))
+            {
+                try
+                {
+                    var errorObj = JsonConvert.DeserializeObject<JObject>(errorContent);
+                    var message = errorObj?["message"]?.ToString() ?? errorContent;
+                    System.Diagnostics.Debug.WriteLine($"[RateLimit] 💬 Mensagem: {message}");
+                }
+                catch
+                {
+                    System.Diagnostics.Debug.WriteLine($"[RateLimit] 💬 Mensagem: {errorContent}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[RateLimit] ❌ Erro ao processar resposta 429: {ex.Message}");
+        }
     }
 }
 

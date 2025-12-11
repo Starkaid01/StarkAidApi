@@ -175,7 +175,7 @@
 
         async function getAccessToken() {
             try {
-                const res = await fetch(`https://starkaid.vbweb.com.br/api/spotifyauth/token?userId=${userId}`);
+                const res = await fetch(`https://starkaid.vbweb.com.br/api/v1/spotifyauth/token?userId=${userId}`);
                 if (!res.ok) throw new Error("Falha ao buscar token");
                 const data = await res.json();
                 return data.accessToken;

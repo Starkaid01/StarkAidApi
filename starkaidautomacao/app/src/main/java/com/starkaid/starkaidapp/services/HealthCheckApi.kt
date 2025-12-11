@@ -4,10 +4,10 @@ import retrofit2.Response
 import retrofit2.http.GET
 
 interface HealthCheckApi {
-    @GET("api/HealthCheck/mqtt")
+    @GET("api/v1/HealthCheck/mqtt")
     suspend fun checkMqttStatus(): Response<MqttStatusResponse>
 
-    @GET("api/HealthCheck/api")
+    @GET("api/v1/HealthCheck/api")
     suspend fun checkApiStatus(): Response<MqttStatusResponse>
 }
 

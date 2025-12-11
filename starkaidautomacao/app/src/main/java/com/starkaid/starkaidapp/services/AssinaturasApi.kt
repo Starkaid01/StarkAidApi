@@ -38,7 +38,7 @@ data class AdsAssinaturaStatusResponse(
 
 interface AssinaturasApi {
 
-    @POST("api/Assinaturas/create/{nivel}")
+    @POST("api/v1/Assinaturas/create/{nivel}")
     suspend fun criarAssinatura(
         @Path("nivel") nivel: Int,
         @Query("userId") userId: String?,
@@ -46,7 +46,7 @@ interface AssinaturasApi {
         @Header("Api-Key") apiKey: String
     ): Response<AssinarResponse>
 
-    @POST("api/Assinaturas/avulso/{valor}")
+    @POST("api/v1/Assinaturas/avulso/{valor}")
     suspend fun criarCompraAvulsa(
         @Path("valor") valor: Double,
         @Query("userId") userId: String?,
@@ -54,33 +54,33 @@ interface AssinaturasApi {
         @Header("Api-Key") apiKey: String
     ): Response<AssinarResponse>
 
-    @GET("api/Assinaturas/status")
+    @GET("api/v1/Assinaturas/status")
     suspend fun getPlanoStatus(
         @Header("Authorization") bearerToken: String,
         @Header("Api-Key") apiKey: String
     ): Response<PlanoStatusResponse>
 
-    @GET("api/Assinaturas/ads/assinatura/status")
+    @GET("api/v1/Assinaturas/ads/assinatura/status")
     suspend fun getAdsAssinaturaStatus(
         @Header("Authorization") bearerToken: String,
         @Header("Api-Key") apiKey: String
     ): Response<AdsAssinaturaStatusResponse>
 
-    @POST("api/Assinaturas/cancelar")
+    @POST("api/v1/Assinaturas/cancelar")
     suspend fun cancelarAssinatura(
         @Header("Authorization") bearerToken: String,
         @Header("Api-Key") apiKey: String
     ): Response<CancelarPlanoResponse>
 
-    @POST("api/Assinaturas/checkout")
+    @POST("api/v1/Assinaturas/checkout")
     suspend fun checkout(
         @Body request: CheckoutRequest
     ): Response<AssinarResponse>
 
-    @GET("api/Assinaturas/ativas")
+    @GET("api/v1/Assinaturas/ativas")
     suspend fun listarAtivas(): Response<List<PlanoAtivoResponse>>
 
-    @POST("api/Assinaturas/cancelar/{assinaturaId}")
+    @POST("api/v1/Assinaturas/cancelar/{assinaturaId}")
     suspend fun cancelarAssinaturaPorId(
         @Path("assinaturaId") assinaturaId: String
     ): Response<CancelarPlanoResponse>

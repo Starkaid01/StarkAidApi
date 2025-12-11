@@ -175,15 +175,128 @@
     border: 1px solid var(--border-color);
 }
 
+/* Desktop padrão: botão na primeira linha, título na segunda */
+@media (min-width: 769px) {
+    .section-header {
+        display: block !important;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .section-header > .btn.btn-primary {
+        display: block !important;
+        width: auto !important;
+        margin-bottom: 0.75rem !important;
+        margin-right: 0 !important;
+    }
+
+    .section-header > .section-title-wrapper {
+        display: flex !important;
+        align-items: center !important;
+        gap: 1rem !important;
+        width: 100% !important;
+        clear: both !important;
+    }
+
+    .section-header > .section-title-wrapper h3 {
+        white-space: nowrap !important;
+        margin: 0 !important;
+        flex-shrink: 0 !important;
+    }
+
+    .section-header > .section-title-wrapper .list-toggle-btn {
+        flex-shrink: 0 !important;
+    }
+}
+
+/* Base para mobile (será sobrescrito pelo media query mobile) */
 .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: block;
+    gap: 1rem;
     margin-bottom: 2rem;
+}
+
+/* ---- FORÇAR MESMO LAYOUT EM TODAS AS LARGURAS ---- */
+.user-tab-content .section-header {
+    display: block !important;
+}
+
+.user-tab-content .section-header > .btn.btn-primary {
+    display: block !important;
+    width: auto !important;
+    margin-bottom: 0.75rem !important;
+}
+
+.user-tab-content .section-header > .section-title-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    width: 100% !important;
+    clear: both !important;
+}
+
+.user-tab-content .section-title-wrapper h3 {
+    white-space: nowrap !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+.user-tab-content .section-title-wrapper .list-toggle-btn {
+    flex-shrink: 0 !important;
+}
+
+/* Mobile (≤768px): também botão em linha separada */
+@media (max-width: 768px) {
+    .section-header {
+        display: block !important;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .section-header > .btn.btn-primary {
+        display: block !important;
+        width: auto !important;
+        margin-bottom: 0.75rem !important;
+        margin-right: 0 !important;
+    }
+
+    .section-header > .section-title-wrapper {
+        display: flex !important;
+        align-items: center !important;
+        gap: 1rem !important;
+        width: 100% !important;
+        clear: both !important;
+    }
+
+    .section-header > .section-title-wrapper h3 {
+        white-space: nowrap !important;
+        margin: 0 !important;
+        flex-shrink: 0 !important;
+    }
+
+    .section-header > .section-title-wrapper .list-toggle-btn {
+        flex-shrink: 0 !important;
+    }
 }
 
 .section-header h2 {
     font-size: 1.5rem;
+}
+
+/* Wrapper para título e toggle */
+.section-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.section-title-wrapper h3 {
+    white-space: nowrap;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .table-container {
@@ -294,13 +407,19 @@
 }
 
 .large-modal {
-    max-width: 90%;
+    width: 100% !important;
+    max-width: 100% !important;
     max-height: 90vh;
     overflow-y: auto;
+    margin: 0.5% auto !important;
+    padding: 1.5rem !important;
+    box-sizing: border-box;
 }
 
 .user-details-content {
     margin-top: 2rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .user-info-header {
@@ -614,15 +733,23 @@ div.welcome-header {
 
 .modal-content {
     background: var(--dark-surface);
-    margin: 5% auto;
+    margin: 1% auto;
     padding: 2rem;
     border: 1px solid var(--border-color);
     border-radius: 16px;
-    width: 90%;
-    max-width: 500px;
+    width: 98%;
+    max-width: 98%;
     position: relative;
-    max-height: 90vh;
+    max-height: 96vh;
     overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.large-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0.5% auto !important;
+    padding: 1.5rem !important;
 }
 
 .modal-header {
@@ -711,10 +838,50 @@ div.welcome-header {
         padding: 0.5rem;
     }
 
-    .section-header {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
+    /* Esta regra só se aplica dentro de modais ou outras seções específicas no mobile */
+    .modal .section-header,
+    .auth-section .section-header {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 0.5rem !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+    }
+    
+    /* Para user-tab-content, manter o layout de coluna mesmo no mobile se necessário */
+    .user-tab-content .section-header {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 0.5rem !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+    }
+    
+    .user-tab-content .section-header > .btn.btn-primary {
+        margin-bottom: 0 !important;
+        flex-shrink: 0 !important;
+    }
+    
+    .user-tab-content .section-header > .section-title-wrapper {
+        flex: 1 !important;
+        min-width: 0 !important;
+        clear: none !important;
+    }
+    
+    /* No mobile, botões e título podem ficar lado a lado */
+    .section-header > .btn {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+    
+    .section-header > div {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .section-title-wrapper {
+        flex: 1;
+        min-width: 0;
     }
 
     .section-header h3 {
@@ -883,8 +1050,11 @@ div.welcome-header {
     }
 
     .large-modal {
-        max-width: 95%;
+        width: 100% !important;
+        max-width: 100% !important;
         padding: 1rem;
+        margin: 0.5% auto !important;
+        box-sizing: border-box;
     }
 
     .user-info-grid {
@@ -1135,23 +1305,39 @@ div.welcome-header {
 /* Responsividade para grid de tabs */
 @media (max-width: 768px) {
     .user-tabs-toggle {
-        display: flex;
+        display: flex !important;
+        z-index: 10;
+        position: relative;
     }
     
     .user-tabs-grid {
-        display: none;
+        display: none !important;
         grid-template-columns: repeat(2, 1fr);
         gap: 0.75rem;
         margin-top: 0;
+        position: relative;
+        z-index: 9;
     }
     
     .user-tabs-container.expanded .user-tabs-grid {
-        display: grid;
+        display: grid !important;
+    }
+    
+    .user-tabs-container.collapsed .user-tabs-grid {
+        display: none !important;
     }
     
     .user-tab-btn {
         padding: 1rem 0.75rem;
         font-size: 0.9rem;
+        pointer-events: auto;
+        z-index: 10;
+        position: relative;
+    }
+    
+    .user-tabs-container {
+        position: relative;
+        z-index: 10;
     }
 }
 
@@ -1288,6 +1474,110 @@ div.welcome-header {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+}
+
+/* Garantir que items-list com collapsible-list mantenha as propriedades */
+.items-list.collapsible-list {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Listas recolhíveis com altura máxima e scrollbar */
+.collapsible-list {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease 0.1s, margin 0.3s ease, padding 0.3s ease;
+    opacity: 1;
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0;
+    position: relative;
+}
+
+.collapsible-list.collapsed {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    min-height: 0 !important;
+    border: none !important;
+    gap: 0 !important;
+}
+
+.collapsible-list.expanded {
+    max-height: 600px !important;
+    opacity: 1 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    margin-top: 1rem !important;
+    padding: 0 !important;
+    gap: 1rem !important;
+}
+
+.collapsible-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.collapsible-list::-webkit-scrollbar-track {
+    background: var(--dark-bg);
+    border-radius: 4px;
+}
+
+.collapsible-list::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+.collapsible-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 255, 0.8);
+}
+
+/* Botão de toggle para listas */
+.list-toggle-btn {
+    background: transparent;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--light-text);
+    min-width: 40px;
+    height: 40px;
+}
+
+.list-toggle-btn:hover {
+    background: rgba(0, 255, 255, 0.1);
+    border-color: var(--primary-color);
+}
+
+.list-toggle-arrow {
+    transition: transform 0.3s ease;
+    font-size: 1rem;
+    color: var(--primary-color);
+    display: inline-block;
+}
+
+/* Quando a lista está expandida, a seta aponta para cima */
+.collapsible-list.expanded ~ .section-header .list-toggle-arrow,
+.section-header:has(+ .collapsible-list.expanded) .list-toggle-arrow {
+    transform: rotate(180deg);
+}
+
+/* Ajuste para quando a lista está expandida */
+.collapsible-list.expanded {
+    max-height: 600px;
+    opacity: 1;
+    margin-top: 1rem;
+    padding: 0;
 }
 
 .item-card {
@@ -1431,5 +1721,157 @@ div.welcome-header {
 .form-group textarea:focus {
     outline: none;
     border-color: var(--primary-color);
+}
+
+.dashboard-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--dark-surface);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.dashboard-section h4 {
+    margin-bottom: 1.5rem;
+    color: var(--dark-text);
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.refresh-btn {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.refresh-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%);
+}
+
+.refresh-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.refresh-btn span {
+    font-size: 1rem;
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.refresh-btn:hover:not(:disabled) span {
+    transform: rotate(180deg);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-card {
+    background: var(--dark-bg);
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-label {
+    font-size: 0.9rem;
+    color: var(--light-text);
+}
+
+.last-commands-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.last-command-card {
+    background: var(--dark-bg);
+    padding: 1.25rem;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s;
+}
+
+.last-command-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.last-command-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.last-command-icon {
+    font-size: 1.5rem;
+}
+
+.last-command-title {
+    font-weight: 600;
+    color: var(--dark-text);
+    font-size: 0.95rem;
+}
+
+.last-command-value {
+    color: var(--light-text);
+    font-size: 0.9rem;
+    word-break: break-word;
+    line-height: 1.5;
+}
+
+.last-command-response {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    color: var(--light-text);
+    font-size: 0.85rem;
+    line-height: 1.5;
 }
 

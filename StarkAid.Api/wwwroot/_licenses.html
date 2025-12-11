@@ -479,7 +479,7 @@
                 console.log('Fazendo requisição para /api/licenses/checkout');
                 console.log('Body:', JSON.stringify({ maxMachines }));
 
-                const response = await fetchWithAuth('/api/licenses/checkout', {
+                const response = await fetchWithAuth('/api/v1/licenses/checkout', {
                     method: 'POST',
                     body: JSON.stringify({ maxMachines })
                 });
@@ -537,7 +537,7 @@
             if (response.status === 401 && refreshToken) {
                 console.log('Token expirado, tentando refresh...');
                 try {
-                    const refreshResponse = await fetch('/api/auth/refresh-token', {
+                    const refreshResponse = await fetch('/api/v1/auth/refresh-token', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ refreshToken })
@@ -590,7 +590,7 @@
             try {
                 console.log('Fazendo requisição para /api/licenses com token:', token ? 'Token presente' : 'Token ausente');
                 
-                const response = await fetchWithAuth('/api/licenses');
+                const response = await fetchWithAuth('/api/v1/licenses');
 
                 console.log('Resposta recebida:', response.status, response.statusText);
 
@@ -713,7 +713,7 @@
             try {
                 console.log('Ativando licença para teste:', licenseId);
                 
-                const response = await fetchWithAuth(`/api/licenses/${licenseId}/activate-test`, {
+                const response = await fetchWithAuth(`/api/v1/licenses/${licenseId}/activate-test`, {
                     method: 'POST'
                 });
 
@@ -750,7 +750,7 @@
             try {
                 console.log('Deletando licença:', licenseId);
                 
-                const response = await fetch(`/api/licenses/${licenseId}`, {
+                const response = await fetch(`/api/v1/licenses/${licenseId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`

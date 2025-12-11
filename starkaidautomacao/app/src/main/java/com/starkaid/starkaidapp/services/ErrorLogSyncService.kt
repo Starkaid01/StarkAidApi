@@ -93,7 +93,7 @@ class ErrorLogSyncService(private val context: Context) {
  * Interface da API para sincronização de logs
  */
 interface ErrorLogSyncApi {
-    @POST("api/Users/error-logs/app/sync")
+    @POST("api/v1/Users/error-logs/app/sync")
     suspend fun syncErrorLogs(
         @Body request: SyncErrorLogsAppRequest
     ): Response<SyncErrorLogsAppResponse>

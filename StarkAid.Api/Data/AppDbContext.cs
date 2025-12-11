@@ -33,6 +33,8 @@ public class AppDbContext : DbContext
     public DbSet<ErrorLogSoft> ErrorLogsSoft => Set<ErrorLogSoft>();
     public DbSet<ErrorLogApp> ErrorLogsApp => Set<ErrorLogApp>();
     public DbSet<ErrorCodeDescription> ErrorCodeDescriptions => Set<ErrorCodeDescription>();
+    public DbSet<UserActivity> UserActivities => Set<UserActivity>();
+    public DbSet<LogFalhaSoft> LogsFalhasSoft => Set<LogFalhaSoft>();
     public DbSet<SuporteAprendizado> SuporteAprendizados => Set<SuporteAprendizado>();
     public DbSet<SuportePerguntaFrequente> SuportePerguntasFrequentes => Set<SuportePerguntaFrequente>();
     public DbSet<SuporteConversa> SuporteConversas => Set<SuporteConversa>();
@@ -423,6 +425,25 @@ public class AppDbContext : DbContext
             entity.Property(e => e.UserEmail).HasMaxLength(200);
             entity.Property(e => e.UserName).HasMaxLength(200);
             entity.Property(e => e.ReferenciaId).HasMaxLength(100);
+        });
+
+        // Configurações de LogFalhaSoft
+        modelBuilder.Entity<LogFalhaSoft>(entity =>
+        {
+            entity.ToTable("LogsFalhasSoft");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserId).IsRequired();
+            entity.Property(e => e.TipoFalha).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Descricao).HasMaxLength(1000);
+            entity.Property(e => e.ComandoTentado).HasMaxLength(500);
+            entity.Property(e => e.DispositivoNome).HasMaxLength(500);
+            entity.Property(e => e.ErroDetalhado).HasMaxLength(200);
+            entity.Property(e => e.CreatedAt).HasColumnType("datetimeoffset").IsRequired();
+            
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -5,24 +5,24 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface EwelinkApi {
-    @GET("api/Ewelink/status")
+    @GET("api/v1/Ewelink/status")
     suspend fun getStatus(): Response<EwelinkStatusResponse>
 
-    @GET("api/Ewelink/dispositivos")
+    @GET("api/v1/Ewelink/dispositivos")
     suspend fun listarDispositivos(): Response<List<EwelinkDeviceResponse>>
 
-    @GET("api/Ewelink/dispositivos/{deviceId}/status")
+    @GET("api/v1/Ewelink/dispositivos/{deviceId}/status")
     suspend fun getDeviceStatus(
         @Path("deviceId") deviceId: String
     ): Response<EwelinkDeviceResponse>
 
-    @POST("api/Ewelink/dispositivos/{deviceId}/controlar")
+    @POST("api/v1/Ewelink/dispositivos/{deviceId}/controlar")
     suspend fun controlarDispositivo(
         @Path("deviceId") deviceId: String,
         @Body request: EwelinkControlRequest
     ): Response<EwelinkDeviceResponse>
 
-    @POST("api/Ewelink/sincronizar")
+    @POST("api/v1/Ewelink/sincronizar")
     suspend fun sincronizarDispositivos(): Response<String>
 }
 

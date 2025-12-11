@@ -4,8 +4,16 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.Html
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
+import android.text.style.UnderlineSpan
 import android.util.Log
+import android.view.View
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.starkaid.starkaidapp.R
@@ -150,7 +158,8 @@ class EwelinkLoginActivity : AppCompatActivity() {
     }
 
     private fun mostrarMensagemConectar() {
-        val mensagem = """
+        val linkUrl = "https://starkaid.runasp.net/automacao.html?"
+        val mensagemTexto = """
             Conectar Ewelink:
 
             Para conectar sua conta ewelink,
@@ -165,12 +174,43 @@ class EwelinkLoginActivity : AppCompatActivity() {
             
             Volte ao Aplicativo e veja se seus dispositivos aparecem.
             
-            Link: https://starkaid.runasp.net/automacao.html?
+            Link: $linkUrl
         """.trimIndent()
+
+        // Criar TextView com link clicável
+        val textView = TextView(this).apply {
+            text = mensagemTexto
+            setPadding(50, 40, 50, 10)
+            textSize = 14f
+            movementMethod = LinkMovementMethod.getInstance()
+        }
+
+        // Criar SpannableString para tornar o link clicável
+        val spannable = SpannableString(mensagemTexto)
+        val linkStart = mensagemTexto.indexOf(linkUrl)
+        val linkEnd = linkStart + linkUrl.length
+
+        if (linkStart >= 0) {
+            val clickableSpan = object : ClickableSpan() {
+                override fun onClick(widget: View) {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(linkUrl))
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        Log.e("EWE", "Erro ao abrir link: ${e.message}")
+                        Toast.makeText(this@EwelinkLoginActivity, "Erro ao abrir link", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            spannable.setSpan(clickableSpan, linkStart, linkEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(UnderlineSpan(), linkStart, linkEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        textView.text = spannable
 
         AlertDialog.Builder(this)
             .setTitle("Conectar Conta Ewelink")
-            .setMessage(mensagem)
+            .setView(textView)
             .setPositiveButton("OK") { dialog, _ ->
                 dialog.dismiss()
             }

@@ -17,24 +17,24 @@ data class AddFundsResponse(
 interface UsersApi {
 
 
-    @GET("api/Users/ads")
+    @GET("api/v1/Users/ads")
     suspend fun getAds(): Response<AdsResponse>
 
-    @GET("api/Users/nivel")
+    @GET("api/v1/Users/nivel")
     suspend fun getNivel(): Response<NivelResponse>
 
     // Adicione este método para deletar conta
-    @DELETE("api/Users/delete-account")
+    @DELETE("api/v1/Users/delete-account")
     suspend fun deleteAccount(): Response<DeleteAccountResponse>
 
     // Adicionar fundos (pagamento avulso)
-    @POST("api/users/add-funds")
+    @POST("api/v1/Users/add-funds")
     suspend fun addFunds(
         @Body request: AddFundsRequest
     ): Response<AddFundsResponse>
 
     // Buscar dados do usuário atual
-    @GET("api/users/me")
+    @GET("api/v1/Users/me")
     suspend fun getCurrentUser(): Response<CurrentUserResponse>
 }
 
