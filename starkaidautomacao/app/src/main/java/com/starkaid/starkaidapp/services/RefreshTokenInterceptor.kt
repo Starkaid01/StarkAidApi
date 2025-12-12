@@ -2,6 +2,7 @@ package com.starkaid.starkaidapp.services
 
 import android.content.Context
 import android.util.Log
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.data.SessionManager
 import com.starkaid.starkaidapp.util.SessionExpiredHandler
 import okhttp3.Interceptor
@@ -89,7 +90,7 @@ class RefreshTokenInterceptor(context: Context) : Interceptor {
                 .toRequestBody("application/json".toMediaType())
 
             val request = Request.Builder()
-                .url("https://starkaid.runasp.net/api/v1/Auth/refresh-token")
+                .url("${ApiConfig.apiBaseUrl}/v1/Auth/refresh-token")
                 .addHeader("Connection", "close")
                 .post(requestBody)
                 .build()

@@ -13,6 +13,7 @@ import android.content.Intent
 import com.microsoft.signalr.HubConnection
 import com.microsoft.signalr.HubConnectionBuilder
 import com.starkaid.starkaidapp.R
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.data.SessionManager
 import com.starkaid.starkaidapp.services.ApiClient
 import io.reactivex.rxjava3.core.Single
@@ -77,10 +78,8 @@ class ChatSuporteActivity : AppCompatActivity() {
             return
         }
 
-        val baseUrl = "https://starkaid.runasp.net"
-        
         try {
-            hubConnection = HubConnectionBuilder.create("$baseUrl/hubs/support-chat?origem=app")
+            hubConnection = HubConnectionBuilder.create("${ApiConfig.webBaseUrl}/hubs/support-chat?origem=app")
                 .withAccessTokenProvider(Single.defer { Single.just(token) })
                 .build()
 

@@ -85,6 +85,7 @@ import com.starkaid.starkaidapp.ewelink.EwelinkVoiceControl
 import com.starkaid.starkaidapp.ewelink.adapter.DeviceEwelinkAdapter
 import com.starkaid.starkaidapp.ewelink.models.EwelinkDevice
 import com.starkaid.starkaidapp.extensions.createHoverEffect
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.models.ComandoSocialDao
 import com.starkaid.starkaidapp.models.ComandoSocialEntity
 import com.starkaid.starkaidapp.models.Device
@@ -1635,7 +1636,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         val userId = sessionManager.fetchUserId() ?: return
 
         try {
-            espHubConnection = HubConnectionBuilder.create("https://starkaid.runasp.net/hubs/dispositivo-esp?type=app")
+            espHubConnection = HubConnectionBuilder.create("${ApiConfig.webBaseUrl}/hubs/dispositivo-esp?type=app")
                 .withAccessTokenProvider(Single.defer { Single.just(token) })
                 .build()
 
@@ -3863,7 +3864,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
     private fun exchangeCodeWithBackend(code: String) {
         val userId = sessionManager.fetchUserId()
-        val url = "https://starkaid.runasp.net/api/v1/spotifyauth/exchange"
+        val url = "${ApiConfig.apiBaseUrl}/v1/spotifyauth/exchange"
 
         val json = JSONObject()
         json.put("code", code)
@@ -6716,7 +6717,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     private fun enviarRespostaAcaoSuporte(acao: String, sucesso: Boolean, mensagem: String) {
         // Enviar resposta via SignalR para o chat de suporte
         try {
-            val supportHub = HubConnectionBuilder.create("https://starkaid.runasp.net/hubs/support-chat?origem=app")
+            val supportHub = HubConnectionBuilder.create("${ApiConfig.webBaseUrl}/hubs/support-chat?origem=app")
                 .withAccessTokenProvider(Single.defer { 
                     Single.just(sessionManager.fetchAuthToken() ?: "") 
                 })

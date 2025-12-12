@@ -13,6 +13,7 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.navigation.NavigationView
 import com.starkaid.starkaidapp.R
 import com.starkaid.starkaidapp.base.BaseActivity
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.data.SessionManager
 import com.starkaid.starkaidapp.ewelink.EwelinkLoginActivity
 import com.starkaid.starkaidapp.ewelink.EwelinkDevicesActivity
@@ -131,7 +132,7 @@ class ConfiguracoesGeraisActivity : BaseActivity()  {
         }
 
         findViewById<CardView>(R.id.privacy).setOnClickListener {
-            val uri = "https://starkaid.runasp.net/starkaid-privacy/privacy.html".toUri()
+            val uri = "${ApiConfig.webBaseUrl}/starkaid-privacy/privacy.html".toUri()
             val intent = Intent(Intent.ACTION_VIEW, uri)
             startActivity(intent)
         }

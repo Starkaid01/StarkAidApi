@@ -490,6 +490,9 @@ try
     app.MapHub<StarkAid.Api.Hubs.DispositivoEspHub>("/hubs/dispositivo-esp");
     app.MapHub<StarkAid.Api.Hubs.SupportChatHub>("/hubs/support-chat");
 
+    // Swagger disponível em Development
+    // IMPORTANTE: Para acessar via IP (ex: http://192.168.2.106:5000/swagger),
+    // certifique-se de que ASPNETCORE_ENVIRONMENT=Development
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
@@ -501,6 +504,8 @@ try
                 options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", 
                     $"StarkAid API {description.GroupName.ToUpperInvariant()}");
             }
+            // Permitir acesso via IP
+            options.ConfigObject.AdditionalItems.Add("persistAuthorization", "true");
         });
     }
 

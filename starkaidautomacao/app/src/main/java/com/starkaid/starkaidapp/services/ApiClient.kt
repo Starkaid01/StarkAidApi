@@ -2,6 +2,7 @@ package com.starkaid.starkaidapp.services
 
 import android.content.Context
 import android.util.Log
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.data.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +17,7 @@ import java.util.concurrent.TimeUnit
 object ApiClient {
     private var retrofit: Retrofit? = null
     private var configLoaded = false
-    private val defaultBaseUrl = "https://starkaid.runasp.net/"
+    private val defaultBaseUrl = ApiConfig.apiBaseUrlWithSlash
 
     fun getClient(context: Context): Retrofit {
         if (retrofit == null) {
@@ -94,7 +95,16 @@ object ApiClient {
                     val config = response.body()!!
                     
                     // Salvar configurações
-                    sessionManager.saveApiBaseUrl(config.apiBaseUrl)
+                    // Usar a URL do servidor se diferente da config local, senão usar a config local
+                    val serverApiBaseUrl = config.apiBaseUrl.trimEnd('/')
+                    val localApiBaseUrl = ApiConfig.apiBaseUrl.trimEnd('/')
+                    val finalApiBaseUrl = if (serverApiBaseUrl != localApiBaseUrl && !serverApiBaseUrl.contains("localhost")) {
+                        serverApiBaseUrl // Usar URL do servidor se for diferente e não for localhost
+                    } else {
+                        localApiBaseUrl // Usar URL da configuração local
+                    }
+                    
+                    sessionManager.saveApiBaseUrl(finalApiBaseUrl)
                     config.spotify?.let {
                         sessionManager.saveSpotifyClientId(it.clientId)
                         sessionManager.saveSpotifyClientSecret(it.clientSecret)
@@ -106,12 +116,12 @@ object ApiClient {
                     }
 
                     // Recriar retrofit com nova base URL se mudou
-                    if (config.apiBaseUrl != defaultBaseUrl.trimEnd('/')) {
-                        val newBaseUrl = if (config.apiBaseUrl.endsWith("/")) config.apiBaseUrl else "$config.apiBaseUrl/"
+                    val newBaseUrl = if (finalApiBaseUrl.endsWith("/")) finalApiBaseUrl else "$finalApiBaseUrl/"
+                    if (newBaseUrl != defaultBaseUrl) {
                         retrofit = null // Força recriação na próxima chamada
                         Log.d("ApiClient", "Configuração carregada. Nova base URL: $newBaseUrl")
                     } else {
-                        Log.d("ApiClient", "Configuração carregada. Usando URL padrão.")
+                        Log.d("ApiClient", "Configuração carregada. Usando URL padrão: $newBaseUrl")
                     }
                 } else {
                     Log.w("ApiClient", "Falha ao carregar configuração: ${response.code()}")

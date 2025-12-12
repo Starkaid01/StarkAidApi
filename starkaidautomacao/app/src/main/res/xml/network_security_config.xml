@@ -8,6 +8,7 @@
         </trust-anchors>
     </base-config>
     <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">192.168.2.106</domain>
         <domain includeSubdomains="true">192.168.2.109</domain>
         <domain includeSubdomains="true">starkaid.com</domain>
         <domain includeSubdomains="true">starkaid.vbweb.com.br</domain>

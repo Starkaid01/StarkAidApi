@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.microsoft.signalr.HubConnection
 import com.microsoft.signalr.HubConnectionBuilder
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.data.SessionManager
 import com.starkaid.starkaidapp.models.HubListener
 import io.reactivex.rxjava3.core.Single
@@ -20,7 +21,7 @@ class HubService(
         sessionManager.fetchUserId() ?: return
         val token = sessionManager.fetchAuthToken() ?: return
 
-        hubConnection = HubConnectionBuilder.create("https://starkaid.runasp.net/hubs/dispositivo-esp?type=app")
+        hubConnection = HubConnectionBuilder.create("${ApiConfig.webBaseUrl}/hubs/dispositivo-esp?type=app")
             .withAccessTokenProvider(Single.defer { Single.just(token) })
             .build()
 

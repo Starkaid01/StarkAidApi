@@ -1,4 +1,5 @@
-const API_BASE_URL = window.location.origin;
+// Usar API_BASE_URL do config.js se disponível, senão usar window.location.origin
+const API_BASE_URL = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : window.location.origin;
 
 let currentUser = null;
 let authToken = null;

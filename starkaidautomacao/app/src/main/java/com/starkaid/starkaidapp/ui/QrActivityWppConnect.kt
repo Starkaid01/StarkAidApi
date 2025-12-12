@@ -10,6 +10,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.starkaid.starkaidapp.R
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.data.SessionManager
 
 class QrActivityWppConnect : AppCompatActivity() {
@@ -35,7 +36,7 @@ class QrActivityWppConnect : AppCompatActivity() {
             return
         }
 
-        val qrLink = "https://starkaid.runasp.net/api/v1/wpp/$userId"
+        val qrLink = "${ApiConfig.apiBaseUrl}/v1/wpp/$userId"
         txtQrLink.text = qrLink
 
         // Copiar link

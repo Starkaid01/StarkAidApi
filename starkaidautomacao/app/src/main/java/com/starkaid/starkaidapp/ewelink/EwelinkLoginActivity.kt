@@ -17,6 +17,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.starkaid.starkaidapp.R
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.ewelink.models.EwelinkTokens
 import com.starkaid.starkaidapp.security.SecureStorageManager
 import okhttp3.*
@@ -31,7 +32,7 @@ class EwelinkLoginActivity : AppCompatActivity() {
 
     private val clientId = "qPNNDkWlhKwh4xn41bteq2qD02aiGs3D"
     private val clientSecret = "kdG0r5OPddNB90tPKvarWyMWmpppIX9s"
-    private val redirectUrl = "https://starkaid.runasp.net/auth/ewelink/calback/callback.html"
+    private val redirectUrl = "${ApiConfig.webBaseUrl}/auth/ewelink/calback/callback.html"
 
     private lateinit var secureStorage: SecureStorageManager
     private lateinit var deviceService: EwelinkDeviceService
@@ -158,7 +159,7 @@ class EwelinkLoginActivity : AppCompatActivity() {
     }
 
     private fun mostrarMensagemConectar() {
-        val linkUrl = "https://starkaid.runasp.net/automacao.html?"
+        val linkUrl = "${ApiConfig.webBaseUrl}/automacao.html?"
         val mensagemTexto = """
             Conectar Ewelink:
 

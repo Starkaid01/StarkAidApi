@@ -1,6 +1,7 @@
 package com.starkaid.starkaidapp.services
 
 import android.util.Log
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.data.SessionManager
 import kotlinx.coroutines.*
 import okhttp3.*
@@ -27,7 +28,8 @@ class WebSocketManager(
         val token = sessionManager.fetchAuthToken() ?: return
         if (token.isEmpty()) return
 
-        val url = "wss://starkaid.runasp.net/api/Websocket/connect/$userId"
+        val webBaseUrl = ApiConfig.webBaseUrl.replace("https://", "").replace("http://", "")
+        val url = "wss://$webBaseUrl/api/Websocket/connect/$userId"
         val request = Request.Builder()
             .url(url)
             .addHeader("Authorization", "Bearer $token")

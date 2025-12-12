@@ -16,6 +16,7 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.starkaid.starkaidapp.R
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.data.SessionManager
 import com.starkaid.starkaidapp.ewelink.adapter.DeviceEwelinkAdapter
 import com.starkaid.starkaidapp.ewelink.models.EwelinkDevice
@@ -150,7 +151,7 @@ class EwelinkDevicesActivity : AppCompatActivity() {
     }
 
     private fun mostrarMensagemNaoConectado() {
-        val linkUrl = "https://starkaid.runasp.net/automacao.html?"
+        val linkUrl = "${ApiConfig.webBaseUrl}/automacao.html?"
         val mensagem = """
             Para conectar sua conta Ewelink:
             

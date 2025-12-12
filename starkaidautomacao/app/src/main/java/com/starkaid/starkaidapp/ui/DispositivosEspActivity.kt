@@ -18,6 +18,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
 import com.microsoft.signalr.HubConnection
 import com.microsoft.signalr.HubConnectionBuilder
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.R
 import com.starkaid.starkaidapp.base.BaseActivity
 import com.starkaid.starkaidapp.data.SessionManager
@@ -125,7 +126,7 @@ class DispositivosEspActivity : BaseActivity() {
         val userId = sessionManager.fetchUserId() ?: return
 
         try {
-            hubConnection = HubConnectionBuilder.create("https://starkaid.runasp.net/hubs/dispositivo-esp?type=app")
+            hubConnection = HubConnectionBuilder.create("${ApiConfig.webBaseUrl}/hubs/dispositivo-esp?type=app")
                 .withAccessTokenProvider(Single.defer { Single.just(token) })
                 .build()
 
