@@ -20,13 +20,13 @@ object ApiConfig {
     // Para desenvolvimento, use HTTP (porta 5000) para evitar problemas com certificados SSL
     private const val DEV_IP = "192.168.2.106"
     private const val DEV_PORT = "5000" // HTTP (porta 5000) ou HTTPS (porta 5001)
-    private const val DEV_API_BASE_URL = "http://$DEV_IP:$DEV_PORT/api"
+    private const val DEV_API_BASE_URL = "http://$DEV_IP:$DEV_PORT" // base sem /api (endpoints já incluem api/v1)
     private const val DEV_WEB_BASE_URL = "http://$DEV_IP:$DEV_PORT"
 
     // ============================================
     // URLs DE PRODUÇÃO
     // ============================================
-    private const val PROD_API_BASE_URL = "https://starkaid.runasp.net/api"
+    private const val PROD_API_BASE_URL = "https://starkaid.runasp.net" // base sem /api (endpoints já incluem api/v1)
     private const val PROD_WEB_BASE_URL = "https://starkaid.runasp.net"
 
     // ============================================
@@ -60,6 +60,6 @@ object ApiConfig {
      * URL para buscar configuração da API
      */
     val configUrl: String
-        get() = "$apiBaseUrl/v1/Config/app-config"
+        get() = "$apiBaseUrl/api/v1/Config/app-config"
 }
 

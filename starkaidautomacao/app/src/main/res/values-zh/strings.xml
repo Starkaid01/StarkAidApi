@@ -427,7 +427,8 @@
   <string name="cannot_load_image">\"无法加载该图片！\"</string>
   <string name="cant_share_reason">蓝牙Mesh设备、Zigbee设备、红外设备暂时不支持单个设备的分享，需要将相关设备同时分享才能够正常操作。</string>
   <string name="car_alert_limit_tip">超过添加限制 %s 个</string>
-  <string name="car_alert_tip_description">普通家庭只可添加 %d 个场景到 %s 中，开通 Pro 权益后最大场景添加数可达到您车机的最大承载数</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="car_alert_tip_description" formatted="false">普通家庭只可添加 %d 个场景到 %s 中，开通 Pro 权益后最大场景添加数可达到您车机的最大承载数</string>
   <string name="car_buy">去购买</string>
   <string name="car_buy_home_service">开通智能生活 Pro 版</string>
   <string name="car_data_config_tips">请前往 %1$s App - 我 - %2$s 车载进行配置</string>
@@ -1056,7 +1057,8 @@
   <string name="google_flip_success_tip_content">Google，打开灯\n\nOK Google，将我的灯调亮\n\n Google，将厨房灯改为蓝色\n\n Google，将我的灯设置为 50%</string>
   <string name="google_flip_unbind_info">您可以随时取消授权</string>
   <string name="google_flip_unbind_info_goto_app">如需解绑，请前往 Google Home APP 中解除 action 的连接</string>
-  <string name="google_flip_voice_demos">“打开浴室灯”\n“关灯”\n“将客厅亮度设置为 50%%”\n“约翰办公室的灯开着吗？”</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="google_flip_voice_demos" formatted="false">“打开浴室灯”\n“关灯”\n“将客厅亮度设置为 50%%”\n“约翰办公室的灯开着吗？”</string>
   <string name="google_home_dev_list_conncet">去连接</string>
   <string name="google_home_dev_list_connect_tip">连接 Google Home 后，您可以将 Google Home App 中的设备同步到App中进行控制</string>
   <string name="google_home_dev_list_empty_tip">暂无设备</string>
@@ -1199,7 +1201,8 @@
   <string name="home_adv_remove_from_room">移出房间</string>
   <string name="home_adv_remove_widget">移除小组件</string>
   <string name="home_adv_room_device_num">%1$d 个常用设备</string>
-  <string name="home_adv_room_hint_num">%d 场景 | %d 设备</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="home_adv_room_hint_num" formatted="false">%d 场景 | %d 设备</string>
   <string name="home_adv_room_list_entry">房间列表</string>
   <string name="home_adv_room_no_device">无设备</string>
   <string name="home_adv_room_tab">房间</string>
@@ -1328,8 +1331,10 @@
   <string name="hometab_auto_start_tip">你当前禁止了%s开机启动，将可能导致以下功能无法正常使用：\n 接收实时消息提醒（可能错过安防告警提示）\n 是否允许应用在开机时自动启动？</string>
   <string name="hometab_auto_start_title">开机启动提示</string>
   <string name="hometab_ignore_tip">不再显示此提示</string>
-  <string name="hosting_camera_used">摄像头 %d/%d</string>
-  <string name="hosting_sensor_used">传感器 %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_camera_used" formatted="false">摄像头 %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_sensor_used" formatted="false">传感器 %d/%d</string>
   <string name="hs_China_mainland">中国大陆</string>
   <string name="hs_abnormal_device_number">个设备异常</string>
   <string name="hs_abnormal_device_title">异常设备</string>
@@ -1443,8 +1448,10 @@
   <string name="hs_favorite_device_center_tips">以上设备将展示在设备页，最多展示4个</string>
   <string name="hs_favorite_device_footer_tips">不展示在设备页的设备</string>
   <string name="hs_favorite_device_tips">你可以将常用的设备添加到设备页，最多展示4个</string>
-  <string name="hs_gateway_armde_failed_ios">%d个安防网关%s失败，查看</string>
-  <string name="hs_gateway_armed_failed_android">%s个安防网关%s失败，查看</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armde_failed_ios" formatted="false">%d个安防网关%s失败，查看</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armed_failed_android" formatted="false">%s个安防网关%s失败，查看</string>
   <string name="hs_gateway_device">安防网关</string>
   <string name="hs_geo_current_location">当前位置</string>
   <string name="hs_go_setting">去开启</string>
@@ -1467,13 +1474,15 @@
   <string name="hs_host_ipc_devices_android">视频设备(%1$s/%2$s)</string>
   <string name="hs_host_sensor_devices_android">非视频设备(%1$s/%2$s)</string>
   <string name="hs_hosting">托管值守服务</string>
-  <string name="hs_hosting_camera_valid">可授权摄像头：%d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_camera_valid" formatted="false">可授权摄像头：%d/%d</string>
   <string name="hs_hosting_device_select">设备选择</string>
   <string name="hs_hosting_other_setting">其他设置</string>
   <string name="hs_hosting_relative_tips">传感器关联摄像头，触发报警事件后报警信息发送至服务平台</string>
   <string name="hs_hosting_remark">备注</string>
   <string name="hs_hosting_sensor">传感器</string>
-  <string name="hs_hosting_sensor_valid">可授权传感器：%d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_sensor_valid" formatted="false">可授权传感器：%d/%d</string>
   <string name="hs_image_des">图片描述</string>
   <string name="hs_invitation_confirm_detail_ios">您有一个待确认的邀请，邀请您加入家庭：\"%s\"一起享受智能生活带来的便利。请您确认是否加入？</string>
   <string name="hs_ipc_device">摄像机设备</string>
@@ -1523,12 +1532,14 @@
   <string name="hs_message_area">店铺大小</string>
   <string name="hs_message_area_unit">%d m²</string>
   <string name="hs_message_contacts">联系人</string>
-  <string name="hs_message_dispatcher_info">%s 创建任务 %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" formatted="false">%s 创建任务 %s</string>
   <string name="hs_message_dispatcher_info_ios">%1$s 创建任务 %2$s</string>
   <string name="hs_message_floor">所在楼层</string>
   <string name="hs_message_floor_unit">%d F</string>
   <string name="hs_message_industry">所属行业</string>
-  <string name="hs_message_receiver_info">%s 执行任务 %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" formatted="false">%s 执行任务 %s</string>
   <string name="hs_message_receiver_info_ios">%1$s 执行任务 %2$s</string>
   <string name="hs_mode_desc_allhours">24小时</string>
   <string name="hs_mode_desc_leaving">离家</string>
@@ -1616,8 +1627,10 @@
   <string name="hs_servicemessage">服务消息</string>
   <string name="hs_settings">设置</string>
   <string name="hs_show_on_device_page">展示在设备页</string>
-  <string name="hs_smart_gateway_armed_failed_android">%s个安防网关%s失败。</string>
-  <string name="hs_smart_gateway_armed_failed_ios">%d个安防网关%s失败。</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_android" formatted="false">%s个安防网关%s失败。</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_ios" formatted="false">%d个安防网关%s失败。</string>
   <string name="hs_sos_alarm_tips">确认撤防并取消报警？</string>
   <string name="hs_sos_alarmimg">报警</string>
   <string name="hs_sos_dispatch_tips">报警系统已触发，请立即处理</string>
@@ -1907,7 +1920,8 @@
   <string name="ipc_cloud_download_encoding">转码中</string>
   <string name="ipc_cloud_download_failed">下载失败</string>
   <string name="ipc_cloud_download_loading">下载中</string>
-  <string name="ipc_cloud_download_precent">已下载 %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" formatted="false">已下载 %s%%</string>
   <string name="ipc_cloud_download_start">下载即将开始</string>
   <string name="ipc_cloud_download_start_body">下载的内容如含有多个事件片段，将会合并成一个视频。下载过程中，请将APP保持在前台。</string>
   <string name="ipc_cloud_empty_event_des">暂无相关事件录像</string>
@@ -2260,7 +2274,8 @@
   <string name="ipc_nvr_channel">通道</string>
   <string name="ipc_nvr_channel_unit">路</string>
   <string name="ipc_ota_update_remind">1.升级过程中请保持设备电源始终处于连接状态。 \n2.升级过程中设备将不能使用，整个过程大概需要3-5分钟，请耐心等待。</string>
-  <string name="ipc_panel_baterrylevel">剩余电量：%s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">剩余电量：%s%%</string>
   <string name="ipc_panel_button_alarm">报警</string>
   <string name="ipc_panel_button_calendar">日期</string>
   <string name="ipc_panel_button_cruise">巡航</string>
@@ -3247,12 +3262,14 @@
   <string name="ota_back_to_home_title">升级提示</string>
   <string name="ota_batch_upgrade_alert_all_update">升级全部设备</string>
   <string name="ota_batch_upgrade_alert_confirm">确定升级</string>
-  <string name="ota_batch_upgrade_alert_content">您的 %d 个设备将进行升级，%d 个设备升级状态中可能无法正常使用，确认开始升级吗？</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_content" formatted="false">您的 %d 个设备将进行升级，%d 个设备升级状态中可能无法正常使用，确认开始升级吗？</string>
   <string name="ota_batch_upgrade_alert_no_room">无房间</string>
   <string name="ota_batch_upgrade_alert_single_update">仅升级当前设备</string>
   <string name="ota_batch_upgrade_alert_tips">发现同网关下 (%d) 个设备可同时进行 OTA 升级，要一起发起吗？</string>
   <string name="ota_batch_upgrade_alert_title">批量升级</string>
-  <string name="ota_batch_upgrade_alert_unsupport_content">本次升级中，“%s” 等 %d 个设备无法同时进行升级，请手动在列表中操作升级。</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_unsupport_content" formatted="false">本次升级中，“%s” 等 %d 个设备无法同时进行升级，请手动在列表中操作升级。</string>
   <string name="ota_batch_upgrade_failure_reason">请单独进行升级</string>
   <string name="ota_batch_upgrade_no_device_to_upgrade">没有设备需要升级</string>
   <string name="ota_ble_device_before_upgrade_warning">固件升级过程中，蓝牙设备将暂时不可使用，请确认是否立刻开始更新？</string>
@@ -3650,7 +3667,8 @@
   <string name="scene_geofence_dialog_explain_new">“位置变化时（Beta）”是我们的实验室功能，使用该功能需要向您申请始终允许获取地理位置的权限，您的位置信息不会用于其他用途。如果您不提供此信息，将无法使用该功能。\n请查看 “%s” 了解更多细节</string>
   <string name="scene_geofence_explain_new">说明：以上位置条件根据您的“手机所在位置”进行判断，详见 %s</string>
   <string name="scene_group_none">群组为空</string>
-  <string name="scene_humidity_tip">干燥(0%-40%)，舒适(40%-70%)，潮湿(70%-100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">干燥(0%-40%)，舒适(40%-70%)，潮湿(70%-100%)</string>
   <string name="scene_icon">图标</string>
   <string name="scene_if">如果</string>
   <string name="scene_if_condition">如果</string>
@@ -4011,7 +4029,8 @@
   <string name="thing_light_rhythm_scene_guide_title">节律场景的功能可以让房间的灯光模拟一天当中灯光亮度和色温的变化，让我们感受回归自然的灯光。\n\n日出\n灯光将在30min内慢慢亮起，在日出时间点达到最亮。\n\n正午\n灯光将慢慢变成冷光，帮助人保持清醒更好地投入工作。\n\n日落\n日落时，灯光将慢慢变成暖光，让人进入休息状态。\n\n夜灯\n灯光将在30min内慢慢变暗，进入夜灯模式。\n\n另外，节律场景需要空间内有设备支持该功能时才可以使用。</string>
   <string name="thing_light_scene_batch_delete_tips">确认删除%d个灯光场景？</string>
   <string name="thing_light_scene_batch_delete_tips_detail">与灯光场景相关联的日程也将会被同步删除</string>
-  <string name="thing_light_scene_batch_delete_toast">%d个灯光场景删除成功，%d个灯光场景删除失败</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_light_scene_batch_delete_toast" formatted="false">%d个灯光场景删除成功，%d个灯光场景删除失败</string>
   <string name="thing_light_scene_create_all_on_all_off">点击创建灯光全开全关</string>
   <string name="thing_light_scene_create_all_on_all_off_tip">由于设备能力不同，部分设备在集中控制时的表现会有差异；部分设备暂未支持房间的灯光全开全开，完成支持后将及时与您同步</string>
   <string name="thing_light_scene_delete">删除灯光场景</string>
@@ -4205,7 +4224,8 @@
   <string name="thing_activator_accessory_not_connect">如果连接不上设备，</string>
   <string name="thing_activator_accessory_reset_ensure">确认%s重置成功</string>
   <string name="thing_activator_accessory_timeout">配件添加超时</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">关联设备：%s 等 %d 个设备</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">关联设备：%s 等 %d 个设备</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">关联设备：%s</string>
   <string name="thing_activator_activate_stop_dialog_title">停止“%s”将会导致其他关联设备一起停止</string>
   <string name="thing_activator_addDevice">添加新设备</string>

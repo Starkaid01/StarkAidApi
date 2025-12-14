@@ -37,6 +37,16 @@ using Stripe;
 using System.Diagnostics;
 using System.Threading.RateLimiting;
 using System.Text;
+using PlanoLimitesService = StarkAid.Api.Services.PlanoLimitesService;
+using IStarkCoinConversionService = StarkAid.Api.Services.IStarkCoinConversionService;
+using StarkCoinConversionService = StarkAid.Api.Services.StarkCoinConversionService;
+using ITokenUsageService = StarkAid.Api.Services.ITokenUsageService;
+using TokenUsageService = StarkAid.Api.Services.TokenUsageService;
+using RefreshTokenServiceV1 = StarkAid.Api.Services.V1.RefreshTokenService;
+using IEwelinkServiceV1 = StarkAid.Api.Services.V1.IEwelinkService;
+using EwelinkServiceV1 = StarkAid.Api.Services.V1.EwelinkService;
+using TranscribeProxyServiceV1 = StarkAid.Api.Services.V1.TranscribeProxyService;
+using WeeklyTokensResetService = StarkAid.Api.Services.WeeklyTokensResetService;
 
 try
 {
@@ -300,7 +310,7 @@ try
     // 8. Serviços e Hosted Services
     builder.Services.AddHttpClient();
     builder.Services.AddScoped<AuthService>();
-    builder.Services.AddScoped<RefreshTokenService>();
+    builder.Services.AddScoped<RefreshTokenServiceV1>();
     builder.Services.AddScoped<DeviceService>();
     builder.Services.AddScoped<ComandoSocialService>();
     builder.Services.AddScoped<AgendamentoService>();
@@ -312,7 +322,10 @@ try
     builder.Services.AddScoped<StripeWebhookService>();
     builder.Services.AddScoped<DispositivoDisparoService>();
     builder.Services.AddScoped<StripeService>();
-    builder.Services.AddScoped<IEwelinkService, EwelinkService>();
+    builder.Services.AddScoped<IEwelinkServiceV1, EwelinkServiceV1>();
+    builder.Services.AddSingleton<PlanoLimitesService>();
+    builder.Services.AddSingleton<IStarkCoinConversionService, StarkCoinConversionService>();
+    builder.Services.AddScoped<ITokenUsageService, TokenUsageService>();
 
 
     // 🧩 Lê o domínio Cloudflare atual do banco e injeta na configuração
@@ -337,6 +350,7 @@ try
     builder.Services.AddHostedService<PasswordResetCleanupService>();
     builder.Services.AddHostedService<MqttHostedService>();
     builder.Services.AddHostedService<AssinaturaStatusChecker>();
+    builder.Services.AddHostedService<WeeklyTokensResetService>();
 
     builder.Services.AddSingleton<IMqttClientService, MqttClientService>();
 
@@ -364,11 +378,12 @@ try
         return new AmazonTranscribeStreamingClient(accessKey, secretKey, config);
     });
 
-    builder.Services.AddSingleton<TranscribeProxyService>(sp =>
+    builder.Services.AddSingleton<TranscribeProxyServiceV1>(sp =>
     {
         var transcribeClient = sp.GetRequiredService<AmazonTranscribeStreamingClient>();
-        var logger = sp.GetRequiredService<ILogger<TranscribeProxyService>>();
-        return new TranscribeProxyService(transcribeClient, sp, logger);
+        var logger = sp.GetRequiredService<ILogger<TranscribeProxyServiceV1>>();
+        var tokenUsage = sp.GetRequiredService<ITokenUsageService>();
+        return new TranscribeProxyServiceV1(transcribeClient, sp, logger, tokenUsage);
     });
 
     // Stripe

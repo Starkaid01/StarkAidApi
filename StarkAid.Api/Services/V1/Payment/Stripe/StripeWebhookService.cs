@@ -250,19 +250,16 @@ namespace StarkAid.Api.Services.V1.Payment.Stripe
                         _ => "Custom"
                     };
 
-                    // Adiciona StarkCoins apenas se não for plano sem anúncios
                     if (assinatura.Valor != 10)
                     {
-                        user.StarkCoins += assinatura.Valor;
+                        user.StarkCoinBalance += (int)assinatura.Valor;
                         _logger.LogInformation("💰 Plano {TipoPlano}: adicionados {Valor} StarkCoins para usuário {UserId}",
                             assinatura.TipoPlano, assinatura.Valor, user.Id);
                     }
                     else
                     {
-                        if (user.Role == "UserNivel1")
-                        {
-                            user.Role = "UserNivel2";
-                        }
+                        user.PlanType = UserPlanType.Premium;
+                        user.StarkCoinBalance += 50;
                         user.RemovalAds = "Ativo";
                     }
 
@@ -298,8 +295,7 @@ namespace StarkAid.Api.Services.V1.Payment.Stripe
                     pagamentoAvulso.Status = "Pago";
                     pagamentoAvulso.PagamentoConfirmadoEm = DateTimeOffset.UtcNow;
 
-                    // 🔹 Adiciona StarkCoins proporcionalmente ao valor
-                    user.StarkCoins += pagamentoAvulso.Valor;
+                    user.StarkCoinBalance += (int)Math.Round(pagamentoAvulso.Valor);
 
                     _db.Users.Update(user);
                     _logger.LogInformation("💰 Pagamento avulso confirmado. +{Valor} StarkCoins para usuário {UserId}",
@@ -387,40 +383,16 @@ namespace StarkAid.Api.Services.V1.Payment.Stripe
             if (primeiraVez)
             {
                 assinatura.IniciadaEm = DateTimeOffset.UtcNow;
+                AjustarBeneficiosPlano(user, assinatura.Valor);
 
-                // 🆕 Primeira assinatura: apenas adiciona StarkCoins
-                if (assinatura.Valor != 10) // exceto plano sem anúncios
-                {
-                    user.StarkCoins += assinatura.Valor;
-                }
-                else
-                {
-                    if (user.Role == "UserNivel1")
-                    {
-                        user.Role = "UserNivel2";
-                    }
-                    user.RemovalAds = "Ativo";
-                }
-
-                _logger.LogInformation("🆕 Primeira assinatura: adicionando {ValorPlano} StarkCoins ao usuário {UserId}",
+                _logger.LogInformation("🆕 Primeira assinatura: saldo ajustado (+{ValorPlano}) para usuário {UserId}",
                     assinatura.Valor, user.Id);
             }
             else
             {
-                if (assinatura.Valor != 10) // exceto plano sem anúncios
-                {
-                    user.StarkCoins += assinatura.Valor;
-                }
-                else
-                {
-                    if (user.Role == "UserNivel1")
-                    {
-                        user.Role = "UserNivel2";
-                    }
-                    user.RemovalAds = "Ativo";
-                }
+                AjustarBeneficiosPlano(user, assinatura.Valor);
                 _logger.LogInformation("🔁 Renovação: saldo ajustado para {StarkCoins} após cobrança do plano {ValorPlano}",
-                    user.StarkCoins, assinatura.Valor);
+                    user.StarkCoinBalance, assinatura.Valor);
             }
 
             // ⚠️ Role do usuário NÃO é atualizado para planos de StarkCoins (níveis 3-7)
@@ -434,6 +406,22 @@ namespace StarkAid.Api.Services.V1.Payment.Stripe
             await _db.SaveChangesAsync();
 
             _logger.LogInformation("✅ Assinatura {Id} processada com sucesso até {ExpiraEm}", assinatura.Id, assinatura.ExpiraEm);
+        }
+
+        private void AjustarBeneficiosPlano(User user, decimal valorPlano)
+        {
+            if (valorPlano == 10)
+            {
+                // StarkAid Premium (antigo Nível 2 / Remove Ads)
+                user.PlanType = UserPlanType.Premium;
+                user.RemovalAds = "Ativo";
+                user.StarkCoinBalance += 50; // crédito mensal fixo
+            }
+            else
+            {
+                // Demais planos apenas creditam coins (inteiro)
+                user.StarkCoinBalance += (int)valorPlano;
+            }
         }
 
         private async Task HandlePaymentFailed(Event stripeEvent)

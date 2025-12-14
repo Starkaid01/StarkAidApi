@@ -2,10 +2,10 @@
 {
     public class SendMessageDto
     {
-        public string UserId { get; set; }
-        public string SessionName { get; set; }
-        public string PhoneNumber { get; set; }
-        public string Message { get; set; }
+public string UserId { get; set; } = string.Empty;
+public string SessionName { get; set; } = string.Empty;
+public string PhoneNumber { get; set; } = string.Empty;
+public string Message { get; set; } = string.Empty;
         public bool IsGroup { get; set; } = false;
         public bool IsNewsletter { get; set; } = false;
         public bool IsLid { get; set; } = false;

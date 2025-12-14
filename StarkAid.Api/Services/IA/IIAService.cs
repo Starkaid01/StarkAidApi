@@ -17,7 +17,6 @@ namespace StarkAid.Api.Services.IA
 
         Task<IaResultado?> ProcessMessageJsonAsync(object[] mensagens);
 
-        decimal CalculateCostUsd(IaResultado resultado);
         Task<string> SummarizeAsync(string texto, string estilo);
         Task<string?> GenerateAlternativeResponsesAsync(string respostaOriginal,
                                                         string estilo);
@@ -29,6 +28,5 @@ namespace StarkAid.Api.Services.IA
                                                 string iaContext,
                                                 string texto,
                                                 string estilo);
-        decimal CalcularCustoUSD(IaResultado resultado);
     }
 }

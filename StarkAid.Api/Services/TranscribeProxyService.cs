@@ -1,7 +1,11 @@
 ﻿using Amazon.TranscribeStreaming;
 using Amazon.TranscribeStreaming.Model;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using StarkAid.Api.Data;
+using StarkAid.Api.DTOs;
+using StarkAid.Api.Services;
+using System.Text.Json;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
@@ -47,8 +51,7 @@ namespace StarkAid.Api.Services
 
         private readonly int _maxActiveClients = 18;
         private readonly int _maxBufferChunks = 50;
-
-        private const decimal StarkCoinsPerMinute = 0.2m;
+        private const int TokensPerMinute = 20; // 0.2 coin/min -> 20 tokens/min
 
         private readonly object _startLock = new();
 
@@ -66,24 +69,10 @@ namespace StarkAid.Api.Services
         {
             if (webSocket is null) throw new ArgumentNullException(nameof(webSocket));
 
-            bool hasSaldo;
-            using (var scope = _provider.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                var user = await db.Users.FindAsync(userId);
-                hasSaldo = user != null && user.StarkCoins > 0;
-            }
-
-            if (!hasSaldo)
-            {
-                await SendAndClose(webSocket, "INSUFFICIENT_BALANCE", "Saldo insuficiente");
-                return;
-            }
-
             if (_clients.Count >= _maxActiveClients)
             {
                 if (webSocket.State == WebSocketState.Open)
-                    await webSocket.SendAsync(Encoding.UTF8.GetBytes("WAITING_IN_QUEUE"), WebSocketMessageType.Text, true, CancellationToken.None);
+                    await SendStatusAsync(webSocket, "WAITING_IN_QUEUE", null, null, null, userId);
 
                 _waitingQueue.Enqueue(webSocket);
                 return;
@@ -191,8 +180,8 @@ namespace StarkAid.Api.Services
 
                     if (awsSessionStart.HasValue)
                     {
-                        var minutes = (decimal)(DateTime.UtcNow - awsSessionStart.Value).TotalMinutes;
-                        await DeductUserStarkCoins(session.UserId, minutes);
+                        var minutes = Math.Max(0, (DateTime.UtcNow - awsSessionStart.Value).TotalMinutes);
+                        await DeductUserTokens(session.UserId, minutes, session.WebSocket);
                         awsSessionStart = null;
                     }
                 }
@@ -203,8 +192,8 @@ namespace StarkAid.Api.Services
                 await CloseAwsSession(response, billingCts);
                 if (awsSessionStart.HasValue)
                 {
-                    var minutes = (decimal)(DateTime.UtcNow - awsSessionStart.Value).TotalMinutes;
-                    await DeductUserStarkCoins(session.UserId, minutes);
+                    var minutes = Math.Max(0, (DateTime.UtcNow - awsSessionStart.Value).TotalMinutes);
+                    await DeductUserTokens(session.UserId, minutes, session.WebSocket);
                 }
             }
         }
@@ -243,8 +232,7 @@ namespace StarkAid.Api.Services
                                 if (!string.IsNullOrWhiteSpace(text) && session.WebSocket.State == WebSocketState.Open)
                                 {
                                     var prefix = result.IsPartial.HasValue && result.IsPartial.Value ? "[PARCIAL]" : "[FINAL]";
-                                    var bytes = Encoding.UTF8.GetBytes($"{prefix} {text}\n");
-                                    await session.WebSocket.SendAsync(bytes, WebSocketMessageType.Text, true, token);
+                                    await SendStatusAsync(session.WebSocket, prefix, null, result.IsPartial, text, session.UserId, token);
                                 }
                             }
                         }
@@ -270,27 +258,96 @@ namespace StarkAid.Api.Services
             await Task.CompletedTask; // Ensures the method remains asynchronous.
         }
 
-        private async Task DeductUserStarkCoins(Guid userId, decimal minutesUsed)
+        private async Task DeductUserTokens(Guid userId, double minutesUsed, WebSocket? ws)
         {
             using var scope = _provider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var tokenUsage = scope.ServiceProvider.GetRequiredService<ITokenUsageService>();
             var user = await db.Users.FindAsync(userId);
-            if (user != null)
+            if (user == null) return;
+
+            var tokens = (int)Math.Ceiling(minutesUsed * TokensPerMinute);
+            if (tokens <= 0) return;
+
+            var consumo = await tokenUsage.TryConsumeTokensAsync(user, tokens);
+            if (!consumo.Success)
             {
-                user.StarkCoins -= minutesUsed * StarkCoinsPerMinute;
-                if (user.StarkCoins < 0) user.StarkCoins = 0;
-                await db.SaveChangesAsync();
+                await SendAndClose(ws, "INSUFFICIENT_BALANCE", "Saldo insuficiente para transcrição.", userId);
             }
         }
 
-        private async Task SendAndClose(WebSocket ws, string message, string reason)
+        private async Task SendAndClose(WebSocket? ws, string message, string reason, Guid? userId = null)
         {
-            if (ws.State == WebSocketState.Open)
+            if (ws != null && ws.State == WebSocketState.Open)
             {
-                await ws.SendAsync(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text, true, CancellationToken.None);
+                object? economy = null;
+                if (userId.HasValue)
+                {
+                    economy = await BuildEconomyAsync(userId.Value);
+                }
+
+                var payload = new
+                {
+                    message,
+                    reason,
+                    economy
+                };
+
+                var json = JsonSerializer.Serialize(payload);
+                await ws.SendAsync(Encoding.UTF8.GetBytes(json), WebSocketMessageType.Text, true, CancellationToken.None);
                 await Task.Delay(50);
                 try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, reason, CancellationToken.None); } catch { }
             }
+        }
+
+        private async Task SendStatusAsync(WebSocket ws, string message, string? reason, bool? isPartial, string? transcript, Guid userId, CancellationToken token = default)
+        {
+            if (ws.State != WebSocketState.Open) return;
+
+            var economy = await BuildEconomyAsync(userId);
+            var payload = new
+            {
+                message,
+                reason,
+                isPartial,
+                transcript,
+                economy
+            };
+
+            var json = JsonSerializer.Serialize(payload);
+            var bytes = Encoding.UTF8.GetBytes(json);
+            await ws.SendAsync(bytes, WebSocketMessageType.Text, true, token);
+        }
+
+        public async Task SendAuthOkAsync(WebSocket ws, Guid userId)
+        {
+            await SendStatusAsync(ws, "AUTH_OK", null, null, null, userId);
+        }
+
+        private async Task<EconomicPayload?> BuildEconomyAsync(Guid userId)
+        {
+            using var scope = _provider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var plano = scope.ServiceProvider.GetRequiredService<PlanoLimitesService>();
+
+            var user = await db.Users.FindAsync(userId);
+            if (user == null) return null;
+
+            var limite = plano.ObterLimiteTokensSemana(user);
+            var agMax = plano.ObterLimiteAgendamentos(user);
+            var agAtuais = await db.Agendamentos.CountAsync(a => a.UserId == userId);
+            var agRest = agMax == -1 ? -1 : Math.Max(0, agMax - agAtuais);
+
+            return new EconomicPayload(
+                user.PlanType.ToString(),
+                user.StarkCoinBalance,
+                user.TokensConsumidosSemana,
+                limite,
+                Math.Max(0, limite - user.TokensConsumidosSemana),
+                plano.ExibeAnuncios(user),
+                agMax,
+                agRest,
+                100);
         }
 
         private async Task MonitorInactivity(ClientSession session, CancellationToken token)
@@ -309,12 +366,7 @@ namespace StarkAid.Api.Services
                     {
                         if (session.WebSocket.State == WebSocketState.Open)
                         {
-                            await session.WebSocket.SendAsync(
-                                Encoding.UTF8.GetBytes("[PING]"),
-                                WebSocketMessageType.Text,
-                                true,
-                                token
-                            );
+                            await SendStatusAsync(session.WebSocket, "PING", null, null, null, session.UserId, token);
                         }
                         else break;
                     }

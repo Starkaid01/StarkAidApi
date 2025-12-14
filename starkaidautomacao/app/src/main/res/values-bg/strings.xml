@@ -537,7 +537,8 @@
   <string name="google_flip_success_tip_content">OK Google, turn on light\n\nOK Google, brighten my light\n\nOK Google, change kitchen lamp to blue\n\nOK Google, set my light to 50%</string>
   <string name="google_flip_unbind_info">Можете да откажете одобрението по всяко време.</string>
   <string name="google_flip_unbind_info_goto_app">Моля, отменете действието от приложение Google Home</string>
-  <string name="google_flip_voice_demos">Вкл лампите в банята\"\n\"Изкл лампите\" \n\"Настрой яркостта в Дневната на 50%%\" \n\"Вкл ли е осветлението в офиса на Джон?</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="google_flip_voice_demos" formatted="false">Вкл лампите в банята\"\n\"Изкл лампите\" \n\"Настрой яркостта в Дневната на 50%%\" \n\"Вкл ли е осветлението в офиса на Джон?</string>
   <string name="got_it">Разбрано</string>
   <string name="goto_family_make">Добавете семеен член</string>
   <string name="group_add_default_name">%s Група</string>
@@ -1020,7 +1021,8 @@
   <string name="ipc_notifi_center_all">Всички</string>
   <string name="ipc_notifi_center_select_all">Изберете всички</string>
   <string name="ipc_ota_update_remind">1. Вашето устройство трябва да е включено в ел. мрежата по време на процеса на актуализация.\n2. Актуализацията отнема 2-5 мин, през което време Вашето устройство няма да е достъпно.</string>
-  <string name="ipc_panel_baterrylevel">Оставаща батерия:%s %%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Оставаща батерия:%s %%</string>
   <string name="ipc_panel_button_alarm">Аларма</string>
   <string name="ipc_panel_button_calendar">Дата</string>
   <string name="ipc_panel_button_cruise">Патрул</string>
@@ -1769,7 +1771,8 @@
   <string name="scene_family_member_go_home">Семеен член се прибира</string>
   <string name="scene_find_new_actionexecutor">Текущата версия на Приложението не може да изпълни някои действия. Моля обновете Приложението до финалната му версия.</string>
   <string name="scene_group_none">Групата е празна</string>
-  <string name="scene_humidity_tip">Сухо (0%-40%), Комфортно (40%-70%), Влажно (70%-100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">Сухо (0%-40%), Комфортно (40%-70%), Влажно (70%-100%)</string>
   <string name="scene_icon">Икона</string>
   <string name="scene_if">Ако</string>
   <string name="scene_image">Изображение</string>
@@ -1983,7 +1986,8 @@
   <string name="tx_status_slow">Бавно мигане</string>
   <string name="tx_status_title">Изберете статус на индикатора</string>
   <string name="thing_about_thingsmart">Относно Smart Life</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">Свързани %s устройства: %d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">Свързани %s устройства: %d</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">Свързани устройства: %s</string>
   <string name="thing_activator_activate_stop_dialog_title">Други свързани устройства ще бъдат афектирани ако \"%s\"се спре.</string>
   <string name="thing_activator_add_all_finish">Готово</string>

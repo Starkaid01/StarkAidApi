@@ -41,6 +41,7 @@ public class AppDbContext : DbContext
     public DbSet<SuporteAcao> SuporteAcoes => Set<SuporteAcao>();
     public DbSet<ResolvendoSuporte> ResolvendoSuportes => Set<ResolvendoSuporte>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<StarkCoinPurchase> StarkCoinPurchases => Set<StarkCoinPurchase>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -88,7 +89,9 @@ public class AppDbContext : DbContext
             entity.Property(u => u.Email).IsRequired().HasMaxLength(256);
             entity.Property(u => u.PasswordHash).IsRequired();
             entity.Property(u => u.ApiKey).IsRequired().HasMaxLength(100);
-            entity.Property(u => u.StarkCoins).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(u => u.PlanType).HasConversion<int>().HasDefaultValue(UserPlanType.Free).IsRequired();
+            entity.Property(u => u.StarkCoinBalance).HasDefaultValue(0).IsRequired();
+            entity.Property(u => u.TokensConsumidosSemana).HasDefaultValue(0).IsRequired();
             entity.Property(u => u.CreatedAt).HasColumnType("datetimeoffset").IsRequired();
             entity.Property(u => u.IsActive).IsRequired();
             entity.Property(u => u.Role).HasMaxLength(50).IsRequired();
@@ -286,6 +289,20 @@ public class AppDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(us => us.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<StarkCoinPurchase>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.PackageType).IsRequired();
+            entity.Property(p => p.StarkCoinsAmount).IsRequired();
+            entity.Property(p => p.Price).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(p => p.CreatedAt).HasColumnType("datetimeoffset").IsRequired();
+
+            entity.HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Configurações de ErrorLogSoft

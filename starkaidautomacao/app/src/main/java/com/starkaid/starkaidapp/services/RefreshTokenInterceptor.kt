@@ -90,7 +90,7 @@ class RefreshTokenInterceptor(context: Context) : Interceptor {
                 .toRequestBody("application/json".toMediaType())
 
             val request = Request.Builder()
-                .url("${ApiConfig.apiBaseUrl}/v1/Auth/refresh-token")
+                .url("${ApiConfig.apiBaseUrl}/api/v1/Auth/refresh-token")
                 .addHeader("Connection", "close")
                 .post(requestBody)
                 .build()

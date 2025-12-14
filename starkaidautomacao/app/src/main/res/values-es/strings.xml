@@ -214,7 +214,8 @@
   <string name="alexa_how_to_remove_link">Si necesita desvincularlo, vaya a Alexa App para deshabilitar la función %s.</string>
   <string name="alexa_link_alexa_info">Al vincular la cuenta de su aplicación con su cuenta de Amazon, puede controlar los dispositivos habilitados para Alexa con los altavoces de Amazon Alexa. Por ejemplo, «Alexa, enciende la luz».</string>
   <string name="alexa_link_fail">Error en la autorización de la cuenta. Vuelva a intentarlo.</string>
-  <string name="alexa_link_success">Su cuenta% 1 $ @% 2 $ @ ha sido autorizada para % 3 $ @ en Alexa</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="alexa_link_success" formatted="false">Su cuenta% 1 $ @% 2 $ @ ha sido autorizada para % 3 $ @ en Alexa</string>
   <string name="alexa_link_success_android">%2$s en la cuenta %1$s se autorizó para %3$s Alexa Skill.</string>
   <string name="alexa_login">Iniciar sesión con Amazon</string>
   <string name="alexa_relink">Vuelve a iniciar sesión</string>
@@ -390,7 +391,8 @@
   <string name="cannot_load_image">\"¡No se puede cargar la imagen!\"</string>
   <string name="cant_share_reason">Temporalmente no es posible agregar, de forma individual, dispositivos Bluetooth Mesh, Zigbee o infrarrojos; para operar normalmente, se requiere agregar simultáneamente todos los dispositivos relacionados.</string>
   <string name="car_alert_limit_tip">No puede añadir más de %s escena(s).</string>
-  <string name="car_alert_tip_description">En un hogar normal, solo puede añadir %d escena(s) a %s. Si activa las ventajas Pro, la cantidad máxima de escenas se corresponderá con la capacidad máxima del sistema de su vehículo.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="car_alert_tip_description" formatted="false">En un hogar normal, solo puede añadir %d escena(s) a %s. Si activa las ventajas Pro, la cantidad máxima de escenas se corresponderá con la capacidad máxima del sistema de su vehículo.</string>
   <string name="car_buy">Comprar ahora</string>
   <string name="car_buy_home_service">Suscribirse a Smart Life Pro</string>
   <string name="car_data_config_tips">Vaya a la aplicación %1$s, seleccione su perfil y el vehículo %2$s para configurarlo.</string>
@@ -1156,7 +1158,8 @@
   <string name="home_adv_remove_from_room">Eliminar de la habitación</string>
   <string name="home_adv_remove_widget">Eliminar widget</string>
   <string name="home_adv_room_device_num">%1$d dispositivo/s favorito/s</string>
-  <string name="home_adv_room_hint_num">%d escena(s) | %d dispositivo(s)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="home_adv_room_hint_num" formatted="false">%d escena(s) | %d dispositivo(s)</string>
   <string name="home_adv_room_list_entry">Lista de habitaciones</string>
   <string name="home_adv_room_no_device">No hay dispositivos</string>
   <string name="home_adv_room_tab">Sala</string>
@@ -1285,8 +1288,10 @@
   <string name="hometab_auto_start_tip">Actualmente ha prohibido el inicio de %s cuando se enciende el móvil, lo que puede provocar que las siguientes funciones no funcionen normalmente: \n Recibir alertas de mensajes en tiempo real (pueden fallar avisos de alertas de seguridad) \n ¿Si permita la aplicación se inicie automáticamente cuando se enciende el móvil?</string>
   <string name="hometab_auto_start_title">Mensajes de encender el móvil</string>
   <string name="hometab_ignore_tip">No se muestra el mensaje por la otra vez.</string>
-  <string name="hosting_camera_used">Cámara %d/%d</string>
-  <string name="hosting_sensor_used">Sensor %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_camera_used" formatted="false">Cámara %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_sensor_used" formatted="false">Sensor %d/%d</string>
   <string name="hs_China_mainland">China continental</string>
   <string name="hs_abnormal_device_number">Dispositivo(s) con fallas</string>
   <string name="hs_abnormal_device_title">Anomalía</string>
@@ -1401,8 +1406,10 @@ La alarma no ha sido enviada a la plataforma de alarma de la policía</string>
   <string name="hs_favorite_device_center_tips">Los dispositivos anteriores se mostrarán en la página de dispositivos, hasta 4.</string>
   <string name="hs_favorite_device_footer_tips">Dispositivos que no se muestran en la página de Dispositivos</string>
   <string name="hs_favorite_device_tips">Puede agregar los dispositivos frecuentes en la página de Dispositivos. Se mostrarán hasta 4 dispositivos.</string>
-  <string name="hs_gateway_armde_failed_ios">%d puerta de enlace de seguridad %s falló, compruebe</string>
-  <string name="hs_gateway_armed_failed_android">%s passerelles de sécurité sur %s ont échoué, vérifier</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armde_failed_ios" formatted="false">%d puerta de enlace de seguridad %s falló, compruebe</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armed_failed_android" formatted="false">%s passerelles de sécurité sur %s ont échoué, vérifier</string>
   <string name="hs_gateway_device">Puerta de enlace de seguridad</string>
   <string name="hs_geo_current_location">Esta ubicación</string>
   <string name="hs_go_setting">Para activarlo</string>
@@ -1425,13 +1432,15 @@ La alarma no ha sido enviada a la plataforma de alarma de la policía</string>
   <string name="hs_host_ipc_devices_android">Dispositivo de cámara (%1$s/%2$s)</string>
   <string name="hs_host_sensor_devices_android">Dispositivo sin cámara (%1$s/%2$s)</string>
   <string name="hs_hosting">Monitoreo de alarma</string>
-  <string name="hs_hosting_camera_valid">Cámaras disponibles: %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_camera_valid" formatted="false">Cámaras disponibles: %d/%d</string>
   <string name="hs_hosting_device_select">Seleccione un dispositivo</string>
   <string name="hs_hosting_other_setting">Otras configuraciones</string>
   <string name="hs_hosting_relative_tips">Los sensores están vinculados a las cámaras. Después de que se activa una alerta, la información de alerta se envía a la plataforma de servicios correspondiente.</string>
   <string name="hs_hosting_remark">Observaciones</string>
   <string name="hs_hosting_sensor">Sensor</string>
-  <string name="hs_hosting_sensor_valid">Sensores disponibles: %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_sensor_valid" formatted="false">Sensores disponibles: %d/%d</string>
   <string name="hs_image_des">Descripción de la imagen</string>
   <string name="hs_invitation_confirm_detail_ios">Usted está invitado a unirse a la casa：\"%s\"para disfrutar de una vida inteligente. ¿Quieres unirte a esta casa?</string>
   <string name="hs_ipc_device">Dispositivos de cámara</string>
@@ -1481,12 +1490,14 @@ La alarma no ha sido enviada a la plataforma de alarma de la policía</string>
   <string name="hs_message_area">Tamaño de la tienda</string>
   <string name="hs_message_area_unit">%d m²</string>
   <string name="hs_message_contacts">Contacto</string>
-  <string name="hs_message_dispatcher_info">%s crea una tarea %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" formatted="false">%s crea una tarea %s</string>
   <string name="hs_message_dispatcher_info_ios">%1$s crea una tarea %2$s</string>
   <string name="hs_message_floor">Cuál piso</string>
   <string name="hs_message_floor_unit">%d F</string>
   <string name="hs_message_industry">Cuál industria</string>
-  <string name="hs_message_receiver_info">%s lleva a cabo una tarea %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" formatted="false">%s lleva a cabo una tarea %s</string>
   <string name="hs_message_receiver_info_ios">%1$s lleva a cabo una tarea %2$s</string>
   <string name="hs_mode_desc_allhours">Todo el día</string>
   <string name="hs_mode_desc_leaving">Ausente</string>
@@ -1574,8 +1585,10 @@ La alarma no ha sido enviada a la plataforma de alarma de la policía</string>
   <string name="hs_servicemessage">Mensaje de servicio</string>
   <string name="hs_settings">Configuraciones</string>
   <string name="hs_show_on_device_page">Se muestran en la página de Dispositivos</string>
-  <string name="hs_smart_gateway_armed_failed_android">%s La puerta de enlace de seguridad %s falló.</string>
-  <string name="hs_smart_gateway_armed_failed_ios">%d puertas de enlace de seguridad %s fallaron.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_android" formatted="false">%s La puerta de enlace de seguridad %s falló.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_ios" formatted="false">%d puertas de enlace de seguridad %s fallaron.</string>
   <string name="hs_sos_alarm_tips">¿Confirmar para desarmar y cancelar la alarma?</string>
   <string name="hs_sos_alarmimg">Alarma</string>
   <string name="hs_sos_dispatch_tips">El sistema de alarma se ha activado, solucionelo de inmediato.</string>
@@ -1861,7 +1874,8 @@ La alarma no ha sido enviada a la plataforma de alarma de la policía</string>
   <string name="ipc_cloud_download_encoding">Codificando</string>
   <string name="ipc_cloud_download_failed">No se pudo descargar</string>
   <string name="ipc_cloud_download_loading">Descargando</string>
-  <string name="ipc_cloud_download_precent">%s%% Descarga</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" formatted="false">%s%% Descarga</string>
   <string name="ipc_cloud_download_start">Iniciar descarga</string>
   <string name="ipc_cloud_download_start_body">Si el video que seleccionó incluye varios eventos, se fusionarán en un solo video. Durante el proceso de descarga, mantenga la aplicación activa al frente.</string>
   <string name="ipc_cloud_empty_event_des">Ningún video de evento relevante</string>
@@ -2211,7 +2225,8 @@ La alarma no ha sido enviada a la plataforma de alarma de la policía</string>
   <string name="ipc_nvr_channel">Canal</string>
   <string name="ipc_nvr_channel_unit">canal</string>
   <string name="ipc_ota_update_remind">1. Asegúrese de que su dispositivo esté conectado a una fuente de alimentación durante todo el proceso de actualización. \n2. La actualización requiere de 3 a 5 minutos. Durante ese tiempo, su dispositivo no se puede utilizar.</string>
-  <string name="ipc_panel_baterrylevel">Carga restante: %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Carga restante: %s%%</string>
   <string name="ipc_panel_button_alarm">Alarma</string>
   <string name="ipc_panel_button_calendar">Fecha</string>
   <string name="ipc_panel_button_cruise">Vigilancia</string>
@@ -3103,12 +3118,14 @@ La alarma no ha sido enviada a la plataforma de alarma de la policía</string>
   <string name="ota_back_to_home_title">Aviso</string>
   <string name="ota_batch_upgrade_alert_all_update">Actualizar todos los dispositivos</string>
   <string name="ota_batch_upgrade_alert_confirm">Confirmar actualización</string>
-  <string name="ota_batch_upgrade_alert_content">%d de sus dispositivos se actualizarán. Puede que los %d dispositivos no funcionen correctamente durante la actualización. ¿Desea iniciar la actualización?</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_content" formatted="false">%d de sus dispositivos se actualizarán. Puede que los %d dispositivos no funcionen correctamente durante la actualización. ¿Desea iniciar la actualización?</string>
   <string name="ota_batch_upgrade_alert_no_room">Ninguna habitación</string>
   <string name="ota_batch_upgrade_alert_single_update">Actualizar solo dispositivo actual</string>
   <string name="ota_batch_upgrade_alert_tips">Se han encontrado (%d) dispositivos en la misma puerta de enlace que se pueden actualizar simultáneamente a través de OTA. ¿Desea actualizarlos a la vez?</string>
   <string name="ota_batch_upgrade_alert_title">Actualización en bloque</string>
-  <string name="ota_batch_upgrade_alert_unsupport_content">En esta actualización, \"%s\" y otros dispositivos (%d dispositivos en total) no se pueden actualizar simultáneamente. Por favor, actualícelos manualmente desde la lista.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_unsupport_content" formatted="false">En esta actualización, \"%s\" y otros dispositivos (%d dispositivos en total) no se pueden actualizar simultáneamente. Por favor, actualícelos manualmente desde la lista.</string>
   <string name="ota_batch_upgrade_failure_reason">Actualice el dispositivo individualmente.</string>
   <string name="ota_batch_upgrade_no_device_to_upgrade">Ningún dispositivo necesita actualizarse.</string>
   <string name="ota_ble_device_before_upgrade_warning">El dispositivo bluetooth no estará temporalmente disponible durante la actualización de firmware. ¿Desea iniciar ahora la actualización?</string>
@@ -3501,7 +3518,8 @@ La alarma no ha sido enviada a la plataforma de alarma de la policía</string>
   <string name="scene_geofence_dialog_explain_new">«Cuando la ubicación cambie (Beta)» es nuestra función experimental. Para utilizar esta función, debe permitir siempre el acceso a su ubicación. La información de su ubicación no se utilizará con ningún otro fin. Esta función no funciona sin la información de su ubicación. \n Consulte «%s» para más información.</string>
   <string name="scene_geofence_explain_new">Nota: Los requisitos de ubicación anteriores dependen de la ubicación de su teléfono. Consulte %s.</string>
   <string name="scene_group_none">grupo vacío</string>
-  <string name="scene_humidity_tip">Seco (0%-40%), agradable (40%-70%), húmedo (70%-100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">Seco (0%-40%), agradable (40%-70%), húmedo (70%-100%)</string>
   <string name="scene_icon">Icono</string>
   <string name="scene_if">Si</string>
   <string name="scene_if_condition">Si</string>
@@ -3856,7 +3874,8 @@ La alarma no ha sido enviada a la plataforma de alarma de la policía</string>
   <string name="thing_light_rhythm_scene_guide_title">La función de ritmo biológico puede simular los cambios de brillo de la luz y temperatura del color durante el día, para que podamos sentir la luz volviendo a la naturaleza./nAl amanecer, la luz se encenderá lentamente en 30 minutos y alcanzará su máximo al momento del amanecer./nAl mediodía, las luces se convertirán lentamente en luz fría para ayudar a las personas a mantenerse despiertas y mejorar en el trabajo./nAl atardecer, la luz se volverá gradualmente cálida, permitiendo que las personas entren en un estado de descanso./nCuando apagues la luz, te dormirás en 30 minutos.</string>
   <string name="thing_light_scene_batch_delete_tips">¿Eliminar %d escena/s de iluminación?</string>
   <string name="thing_light_scene_batch_delete_tips_detail">También se eliminarán los horarios vinculados.</string>
-  <string name="thing_light_scene_batch_delete_toast">Eliminación realizada: %d escena/s de iluminación. Error: %d escena/s de iluminación.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_light_scene_batch_delete_toast" formatted="false">Eliminación realizada: %d escena/s de iluminación. Error: %d escena/s de iluminación.</string>
   <string name="thing_light_scene_create_all_on_all_off">Encender/apagar todas las luces</string>
   <string name="thing_light_scene_create_all_on_all_off_tip">Dadas las distintas capacidades de los dispositivos, algunos de estos podrían funcionar de forma inesperada al controlarlos en grupo. Algunos dispositivos no son compatibles con «Todo encendido/apagado». Se le notificará oportunamente una vez que sean compatibles con esta función.</string>
   <string name="thing_light_scene_delete">Eliminar escena de iluminación</string>
@@ -4048,7 +4067,8 @@ La alarma no ha sido enviada a la plataforma de alarma de la policía</string>
   <string name="thing_activator_accessory_not_connect">¿No puede conectar el dispositivo?</string>
   <string name="thing_activator_accessory_reset_ensure">Confirme que %s se ha restablecido.</string>
   <string name="thing_activator_accessory_timeout">Límite de tiempo de la operación</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">%s Dispositivos conectados: %d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">%s Dispositivos conectados: %d</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">Dispositivo conectados: %s</string>
   <string name="thing_activator_activate_stop_dialog_title">Otros dispositivos conectados se verán afectados si se detiene \"%s\".</string>
   <string name="thing_activator_addDevice">Nuevo dispositivo</string>

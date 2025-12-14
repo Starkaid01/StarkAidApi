@@ -399,7 +399,8 @@
   <string name="ipc_motion_time_unit">Minut</string>
   <string name="ipc_motion_time_unit_mins">Minuter</string>
   <string name="ipc_motion_tracking_settings">Rörelsedetektering</string>
-  <string name="ipc_panel_baterrylevel">Batterinivå %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Batterinivå %s%%</string>
   <string name="ipc_panel_button_alarm">Alarm</string>
   <string name="ipc_panel_button_calendar">Kalender</string>
   <string name="ipc_panel_button_cstorage">Molnlagring</string>

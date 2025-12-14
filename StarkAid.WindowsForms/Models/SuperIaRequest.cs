@@ -6,5 +6,6 @@ public class SuperIaRequest
     public string ContextoUser { get; set; } = string.Empty;
     public string ContextoIA { get; set; } = string.Empty;
     public string Estilo { get; set; } = string.Empty;
+    public bool UseStarkCoins { get; set; } = false;
 }
 

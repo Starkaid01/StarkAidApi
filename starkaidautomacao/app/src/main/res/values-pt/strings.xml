@@ -385,7 +385,8 @@
   <string name="cannot_load_image">Impossível carregar imagem </string>
   <string name="cant_share_reason">Um único dispositivo de malha Bluetooth, dispositivo Zigbee ou dispositivo infravermelho (IR) não pode ser compartilhado. Tal dispositivo pode ser compartilhado apenas com dispositivos relevantes.</string>
   <string name="car_alert_limit_tip">Não pode adicionar mais do que %s cena(s).</string>
-  <string name="car_alert_tip_description">Numa casa normal, só pode adicionar %d cena(s) a %s. Depois de subscrever as vantagens Pro, o número máximo de cenas pode atingir a capacidade máxima do sistema do seu veículo.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="car_alert_tip_description" formatted="false">Numa casa normal, só pode adicionar %d cena(s) a %s. Depois de subscrever as vantagens Pro, o número máximo de cenas pode atingir a capacidade máxima do sistema do seu veículo.</string>
   <string name="car_buy">Comprar agora</string>
   <string name="car_buy_home_service">Subscrever o Vida inteligente Pro</string>
   <string name="car_data_config_tips">Aceda à aplicação %1$s &gt; Eu &gt; veículo %2$s para configurar.</string>
@@ -1009,7 +1010,8 @@ para retirar a ligação da capacidade %s .</string>
   <string name="google_flip_success_tip_content">OK Google, acende a luz\n\nOK Google, aumenta a intensidade da minha luz\n\nOK Google, muda a lâmpada da cozinha para azul\n\nOK Google, define a minha luz para 50%</string>
   <string name="google_flip_unbind_info">Poderá cancelar a autorização a qualquer altura.</string>
   <string name="google_flip_unbind_info_goto_app">Desvincular a ação no Google Home.</string>
-  <string name="google_flip_voice_demos">Turn on the bathroom lamps\"\n\"Turn off the lights\" \n\"Set the living room brightness to 50%%\" \n\"Is the light on in John\'s office?</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="google_flip_voice_demos" formatted="false">Turn on the bathroom lamps\"\n\"Turn off the lights\" \n\"Set the living room brightness to 50%%\" \n\"Is the light on in John\'s office?</string>
   <string name="google_home_dev_list_conncet">Ligar</string>
   <string name="google_home_dev_list_connect_tip">Depois de conectar o Google Home, pode sincronizar os dispositivos na aplicação Google Home com outra aplicação para controlá-los.</string>
   <string name="google_home_dev_list_empty_tip">Nenhum dispositivo encontrado</string>
@@ -1152,7 +1154,8 @@ para retirar a ligação da capacidade %s .</string>
   <string name="home_adv_remove_from_room">Remover da divisão</string>
   <string name="home_adv_remove_widget">Remover widget</string>
   <string name="home_adv_room_device_num">%1$d dispositivo(s) favorito(s)</string>
-  <string name="home_adv_room_hint_num">%d Cena(s) | %d Dispositivo(s)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="home_adv_room_hint_num" formatted="false">%d Cena(s) | %d Dispositivo(s)</string>
   <string name="home_adv_room_list_entry">Lista de divisões</string>
   <string name="home_adv_room_no_device">Sem dispositivos</string>
   <string name="home_adv_room_tab">Quarto</string>
@@ -1281,8 +1284,10 @@ para retirar a ligação da capacidade %s .</string>
   <string name="hometab_auto_start_tip">Desativou %s para arranque automático, o que pode afetar a função seguinte:\n Receber mensagens em tempo real (Pode perder alguns alertas de segurança.)\n Permite que a aplicação arranque automaticamente quando o seu telefone estiver ligado?</string>
   <string name="hometab_auto_start_title">Lembrete de Arranque Automático</string>
   <string name="hometab_ignore_tip">Não mostrar novamente.</string>
-  <string name="hosting_camera_used">Câmera %d/%d</string>
-  <string name="hosting_sensor_used">Sensor %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_camera_used" formatted="false">Câmera %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_sensor_used" formatted="false">Sensor %d/%d</string>
   <string name="hs_China_mainland">China Continental</string>
   <string name="hs_abnormal_device_number">Dispositivo(s) anormal(ais)</string>
   <string name="hs_abnormal_device_title">Anomalia</string>
@@ -1396,8 +1401,10 @@ para retirar a ligação da capacidade %s .</string>
   <string name="hs_favorite_device_center_tips">Os dispositivos acima serão exibidos na página Dispositivos (até 4)</string>
   <string name="hs_favorite_device_footer_tips">Dispositivos não exibidos na página Dispositivos</string>
   <string name="hs_favorite_device_tips">Você pode adicionar dispositivos usados com frequência à página Dispositivos e exibir até 4 deles</string>
-  <string name="hs_gateway_armde_failed_ios">%d gateway de segurança%s falhou, verifique</string>
-  <string name="hs_gateway_armed_failed_android">%s gateway de segurança%s falhou, verifique</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armde_failed_ios" formatted="false">%d gateway de segurança%s falhou, verifique</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armed_failed_android" formatted="false">%s gateway de segurança%s falhou, verifique</string>
   <string name="hs_gateway_device">Gateway de segurança</string>
   <string name="hs_geo_current_location">Este local</string>
   <string name="hs_go_setting">Para abri-lo</string>
@@ -1420,13 +1427,15 @@ para retirar a ligação da capacidade %s .</string>
   <string name="hs_host_ipc_devices_android">Dispositivo de câmera (%1$s/%2$s)</string>
   <string name="hs_host_sensor_devices_android">Dispositivo sem câmera (%1$s/%2$s)</string>
   <string name="hs_hosting">Monitoramento de alarme</string>
-  <string name="hs_hosting_camera_valid">Câmeras disponíveis: %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_camera_valid" formatted="false">Câmeras disponíveis: %d/%d</string>
   <string name="hs_hosting_device_select">Selecionar dispositivo</string>
   <string name="hs_hosting_other_setting">Outras configurações</string>
   <string name="hs_hosting_relative_tips">Sensores estão vinculados às câmeras. Após um alerta ser acionado, as informações dele são enviadas à respectiva plataforma de serviço.</string>
   <string name="hs_hosting_remark">Observações</string>
   <string name="hs_hosting_sensor">Sensor</string>
-  <string name="hs_hosting_sensor_valid">Sensores disponíveis: %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_sensor_valid" formatted="false">Sensores disponíveis: %d/%d</string>
   <string name="hs_image_des">Descrição da imagem</string>
   <string name="hs_invitation_confirm_detail_ios">Você é convidado a participar da casa：\"%s\"Para desfrutar de uma vida inteligente. Você quer se juntar a esta casa?</string>
   <string name="hs_ipc_device">Dispositivos de câmera</string>
@@ -1476,12 +1485,14 @@ para retirar a ligação da capacidade %s .</string>
   <string name="hs_message_area">Tamanho da loja</string>
   <string name="hs_message_area_unit">%d m²</string>
   <string name="hs_message_contacts">Contato</string>
-  <string name="hs_message_dispatcher_info">%s cria uma tarefa %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" formatted="false">%s cria uma tarefa %s</string>
   <string name="hs_message_dispatcher_info_ios">%1$s cria uma tarefa %2$s</string>
   <string name="hs_message_floor">Qual andar</string>
   <string name="hs_message_floor_unit">%d F</string>
   <string name="hs_message_industry">Qual setor</string>
-  <string name="hs_message_receiver_info">%s realiza uma tarefa %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" formatted="false">%s realiza uma tarefa %s</string>
   <string name="hs_message_receiver_info_ios">%1$s realiza uma tarefa %2$s</string>
   <string name="hs_mode_desc_allhours">O dia todo</string>
   <string name="hs_mode_desc_leaving">Total</string>
@@ -1569,8 +1580,10 @@ para retirar a ligação da capacidade %s .</string>
   <string name="hs_servicemessage">Mensagem de serviço</string>
   <string name="hs_settings">Configurações</string>
   <string name="hs_show_on_device_page">Exibido na página Dispositivos</string>
-  <string name="hs_smart_gateway_armed_failed_android">%s gateway de segurança %s falhou.</string>
-  <string name="hs_smart_gateway_armed_failed_ios">Falha em %d gateways de segurança %s.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_android" formatted="false">%s gateway de segurança %s falhou.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_ios" formatted="false">Falha em %d gateways de segurança %s.</string>
   <string name="hs_sos_alarm_tips">Confirmar para desarmar e cancelar o alarme?</string>
   <string name="hs_sos_alarmimg">alarme</string>
   <string name="hs_sos_dispatch_tips">O sistema de alarme foi acionado, resolva isso imediatamente.</string>
@@ -1856,7 +1869,8 @@ para retirar a ligação da capacidade %s .</string>
   <string name="ipc_cloud_download_encoding">Codificação</string>
   <string name="ipc_cloud_download_failed">Falha no download</string>
   <string name="ipc_cloud_download_loading">Baixando</string>
-  <string name="ipc_cloud_download_precent">Download: %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" formatted="false">Download: %s%%</string>
   <string name="ipc_cloud_download_start">Iniciar download</string>
   <string name="ipc_cloud_download_start_body">Se o vídeo que você selecionou incluir vários eventos, eles serão mesclados em um vídeo. Durante o download, mantenha o aplicativo em primeiro plano.</string>
   <string name="ipc_cloud_empty_event_des">Nenhum vídeo de evento relevante</string>
@@ -2206,7 +2220,8 @@ para retirar a ligação da capacidade %s .</string>
   <string name="ipc_nvr_channel">Canal</string>
   <string name="ipc_nvr_channel_unit">canal</string>
   <string name="ipc_ota_update_remind">1. Certifique-se de que seu dispositivo esteja conectado a uma fonte de alimentação durante todo o processo de atualização. \n2. A atualização requer de 3 a 5 minutos. Durante esse tempo, o seu dispositivo está inutilizável.</string>
-  <string name="ipc_panel_baterrylevel">Bateria restante %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Bateria restante %s%%</string>
   <string name="ipc_panel_button_alarm">Alarme</string>
   <string name="ipc_panel_button_calendar">Data</string>
   <string name="ipc_panel_button_cruise">Patrulha</string>
@@ -3040,12 +3055,14 @@ para retirar a ligação da capacidade %s .</string>
   <string name="ota_back_to_home_title">Aviso</string>
   <string name="ota_batch_upgrade_alert_all_update">Atualizar todos os dispositivos</string>
   <string name="ota_batch_upgrade_alert_confirm">Confirmar atualização</string>
-  <string name="ota_batch_upgrade_alert_content">%d dos seus dispositivos serão atualizados. Os dispositivos %d podem não funcionar corretamente durante a atualização. Tem a certeza de que vai iniciar a atualização?</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_content" formatted="false">%d dos seus dispositivos serão atualizados. Os dispositivos %d podem não funcionar corretamente durante a atualização. Tem a certeza de que vai iniciar a atualização?</string>
   <string name="ota_batch_upgrade_alert_no_room">Sem sala</string>
   <string name="ota_batch_upgrade_alert_single_update">Atualizar apenas o dispositivo atual</string>
   <string name="ota_batch_upgrade_alert_tips">Verificou-se que (%d) dispositivos sob o mesmo gateway podem ser atualizados simultaneamente via OTA. Pretende atualizá-los em conjunto?</string>
   <string name="ota_batch_upgrade_alert_title">Atualização em massa</string>
-  <string name="ota_batch_upgrade_alert_unsupport_content">Nesta atualização, \"%s\" e outros dispositivos (total de %d dispositivos) não podem ser atualizados simultaneamente. Por favor, atualize-os manualmente na lista.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_unsupport_content" formatted="false">Nesta atualização, \"%s\" e outros dispositivos (total de %d dispositivos) não podem ser atualizados simultaneamente. Por favor, atualize-os manualmente na lista.</string>
   <string name="ota_batch_upgrade_failure_reason">Atualize o dispositivo individualmente.</string>
   <string name="ota_batch_upgrade_no_device_to_upgrade">Nenhum dispositivo necessita de ser atualizado.</string>
   <string name="ota_ble_device_before_upgrade_warning">O dispositivo Bluetooth ficará temporariamente indisponível durante a atualização do firmware. Tem a certeza de que deseja iniciar a atualização agora?</string>
@@ -3438,7 +3455,8 @@ para retirar a ligação da capacidade %s .</string>
   <string name="scene_geofence_dialog_explain_new">\"Quando a localização for alterada (Beta)\" é a nossa funcionalidade experimental. Para utilizar esta funcionalidade, terá sempre de permitir o acesso à sua localização. A informação da sua localização não será utilizada para quaisquer outros fins. Esta funcionalidade não funciona sem a informação da sua localização. \n Ver \"%s\" para saber mais detalhes.</string>
   <string name="scene_geofence_explain_new">Nota: As condições de localização acima indicadas dependem da localização do seu telemóvel. Ver %s.</string>
   <string name="scene_group_none">grupo está vazio</string>
-  <string name="scene_humidity_tip">Seco (0%-40%), Confortável (40%-70%), Úmido (70%-100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">Seco (0%-40%), Confortável (40%-70%), Úmido (70%-100%)</string>
   <string name="scene_icon">Ícone</string>
   <string name="scene_if">Se</string>
   <string name="scene_if_condition">Se</string>
@@ -3782,7 +3800,8 @@ para retirar a ligação da capacidade %s .</string>
   <string name="thing_light_rhythm_scene_default_name">Novo Ritmo</string>
   <string name="thing_light_scene_batch_delete_tips">Tem a certeza de que deseja eliminar %d cena(s) de iluminação?</string>
   <string name="thing_light_scene_batch_delete_tips_detail">Os calendários associados também serão eliminados.</string>
-  <string name="thing_light_scene_batch_delete_toast">Eliminado: %d cena(s) de iluminação. Falha: %d cena(s) de iluminação.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_light_scene_batch_delete_toast" formatted="false">Eliminado: %d cena(s) de iluminação. Falha: %d cena(s) de iluminação.</string>
   <string name="thing_light_scene_create_all_on_all_off">Ligar/desligar todas as luzes</string>
   <string name="thing_light_scene_create_all_on_all_off_tip">Devido às diferentes capacidades dos dispositivos, alguns dispositivos podem não funcionar como esperado no controlo de grupo. Alguns dispositivos não suportam a função Todos ligados/desligados. Será notificado atempadamente depois de suportarem esta função.</string>
   <string name="thing_light_scene_delete">Eliminar cena de iluminação</string>
@@ -3971,7 +3990,8 @@ para retirar a ligação da capacidade %s .</string>
   <string name="thing_activator_accessory_not_connect">Não foi possível ligar ao dispositivo?</string>
   <string name="thing_activator_accessory_reset_ensure">Confirme se %s foi reiniciado.</string>
   <string name="thing_activator_accessory_timeout">Tempo excedido para operação</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">%s dispositivos relacionados: %d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">%s dispositivos relacionados: %d</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">Dispositivo relacionado: %s</string>
   <string name="thing_activator_activate_stop_dialog_title">Outros dispositivos relacionados serão afetados se \"%s\" for interrompido.</string>
   <string name="thing_activator_addDevice">Novo dispositivo</string>

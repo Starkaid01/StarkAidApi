@@ -666,7 +666,7 @@ namespace StarkAid.Api.Controllers.V1
                     if (a.Valor == 10m)
                     {
                         nivel = 2;
-                        nomePlano = "Nível 2 - Remove Ads";
+                        nomePlano = "StarkAid Premium";
                     }
                     else if (a.Valor == 5m)
                     {

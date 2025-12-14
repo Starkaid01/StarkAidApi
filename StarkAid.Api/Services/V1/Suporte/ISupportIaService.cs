@@ -1,3 +1,5 @@
+using StarkAid.Api.DTOs;
+
 namespace StarkAid.Api.Services.V1.Suporte;
 
 public interface ISupportIaService
@@ -6,4 +8,6 @@ public interface ISupportIaService
     Task<string> ProcessarMensagem(Guid userId, string mensagem, string origem, Guid? conversaId = null);
     Task<string> ProcessarMensagemComContexto(Guid userId, string mensagem, string origem, Guid conversaId);
     Task<List<string>> FiltrarSolucoes(List<string> solucoes, string origem);
+
+    Task<StarkAid.Api.DTOs.EconomicPayload?> ObterEconomiaAsync(Guid userId);
 }

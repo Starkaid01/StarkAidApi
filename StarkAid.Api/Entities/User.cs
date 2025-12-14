@@ -1,8 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace StarkAid.Api.Entities;
+
+public enum PlanoStarkAid
+{
+    Free = 1,
+    Premium = 2
+}
+
+public enum UserPlanType
+{
+    Free = 0,
+    Premium = 1
+}
 
 public class User
 {
@@ -16,8 +29,19 @@ public class User
 
     [Required, MaxLength(100)] public string ApiKey { get; set; } = string.Empty;
 
-    [Required, Range(0, 9999999999999999.99)]
-    public decimal StarkCoins { get; set; }
+[Required] public int StarkCoinBalance { get; set; }
+
+
+    [Required] public UserPlanType PlanType { get; set; } = UserPlanType.Free;
+
+    [NotMapped]
+    public PlanoStarkAid Plano
+    {
+        get => PlanType == UserPlanType.Premium ? PlanoStarkAid.Premium : PlanoStarkAid.Free;
+        set => PlanType = value == PlanoStarkAid.Premium ? UserPlanType.Premium : UserPlanType.Free;
+    }
+
+    [Required] public int TokensConsumidosSemana { get; set; }
 
     [Required] public DateTimeOffset CreatedAt { get; set; }
 

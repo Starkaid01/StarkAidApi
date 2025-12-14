@@ -684,8 +684,10 @@
   <string name="hometab_auto_start_tip">Ви вимкнули %s з автоматичного запуску, що може вплинути на таку функцію: \n отримувати повідомлення в режимі реального часу (ви можете пропустити попередження системи безпеки), \n ви дозволяєте застосунку автоматично запускатися, коли ваш телефон увімкнений?</string>
   <string name="hometab_auto_start_title">Нагадування щодо автоматичного запуску</string>
   <string name="hometab_ignore_tip">Більше не показувати.</string>
-  <string name="hosting_camera_used">Камера %d/%d</string>
-  <string name="hosting_sensor_used">Датчик %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_camera_used" formatted="false">Камера %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_sensor_used" formatted="false">Датчик %d/%d</string>
   <string name="hs_China_mainland">Материковий Китай</string>
   <string name="hs_abnormal_device_number">Незвичний пристрій(ої)</string>
   <string name="hs_abnormal_device_title">Збій</string>
@@ -790,8 +792,10 @@
   <string name="hs_favorite_device_center_tips">Зазначені вище пристрої відображатимуться на сторінці пристроїв (макс. 4)</string>
   <string name="hs_favorite_device_footer_tips">Пристрої не відображаються на сторінці пристроїв</string>
   <string name="hs_favorite_device_tips">Ви можете додати до 4-х часто використовуваних пристроїв на сторінку пристроїв</string>
-  <string name="hs_gateway_armde_failed_ios">%d шлюз безпеки %s не спрацював, перегляд</string>
-  <string name="hs_gateway_armed_failed_android">%s шлюз безпеки %s не спрацював, просмотр</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armde_failed_ios" formatted="false">%d шлюз безпеки %s не спрацював, перегляд</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armed_failed_android" formatted="false">%s шлюз безпеки %s не спрацював, просмотр</string>
   <string name="hs_gateway_device">Шлюз сигналізації</string>
   <string name="hs_geo_current_location">Поточний дім</string>
   <string name="hs_go_setting">Для відкриття</string>
@@ -811,13 +815,15 @@
   <string name="hs_homesecurity_mc_config">Професійна поліцейська послуга</string>
   <string name="hs_homesecurity_mc_protocol">Сервісна угода</string>
   <string name="hs_hosting">Моніторинг сигналів тривоги</string>
-  <string name="hs_hosting_camera_valid">Доступні камери: %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_camera_valid" formatted="false">Доступні камери: %d/%d</string>
   <string name="hs_hosting_device_select">Вибрати пристрій</string>
   <string name="hs_hosting_other_setting">Інші налаштування.</string>
   <string name="hs_hosting_relative_tips">Датчики пов\'язані з камерами. Після спрацьовування сигналу тривоги сповіщення направляється на відповідну сервісну платформу.</string>
   <string name="hs_hosting_remark">Примітки</string>
   <string name="hs_hosting_sensor">Датчик</string>
-  <string name="hs_hosting_sensor_valid">Доступні датчики: %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_sensor_valid" formatted="false">Доступні датчики: %d/%d</string>
   <string name="hs_image_des">Описание изображения</string>
   <string name="hs_ipc_device">IP камера</string>
   <string name="hs_location_area_size">Розмір</string>
@@ -860,12 +866,14 @@
   <string name="hs_message_area">Розмір магазину</string>
   <string name="hs_message_area_unit">%d m²</string>
   <string name="hs_message_contacts">Контакт</string>
-  <string name="hs_message_dispatcher_info">%s створює завдання %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" formatted="false">%s створює завдання %s</string>
   <string name="hs_message_dispatcher_info_ios">%1$s створює завдання %2$s</string>
   <string name="hs_message_floor">Поверх</string>
   <string name="hs_message_floor_unit">%d F</string>
   <string name="hs_message_industry">Галузь</string>
-  <string name="hs_message_receiver_info">%s виконує завдання %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" formatted="false">%s виконує завдання %s</string>
   <string name="hs_message_receiver_info_ios">%1$s виконує завдання %2$s</string>
   <string name="hs_mode_desc_allhours">Цілодобово</string>
   <string name="hs_mode_desc_leaving">Відсутність</string>
@@ -947,8 +955,10 @@
   <string name="hs_servicemessage">Сервісне повідомлення</string>
   <string name="hs_settings">Налаштування</string>
   <string name="hs_show_on_device_page">Відображається на сторінці пристроїв</string>
-  <string name="hs_smart_gateway_armed_failed_android">%s шлюз безпеки %s відмовив.</string>
-  <string name="hs_smart_gateway_armed_failed_ios">%d шлюзів безпеки %s не вдалося.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_android" formatted="false">%s шлюз безпеки %s відмовив.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_ios" formatted="false">%d шлюзів безпеки %s не вдалося.</string>
   <string name="hs_sos_alarm_tips">Ви впевнені?</string>
   <string name="hs_sos_alarmimg">Тривога</string>
   <string name="hs_sos_dispatch_tips">У вас немає жодного екстреного реагування</string>
@@ -1161,7 +1171,8 @@
   <string name="ipc_cloud_download_encoding">Транскодування</string>
   <string name="ipc_cloud_download_failed">Не вдалося завантажити</string>
   <string name="ipc_cloud_download_loading">Завантажиться</string>
-  <string name="ipc_cloud_download_precent">%s%% Завантажено</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" formatted="false">%s%% Завантажено</string>
   <string name="ipc_cloud_download_start">Завантаження починається</string>
   <string name="ipc_cloud_download_start_body">Якщо вибране вами відео включає декілька подій, вони будуть об\'єднані в одне відео. Під час завантаження, будь ласка, тримайте застосунок на передньому плані.</string>
   <string name="ipc_cloud_storage_delete_all">Видалити всі відео</string>
@@ -1432,7 +1443,8 @@
   <string name="ipc_nvr_channel">Канал</string>
   <string name="ipc_nvr_channel_unit">Канал</string>
   <string name="ipc_ota_update_remind">1. Переконайтеся, що пристрій під\'єднаний до джерела живлення впродовж усього процесу оновлення. \ N2. Оновлення зазвичай забирає від трьох до п\'яти хвилин. Не використовуйте пристрій під час оновлення.</string>
-  <string name="ipc_panel_baterrylevel">Залишок акумулятора: %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Залишок акумулятора: %s%%</string>
   <string name="ipc_panel_button_alarm">Сигнал тривоги</string>
   <string name="ipc_panel_button_calendar">Дата</string>
   <string name="ipc_panel_button_cruise">Патрулювання</string>
@@ -2313,7 +2325,8 @@
   <string name="scene_family_member_go_home">Учасник іде додому</string>
   <string name="scene_find_new_actionexecutor">Поточна версія програми дуже давня, у ній не відображаються та не виконуються деякі дії. Оновіть її до останньої версії.</string>
   <string name="scene_group_none">Група не порожня</string>
-  <string name="scene_humidity_tip">Сухо (0%–40%), комфортно (40%–70%), волого (70%–100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">Сухо (0%–40%), комфортно (40%–70%), волого (70%–100%)</string>
   <string name="scene_icon">Значок</string>
   <string name="scene_if">Якщо</string>
   <string name="scene_if_condition">Якщо</string>
@@ -2563,7 +2576,8 @@
   <string name="thing_activator_accessory_not_connect">Не вдалося підключитися до пристрою?</string>
   <string name="thing_activator_accessory_reset_ensure">Переконайтеся, що скидання %s виконане.</string>
   <string name="thing_activator_accessory_timeout">Тайм-аут операції</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">Пов\'язані пристрої %s: %d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">Пов\'язані пристрої %s: %d</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">Пов\'язані пристрої %s</string>
   <string name="thing_activator_activate_stop_dialog_title">Інші пов\'язані пристрої будуть зачеплені, якщо \"%s\" буде зупинено.</string>
   <string name="thing_activator_add_after_reset_device">Перезавантажте пристрій, введіть правильний пароль і спробуйте ще раз.</string>

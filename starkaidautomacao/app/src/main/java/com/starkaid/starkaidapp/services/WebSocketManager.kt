@@ -28,8 +28,14 @@ class WebSocketManager(
         val token = sessionManager.fetchAuthToken() ?: return
         if (token.isEmpty()) return
 
-        val webBaseUrl = ApiConfig.webBaseUrl.replace("https://", "").replace("http://", "")
-        val url = "wss://$webBaseUrl/api/Websocket/connect/$userId"
+        val base = ApiConfig.webBaseUrl
+        val wsBase = when {
+            base.startsWith("https://") -> base.replaceFirst("https://", "wss://")
+            base.startsWith("http://") -> base.replaceFirst("http://", "ws://")
+            else -> "wss://$base"
+        }
+        // Backend expõe em api/v1/Websocket/connect/{userId}
+        val url = "$wsBase/api/v1/Websocket/connect/$userId"
         val request = Request.Builder()
             .url(url)
             .addHeader("Authorization", "Bearer $token")

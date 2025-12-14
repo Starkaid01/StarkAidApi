@@ -8,6 +8,12 @@ import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.data.SessionManager
 import com.starkaid.starkaidapp.models.HubListener
 import io.reactivex.rxjava3.core.Single
+import com.google.gson.JsonElement
+
+data class HubClientInfo(
+    val tipo: String? = null,
+    val identificador: String? = null
+)
 
 class HubService(
     private val sessionManager: SessionManager,
@@ -24,6 +30,15 @@ class HubService(
         hubConnection = HubConnectionBuilder.create("${ApiConfig.webBaseUrl}/hubs/dispositivo-esp?type=app")
             .withAccessTokenProvider(Single.defer { Single.just(token) })
             .build()
+
+        // Eventos de conexão / identificação (backend envia objeto { tipo, identificador })
+        hubConnection?.on("Connected", { info: JsonElement ->
+            Log.d("SignalR", "Evento Connected payload: $info")
+        }, JsonElement::class.java)
+
+        hubConnection?.on("Identificado", { info: JsonElement ->
+            Log.d("SignalR", "Evento Identificado payload: $info")
+        }, JsonElement::class.java)
 
         // Comandos recebidos
         hubConnection?.on("ReceiveCommand", { deviceId: String, command: String ->

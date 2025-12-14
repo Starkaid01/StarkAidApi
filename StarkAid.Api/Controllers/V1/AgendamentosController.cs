@@ -62,7 +62,9 @@ namespace StarkAid.Api.Controllers.V1
         [HttpPost]
         public async Task<IActionResult> Criar([FromBody] CriarAgendamentoRequest request)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        try
+        {
             var agendamento = await _service.CriarAsync(
                 userId,
                 request.DeviceId,
@@ -70,6 +72,11 @@ namespace StarkAid.Api.Controllers.V1
                 request.Comando,
                 request.Recorrencia);
             return Created("", agendamento);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
         }
 
         [HttpPut("{id}")]
@@ -170,6 +177,8 @@ namespace StarkAid.Api.Controllers.V1
             if (!recorrenciasValidas.Contains(request.Recorrencia))
                 return BadRequest("Recorrência inválida. Use: NaoRepetir, TodosOsDias, TodaSemana, TodoMes ou TodoAno");
 
+        try
+        {
             var agendamento = await _service.CriarAgendamentoStarkswitchAsync(
                 userId,
                 request.DeviceId,
@@ -180,6 +189,11 @@ namespace StarkAid.Api.Controllers.V1
                 request.Recorrencia);
 
             return Created("", agendamento);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
         }
 
         [HttpPost("ewelink")]

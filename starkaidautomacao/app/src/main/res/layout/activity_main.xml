@@ -377,6 +377,59 @@
                 android:padding="16dp">
 
 
+                <!-- Card de limites por plano (Free x Premium) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/bg_jarvis_card"
+                    app:cardBackgroundColor="@color/jarvis_card_bg_transparent"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="8dp"
+                    app:strokeColor="@color/jarvis_cyan"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:id="@+id/tvPlanLimitsTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Limites dos Planos"
+                            android:textColor="@color/jarvis_text_primary"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginTop="8dp">
+
+                            <TextView
+                                android:id="@+id/tvPlanFreeLine"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Free: 1200 tokens/semana · 2 agendamentos · Anúncios ON"
+                                android:textColor="@color/jarvis_text_secondary"
+                                android:textSize="14sp" />
+
+                            <TextView
+                                android:id="@+id/tvPlanPremiumLine"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Premium: 4500 tokens/semana · Agendamentos ilimitados · Anúncios OFF"
+                                android:textColor="@color/jarvis_text_secondary"
+                                android:textSize="14sp"
+                                android:layout_marginTop="4dp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
                 <!-- Card de status da conexão estilo Jarvis -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"

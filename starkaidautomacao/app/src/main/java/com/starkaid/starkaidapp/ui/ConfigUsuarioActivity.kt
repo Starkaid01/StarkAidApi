@@ -88,7 +88,7 @@ class ConfigUsuarioActivity : BaseActivity()  {
                     runOnUiThread {
                         textViewNome.text = usuario.name
                         textViewEmail.text = usuario.email
-                        textViewCoins.text = usuario.starkCoins.toString()
+                        textViewCoins.text = usuario.balance().toString()
                         textViewStatus.text = if (usuario.isActive) "Ativo" else "Inativo"
                         textViewStatus.setTextColor(
                             ContextCompat.getColor(this@ConfigUsuarioActivity,

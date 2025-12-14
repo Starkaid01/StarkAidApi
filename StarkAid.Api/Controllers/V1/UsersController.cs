@@ -10,6 +10,7 @@ using StarkAid.Api.DTOs.V1.SuperIA;
 using StarkAid.Api.DTOs.V1.Users;
 using StarkAid.Api.DTOs.V1.Admin;
 using StarkAid.Api.Entities;
+using StarkAid.Api.Services;
 using StarkAid.Api.Services.V1.Auth;
 using StarkAid.Api.Services.V1.Email;
 using StarkAid.Api.Services.V1.SuperIA;
@@ -31,14 +32,25 @@ namespace StarkAid.Api.Controllers.V1
         private readonly AuthService _authService;
         private readonly IEmailService _emailService;
         private readonly IaService _iaService;
+    private readonly PlanoLimitesService _planoLimites;
+    private readonly ITokenUsageService _tokenUsage;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(AppDbContext context, AuthService authService, IEmailService emailService, IaService iaService, ILogger<UsersController> logger)
+    public UsersController(
+        AppDbContext context,
+        AuthService authService,
+        IEmailService emailService,
+        IaService iaService,
+        PlanoLimitesService planoLimites,
+        ITokenUsageService tokenUsage,
+        ILogger<UsersController> logger)
         {
             _context = context;
             _authService = authService;
             _emailService = emailService;
             _iaService = iaService;
+        _planoLimites = planoLimites;
+        _tokenUsage = tokenUsage;
             _logger = logger;
         }
 
@@ -88,18 +100,38 @@ namespace StarkAid.Api.Controllers.V1
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return Unauthorized();
 
+            // Verificar se há assinatura Premium ativa e atualizar PlanType se necessário
+            var hasActivePremium = await _context.Assinaturas
+                .AnyAsync(a => a.UserId == userId && 
+                              (a.Status == "ativa" || a.Status == "Ativa") && 
+                              a.Valor == 10 && 
+                              (!a.ExpiraEm.HasValue || a.ExpiraEm.Value > DateTimeOffset.UtcNow));
+            
+            if (hasActivePremium && user.PlanType != UserPlanType.Premium)
+            {
+                _logger.LogInformation("🔄 [SuperIA] Atualizando PlanType para Premium - UserId: {UserId}", userId);
+                user.PlanType = UserPlanType.Premium;
+                user.RemovalAds = "Ativo";
+                if (user.Role == "UserNivel1")
+                {
+                    user.Role = "UserNivel2";
+                }
+                await _context.SaveChangesAsync();
+            }
+
             var resultado = await _iaService.ProcessarMensagem(request.ContextoUser, request.ContextoIA, request.Texto, request.Estilo);
             if (resultado == null) return StatusCode(500, "Erro ao processar mensagem.");
 
-            // Cálculo de custo
-            var custoUsd = _iaService.CalcularCustoUSD(resultado);
-            var custoSC = custoUsd / 0.03m;
-            if (user.StarkCoins < custoSC)
-                throw new InvalidOperationException("Saldo insuficiente para gerar variações.");
+            var tokensUsados = Math.Max(0, resultado.PromptTokens) + Math.Max(0, resultado.CompletionTokens);
+            var limite = _planoLimites.ObterLimiteTokensSemana(user);
 
-            // Debita saldo e salva
-            user.StarkCoins -= custoSC;
-            await _context.SaveChangesAsync();
+            // Se o app autorizou uso de StarkCoins (useStarkCoins = true), permite consumo automático
+            // Caso contrário, retorna 402 quando limite atingido para o app perguntar ao usuário
+            var consumo = await _tokenUsage.TryConsumeTokensAsync(user, tokensUsados, request.UseStarkCoins);
+            if (!consumo.Success)
+            {
+                return StatusCode(402, new { message = "Saldo insuficiente para tokens excedentes. Adicione StarkCoins ou aguarde o reset semanal.", requiredCoins = consumo.RequiredCoins });
+            }
 
             // Salvar no histórico
             var historico = new IaHistorico
@@ -113,7 +145,18 @@ namespace StarkAid.Api.Controllers.V1
             _context.IaHistoricos.Add(historico);
             await _context.SaveChangesAsync();
 
-            return Ok(resultado);
+            return Ok(new
+            {
+                resultado,
+                planType = user.PlanType.ToString(),
+                tokensConsumidosSemana = user.TokensConsumidosSemana,
+                tokensSemanaMax = limite,
+                tokensRestantes = Math.Max(0, limite - user.TokensConsumidosSemana),
+                StarkCoinBalance = user.StarkCoinBalance,
+                adsEnabled = _planoLimites.ExibeAnuncios(user),
+                agendamentosMax = _planoLimites.ObterLimiteAgendamentos(user),
+                rate = 100
+            });
         }
 
         [HttpPost("request-password-reset")]
@@ -186,43 +229,103 @@ namespace StarkAid.Api.Controllers.V1
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var user = await _context.Users
-                .Select(u => new { u.Id, u.RemovalAds })
+            .Select(u => new { u.Id, u.RemovalAds, u.PlanType })
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
                 return NotFound("Usuário não encontrado.");
 
-            // Retorna "Ativo" se o usuário tem o plano Remove Ads ativo, "Desativado" caso contrário
-            // O app verifica: adsReturn.set(ads == "Desativado") - só carrega anúncios se for "Desativado"
-            return Ok(new { adsAtiv = user.RemovalAds ?? "Desativado" });
+        var adsOn = user.PlanType != UserPlanType.Premium;
+
+        return Ok(new
+        {
+            adsAtiv = adsOn ? "Desativado" : "Ativo",
+            exibeAnuncios = adsOn
+        });
         }
 
         [HttpGet("me")]
         public async Task<IActionResult> GetCurrentUser()
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var user = await _context.Users
-                .Select(u => new
-                {
-                    u.Id,
-                    u.Name,
-                    u.Email,
-                    u.Role,
-                    u.StarkCoins,
-                    u.ApiKey,
-                    u.RemovalAds,
-                    u.IsActive,
-                    u.CreatedAt,
-                    u.Estado,
-                    u.Cidade,
-                    u.Bairro
-                })
-                .FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null) return NotFound();
 
-            return Ok(user);
+            // Verificar se há assinatura Premium ativa e atualizar PlanType se necessário
+            var hasActivePremium = await _context.Assinaturas
+                .AnyAsync(a => a.UserId == userId && 
+                              (a.Status == "ativa" || a.Status == "Ativa") && 
+                              a.Valor == 10 && 
+                              (!a.ExpiraEm.HasValue || a.ExpiraEm.Value > DateTimeOffset.UtcNow));
+            
+            if (hasActivePremium && user.PlanType != UserPlanType.Premium)
+            {
+                _logger.LogInformation("🔄 [GetMe] Atualizando PlanType para Premium - UserId: {UserId}", userId);
+                user.PlanType = UserPlanType.Premium;
+                user.RemovalAds = "Ativo";
+                if (user.Role == "UserNivel1")
+                {
+                    user.Role = "UserNivel2";
+                }
+                await _context.SaveChangesAsync();
+            }
+            else if (!hasActivePremium && user.PlanType == UserPlanType.Premium)
+            {
+                // Se não há assinatura Premium ativa mas PlanType está como Premium, verificar se deve rebaixar
+                var hasAnyActivePremium = await _context.Assinaturas
+                    .AnyAsync(a => a.UserId == userId && 
+                                  (a.Status == "ativa" || a.Status == "Ativa") && 
+                                  a.Valor == 10);
+                
+                if (!hasAnyActivePremium)
+                {
+                    _logger.LogInformation("🔄 [GetMe] Rebaixando PlanType para Free - UserId: {UserId}", userId);
+                    user.PlanType = UserPlanType.Free;
+                    user.RemovalAds = "Desativado";
+                }
+            }
+
+        var limite = _planoLimites.ObterLimiteTokensSemana(user);
+        var agendamentosRestantes = _planoLimites.CalcularAgendamentosRestantes(
+            user,
+            await _context.Agendamentos.CountAsync(a => a.UserId == userId));
+
+        _logger.LogInformation("🔍 [GetMe] UserId: {UserId}, PlanType: {PlanType}, StarkCoinBalance: {Balance}, TokensConsumidosSemana: {Consumed}, Limite calculado: {Limit}", 
+            userId, user.PlanType, user.StarkCoinBalance, user.TokensConsumidosSemana, limite);
+
+        var economy = new StarkAid.Api.DTOs.EconomicPayload(
+            user.PlanType.ToString(),
+            user.StarkCoinBalance,
+            user.TokensConsumidosSemana,
+            limite,
+            Math.Max(0, limite - user.TokensConsumidosSemana),
+            _planoLimites.ExibeAnuncios(user),
+            _planoLimites.ObterLimiteAgendamentos(user),
+            agendamentosRestantes,
+            100
+        );
+        
+        _logger.LogInformation("🔍 [GetMe] Economy payload criado: planType={PlanType}, StarkCoinBalance={Balance}, tokensConsumidosSemana={Consumed}, tokensSemanaMax={Max}, tokensRestantes={Restantes}", 
+            economy.planType, economy.StarkCoinBalance, economy.tokensConsumidosSemana, economy.tokensSemanaMax, economy.tokensRestantes);
+
+        return Ok(new
+        {
+            id = user.Id,
+            name = user.Name,
+            email = user.Email,
+            apiKey = user.ApiKey,
+            role = user.Role,
+            estado = user.Estado,
+            cidade = user.Cidade,
+            bairro = user.Bairro,
+            removalAds = user.RemovalAds,
+            createdAt = user.CreatedAt,
+            isActive = user.IsActive,
+            economy
+        });
         }
+
 
         [HttpPut("me")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
@@ -326,8 +429,20 @@ namespace StarkAid.Api.Controllers.V1
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return Unauthorized();
 
-            if (request.Amount <= 0)
-                return BadRequest("Valor deve ser maior que zero.");
+            if (request.Coins <= 0)
+                return BadRequest("Quantidade de StarkCoins deve ser maior que zero.");
+
+            decimal valorBrl = request.Coins switch
+            {
+                5 => 4.90m,
+                15 => 9.90m,
+                50 => 19.90m,
+                120 => 39.90m,
+                _ => -1m
+            };
+
+            if (valorBrl < 0)
+                return BadRequest("Pacote inválido. Use 5, 15, 50 ou 120 StarkCoins.");
 
             var stripeService = HttpContext.RequestServices.GetService<StripeService>();
             var stripeSettings = HttpContext.RequestServices.GetService<IOptions<Options.StripeSettings>>();
@@ -388,7 +503,7 @@ namespace StarkAid.Api.Controllers.V1
 
             var paymentResult = await stripeService.CreateOneTimePaymentSessionAsync(
                 user,
-                request.Amount,
+                valorBrl,
                 successUrl,
                 cancelUrl
             );
@@ -401,7 +516,7 @@ namespace StarkAid.Api.Controllers.V1
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
-                Valor = request.Amount,
+                Valor = request.Coins, // guarda quantidade de coins; conversão para BRL feita acima
                 StripeSessionId = session.Id,
                 StripeCustomerId = customer.Id,
                 Status = "pendente",
@@ -702,7 +817,7 @@ namespace StarkAid.Api.Controllers.V1
                     name = s.User.Name,
                     email = s.User.Email,
                     role = s.User.Role,
-                    starkCoins = s.User.StarkCoins,
+                    starkCoins = s.User.StarkCoinBalance,
                     origem = string.Join(", ", s.Origens.Distinct())
                 }).ToList();
 
@@ -879,7 +994,7 @@ namespace StarkAid.Api.Controllers.V1
 
     public class AddFundsRequest
     {
-        public decimal Amount { get; set; }
+        public int Coins { get; set; }
     }
 
     public class SetUserOnlineRequest
@@ -928,4 +1043,5 @@ namespace StarkAid.Api.Controllers.V1
         public string HoraErro { get; set; } = string.Empty;
         public string AcaoErro { get; set; } = string.Empty;
     }
+
 }

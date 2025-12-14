@@ -151,7 +151,7 @@ public partial class BootstrapForm : Form
                     _apiService.SetToken(savedToken);
                 }
                 
-                System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Usando dados locais do usuário: {user.Name}, StarkCoins: {user.StarkCoins}");
+                System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Usando dados locais do usuário: {user.Name}, StarkCoinBalance: {user.StarkCoinBalance} SC");
             }
 
             // Verificar licença
@@ -338,8 +338,8 @@ public partial class BootstrapForm : Form
             if (user != null)
             {
                 _database.SaveUser(user);
-                _database.SaveDadosUI(user.StarkCoins);
-                System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Usuário salvo: {user.Name}, StarkCoins: {user.StarkCoins}");
+                _database.SaveDadosUI(user.StarkCoinBalance);
+                System.Diagnostics.Debug.WriteLine($"[BootstrapForm] Usuário salvo: {user.Name}, StarkCoinBalance: {user.StarkCoinBalance} SC");
             }
 
             // Buscar e salvar comandos sociais

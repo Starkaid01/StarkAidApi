@@ -2,9 +2,9 @@
 {
     internal class TokenResult
     {
-        public dynamic AccessToken { get; set; }
-        public dynamic RefreshToken { get; set; }
-        public dynamic Uid { get; set; }
-        public dynamic ExpireTime { get; set; }
+        public object AccessToken { get; set; } = default!;
+        public object RefreshToken { get; set; } = default!;
+        public object Uid { get; set; } = default!;
+        public object ExpireTime { get; set; } = default!;
     }
 }

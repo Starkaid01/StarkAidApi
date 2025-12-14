@@ -1,6 +1,7 @@
 package com.starkaid.starkaidapp.ui
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -583,11 +584,15 @@ class AgendamentosActivity : AppCompatActivity() {
                     } else {
                         val errorBody = response.errorBody()?.string()
                         Log.e("Agendamentos", "Erro ao criar agendamento ESP: ${response.code()} - $errorBody")
-                        Toast.makeText(
-                            this@AgendamentosActivity,
-                            "Erro ao criar agendamento ESP: ${response.code()}",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        if (response.code() == 400 && (errorBody?.contains("Limite de agendamentos") == true)) {
+                            mostrarDialogLimiteAgendamentos()
+                        } else {
+                            Toast.makeText(
+                                this@AgendamentosActivity,
+                                "Erro ao criar agendamento ESP: ${response.code()}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -629,11 +634,15 @@ class AgendamentosActivity : AppCompatActivity() {
                     } else {
                         val errorBody = response.errorBody()?.string()
                         Log.e("Agendamentos", "Erro ao criar agendamento Starkswitch: ${response.code()} - $errorBody")
-                        Toast.makeText(
-                            this@AgendamentosActivity,
-                            "Erro ao criar agendamento Starkswitch: ${response.code()}",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        if (response.code() == 400 && (errorBody?.contains("Limite de agendamentos") == true)) {
+                            mostrarDialogLimiteAgendamentos()
+                        } else {
+                            Toast.makeText(
+                                this@AgendamentosActivity,
+                                "Erro ao criar agendamento Starkswitch: ${response.code()}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -675,11 +684,15 @@ class AgendamentosActivity : AppCompatActivity() {
                     } else {
                         val errorBody = response.errorBody()?.string()
                         Log.e("Agendamentos", "Erro ao criar agendamento Ewelink: ${response.code()} - $errorBody")
-                        Toast.makeText(
-                            this@AgendamentosActivity,
-                            "Erro ao criar agendamento Ewelink: ${response.code()}",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        if (response.code() == 400 && (errorBody?.contains("Limite de agendamentos") == true)) {
+                            mostrarDialogLimiteAgendamentos()
+                        } else {
+                            Toast.makeText(
+                                this@AgendamentosActivity,
+                                "Erro ao criar agendamento Ewelink: ${response.code()}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -692,6 +705,20 @@ class AgendamentosActivity : AppCompatActivity() {
                     ).show()
                 }
             }
+        }
+    }
+
+    private fun mostrarDialogLimiteAgendamentos() {
+        runOnUiThread {
+            AlertDialog.Builder(this)
+                .setTitle("Limite atingido")
+                .setMessage("Limite de agendamentos do seu plano atingido. Para adicionar mais um dispositivo/agendamento, use seus créditos StarkCoins.")
+                .setPositiveButton("Usar Crédito") { _, _ ->
+                    // Levar usuário para adicionar StarkCoins
+                    startActivity(Intent(this, AddStarkcoinsActivity::class.java))
+                }
+                .setNegativeButton("Fechar", null)
+                .show()
         }
     }
 }

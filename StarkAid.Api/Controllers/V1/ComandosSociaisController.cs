@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using StarkAid.Api.DTOs.V1.SocialCommand;
 using StarkAid.Api.Entities;
 using StarkAid.Api.Services.V1.SocialCommand;
+using StarkAid.Api.Services;
 using System.Security.Claims;
 
 namespace StarkAid.Api.Controllers.V1;
@@ -31,7 +32,8 @@ public class ComandosSociaisController : ControllerBase
             return Unauthorized("Token inválido.");
 
         var comandos = await _service.GetByUserIdAsync(userId);
-        return Ok(comandos);
+        var economy = await _service.ObterEconomiaAsync(userId);
+        return Ok(new { comandos, economy });
     }
 
     [HttpPost]
@@ -50,11 +52,16 @@ public class ComandosSociaisController : ControllerBase
             if (novo == null)
                 return StatusCode(500, "Erro ao gerar variações com a IA.");
 
-            return Created("", novo);
+            var economy = await _service.ObterEconomiaAsync(userId);
+            return Created("", new { comando = novo, economy });
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("Saldo insuficiente"))
         {
             return BadRequest("Saldo insuficiente para criar o comando.");
+        }
+        catch (TokenInsufficientException tex)
+        {
+            return StatusCode(402, new { message = tex.Message, requiredCoins = tex.RequiredCoins });
         }
     }
 
@@ -70,11 +77,16 @@ public class ComandosSociaisController : ControllerBase
             var respostasAleatorias = await _service.RespsrandomAnswers(userId, resposta);
             if (respostasAleatorias == null)
                 return StatusCode(500, "Erro ao gerar variações com a IA.");
-            return Ok(respostasAleatorias);
+            var economy = await _service.ObterEconomiaAsync(userId);
+            return Ok(new { respostasAleatorias, economy });
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("Saldo insuficiente"))
         {
             return BadRequest("Saldo insuficiente para gerar variações.");
+        }
+        catch (TokenInsufficientException tex)
+        {
+            return StatusCode(402, new { message = tex.Message, requiredCoins = tex.RequiredCoins });
         }
     }
 
@@ -94,11 +106,16 @@ public class ComandosSociaisController : ControllerBase
             if (!atualizado)
                 return NotFound("Comando não encontrado ou saldo insuficiente.");
 
-            return NoContent();
+            var economy = await _service.ObterEconomiaAsync(userId);
+            return Ok(new { updated = true, economy });
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("Saldo insuficiente"))
         {
             return BadRequest("Saldo insuficiente para atualizar comando.");
+        }
+        catch (TokenInsufficientException tex)
+        {
+            return StatusCode(402, new { message = tex.Message, requiredCoins = tex.RequiredCoins });
         }
     }
 
@@ -113,6 +130,7 @@ public class ComandosSociaisController : ControllerBase
         if (!excluido)
             return NotFound("Comando não encontrado ou pertence a outro usuário.");
 
-        return NoContent();
+        var economy = await _service.ObterEconomiaAsync(userId);
+        return Ok(new { deleted = true, economy });
     }
 }

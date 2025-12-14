@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using StarkAid.Api.Data;
 using StarkAid.Api.Entities;
+using StarkAid.Api.Services;
 using System.Text.Json;
 
 namespace StarkAid.Api.Services.V1.Suporte;
@@ -134,7 +135,15 @@ public class SuporteChatService : ISuporteChatService
         }
 
         // Se não encontrou nada, usar IA para responder com contexto adequado
-        var respostaIa = await _iaService.ProcessarMensagemComContexto(userId, mensagem, origem, conversa.Id);
+        string respostaIa;
+        try
+        {
+            respostaIa = await _iaService.ProcessarMensagemComContexto(userId, mensagem, origem, conversa.Id);
+        }
+        catch (TokenInsufficientException tex)
+        {
+            return $"Saldo insuficiente para IA. Moedas necessárias: {tex.RequiredCoins}.";
+        }
         await SalvarMensagemConversa(conversa.Id, "ia", respostaIa);
         conversa.ContadorMensagens++;
         await _context.SaveChangesAsync();
@@ -335,7 +344,15 @@ public class SuporteChatService : ISuporteChatService
 
         // Se chegou aqui, nenhum problema específico foi detectado
         // Processar com IA usando contexto antes de mostrar aprendizado genérico
-        var respostaIaContexto = await _iaService.ProcessarMensagemComContexto(userId, mensagem, origem, conversaId);
+        string respostaIaContexto;
+        try
+        {
+            respostaIaContexto = await _iaService.ProcessarMensagemComContexto(userId, mensagem, origem, conversaId);
+        }
+        catch (TokenInsufficientException tex)
+        {
+            return $"Saldo insuficiente para IA. Moedas necessárias: {tex.RequiredCoins}.";
+        }
         
         // Verificar se a resposta da IA contém um comando - se sim, usar ela
         if (!string.IsNullOrEmpty(respostaIaContexto) && respostaIaContexto.Contains("[COMANDO:"))

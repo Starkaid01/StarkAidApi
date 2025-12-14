@@ -866,10 +866,12 @@
   <string name="google_flip_link_google_info">Miután összekapcsolta alkalmazásfiókját és Google-fiókját, a Google Home intelligens hangszórókkal vezérelheti a Google Assistant-tal működő eszközöket. Például azt mondhatja: \"OK, Google, kérjük, kapcsolja be a lámpát\".</string>
   <string name="google_flip_permission">• Eszközvezérlési engedély</string>
   <string name="google_flip_refuse_auth">Mégse</string>
-  <string name="google_flip_success_tip_content">OK Google, kapcsold fel a fényt\n\nOK Google, több fényt\n\nOK Google, váltsd a konyhai lámpát kékre\n\nOK Google, állítsd a fényemet 50%%-ra</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="google_flip_success_tip_content" formatted="false">OK Google, kapcsold fel a fényt\n\nOK Google, több fényt\n\nOK Google, váltsd a konyhai lámpát kékre\n\nOK Google, állítsd a fényemet 50%%-ra</string>
   <string name="google_flip_unbind_info">Az engedélyt bármikor vissza lehet vonni.</string>
   <string name="google_flip_unbind_info_goto_app">Válassza le a műveletet a Google Home mobilalkalmazás segítségével.</string>
-  <string name="google_flip_voice_demos">\"\"Kapcsold be a fürdőszobai lámpákat\"\"\n\"\"Kapcsold ki a villanyt\"\" \n \"\"Állítsd a nappali fényerejét 50%%-ra\"\" \n \"\"John irodájában világít a fény?\"\"</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="google_flip_voice_demos" formatted="false">\"\"Kapcsold be a fürdőszobai lámpákat\"\"\n\"\"Kapcsold ki a villanyt\"\" \n \"\"Állítsd a nappali fényerejét 50%%-ra\"\" \n \"\"John irodájában világít a fény?\"\"</string>
   <string name="got_it">Megértettem</string>
   <string name="goto_family_make">Nyissa meg az Otthontulajdonos hozzáadása opciót</string>
   <string name="group_add_default_name">%s csoport</string>
@@ -999,7 +1001,8 @@
   <string name="home_adv_remove_from_room">Távolítsa el a szobából</string>
   <string name="home_adv_remove_widget">Widget eltávolítása</string>
   <string name="home_adv_room_device_num">%1$d Kedvenc eszköz(ök)</string>
-  <string name="home_adv_room_hint_num">Kedvenc jelenetek: %d ｜ Kedvenc eszközök: %d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="home_adv_room_hint_num" formatted="false">Kedvenc jelenetek: %d ｜ Kedvenc eszközök: %d</string>
   <string name="home_adv_room_list_entry">Helyiség lista</string>
   <string name="home_adv_room_no_device">Nincsenek eszközök</string>
   <string name="home_adv_room_tab">Szoba</string>
@@ -1140,8 +1143,10 @@
   <string name="hs_favorite_device_center_tips">A fenti eszközök megjelennek az eszközoldalon, maximum 4 db.</string>
   <string name="hs_favorite_device_footer_tips">Az Eszközök lapon nem megjelenő eszközök</string>
   <string name="hs_favorite_device_tips">A gyakran használt eszközöket hozzáadhatja az Eszközök oldalhoz, és legfeljebb 4 eszközt jeleníthet meg.</string>
-  <string name="hs_gateway_armde_failed_ios">%d biztonsági átjáró %s sikertelen. Kérjük, ellenőrizze.</string>
-  <string name="hs_gateway_armed_failed_android">%s biztonsági átjáró %s sikertelen. Kérjük, ellenőrizze.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armde_failed_ios" formatted="false">%d biztonsági átjáró %s sikertelen. Kérjük, ellenőrizze.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armed_failed_android" formatted="false">%s biztonsági átjáró %s sikertelen. Kérjük, ellenőrizze.</string>
   <string name="hs_gateway_device">Biztonsági átjáró</string>
   <string name="hs_geo_current_location">Ez a hely</string>
   <string name="hs_go_setting">Megnyitni</string>
@@ -1177,9 +1182,11 @@
   <string name="hs_location_trade_warehouse">Raktár</string>
   <string name="hs_message_address">Cím</string>
   <string name="hs_message_area_unit">%d m²</string>
-  <string name="hs_message_dispatcher_info">%s létrehoz egy feladatot %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" formatted="false">%s létrehoz egy feladatot %s</string>
   <string name="hs_message_floor_unit">%d F</string>
-  <string name="hs_message_receiver_info">%s végrehajt egy feladatot %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" formatted="false">%s végrehajt egy feladatot %s</string>
   <string name="hs_mode_desc_allhours">Egész nap</string>
   <string name="hs_mode_desc_leaving">Távol</string>
   <string name="hs_mode_desc_no">Hatástalanítva</string>
@@ -1235,8 +1242,10 @@
   <string name="hs_service_agreement">Szolgáltatási megállapodás</string>
   <string name="hs_settings">Beállítások</string>
   <string name="hs_show_on_device_page">Megjelenik az Eszközök oldalon</string>
-  <string name="hs_smart_gateway_armed_failed_android">%s biztonsági átjáró %s sikertelen.</string>
-  <string name="hs_smart_gateway_armed_failed_ios">%d biztonsági átjáró %s sikertelen.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_android" formatted="false">%s biztonsági átjáró %s sikertelen.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_ios" formatted="false">%d biztonsági átjáró %s sikertelen.</string>
   <string name="hs_sos_alarm_tips">Biztos ebben?</string>
   <string name="hs_sos_alarmimg">Biztonsági riasztó</string>
   <string name="hs_sos_dispatch_tips">Az Ön számára nincs sürgősségi válasz.</string>
@@ -1509,7 +1518,8 @@
   <string name="ipc_cloud_download_encoding">Kódolás</string>
   <string name="ipc_cloud_download_failed">Sikertelen letöltés</string>
   <string name="ipc_cloud_download_loading">Letöltés</string>
-  <string name="ipc_cloud_download_precent">%s%% Letöltés</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" formatted="false">%s%% Letöltés</string>
   <string name="ipc_cloud_download_start">Letöltés indítása</string>
   <string name="ipc_cloud_download_start_body">Ha a kiválasztott videó több eseményt tartalmaz, azokat egy videóvá egyesítik. A letöltési folyamat során kérjük, tartsa az APP-ot előtérben.</string>
   <string name="ipc_cloud_empty_event_des">Nincs releváns eseményvideó</string>
@@ -1840,7 +1850,8 @@
   <string name="ipc_nvr_channel">Csatorna</string>
   <string name="ipc_nvr_channel_unit">csatorna</string>
   <string name="ipc_ota_update_remind">1. A frissítési folyamat során csatlakoztassa a készüléket a villamoshálózathoz.\n2. Ez a frissítés általában három-öt percig tart, amely idő alatt az eszköz nem használható.</string>
-  <string name="ipc_panel_baterrylevel">Hátralevő akkumulátorszint: %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Hátralevő akkumulátorszint: %s%%</string>
   <string name="ipc_panel_button_alarm">Riasztás</string>
   <string name="ipc_panel_button_calendar">Dátum</string>
   <string name="ipc_panel_button_cruise">Felügyelet</string>
@@ -2887,7 +2898,8 @@
   <string name="scene_family_member_go_home">Hazatérő családtag</string>
   <string name="scene_find_new_actionexecutor">A mobilalkalmazás jelenlegi verziója nem jelenít meg vagy vezérel bizonyos műveleteket. Kérjük, frissítse a mobilalkalmazást a legfrissebb verzióra.</string>
   <string name="scene_group_none">Üres csoport</string>
-  <string name="scene_humidity_tip">Száraz (0%-40%), Kellemes (40%-70%), Párás (70%-100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">Száraz (0%-40%), Kellemes (40%-70%), Párás (70%-100%)</string>
   <string name="scene_icon">Ikon</string>
   <string name="scene_if">Ha</string>
   <string name="scene_if_condition">Ha</string>
@@ -3202,7 +3214,8 @@
   <string name="thing_light_rhythm_scene_default_name">Új ritmus</string>
   <string name="thing_light_scene_batch_delete_tips">Biztos, hogy törölni szeretné a %d fényjelenet(eke)t?</string>
   <string name="thing_light_scene_batch_delete_tips_detail">A kapcsolódó ütemtervek szintén törlésre kerülnek.</string>
-  <string name="thing_light_scene_batch_delete_toast">Törölve: %d fényjelenet(ek). Sikertelen: %d fényjelenet(ek).</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_light_scene_batch_delete_toast" formatted="false">Törölve: %d fényjelenet(ek). Sikertelen: %d fényjelenet(ek).</string>
   <string name="thing_light_scene_create_all_on_all_off">Minden lámpa be/ki kapcsolása</string>
   <string name="thing_light_scene_create_all_on_all_off_tip">A különböző eszközképességek miatt előfordulhat, hogy egyes eszközök nem a várt módon működnek a csoportos vezérlésben. Bizonyos eszközök nem támogatják a minden Be/Ki funkciót. Önt időben értesítjük, miután támogatják ezt a funkciót.</string>
   <string name="thing_light_scene_delete">Fényjelenet törlése</string>
@@ -3373,7 +3386,8 @@
   <string name="thing_activator_accessory_not_connect">Ha nem tud csatlakozni a készülékhez,</string>
   <string name="thing_activator_accessory_reset_ensure">Megerősítés %s sikeres visszaállítása</string>
   <string name="thing_activator_accessory_timeout">Tartozékok hozzáadása hiba</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">Kapcsolódó %s eszközök: %d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">Kapcsolódó %s eszközök: %d</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">Kapcsolódó eszköz: %s</string>
   <string name="thing_activator_activate_stop_dialog_title">A többi kapcsolódó eszközre hatással lesz, ha a(z) \"%s\" leáll.</string>
   <string name="thing_activator_add_after_reset_device">Állítsa vissza a készüléket, adja meg a helyes jelszót, és próbálja meg újra.</string>

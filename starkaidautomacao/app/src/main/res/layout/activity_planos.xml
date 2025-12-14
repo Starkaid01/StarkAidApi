@@ -20,26 +20,51 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp"/>
 
-    <Button
-        android:id="@+id/btnContratarNovoPlano"
+    <LinearLayout
+        android:id="@+id/cardFreeBenefits"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="+ Contratar Novo Plano"
-        android:backgroundTint="@android:color/holo_blue_dark"
-        android:textColor="@android:color/white"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:background="@android:color/white"
+        android:elevation="2dp"
         app:layout_constraintTop_toBottomOf="@id/tvTitulo"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"/>
+        android:layout_marginTop="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Você está no plano Free"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="@android:color/black"/>
+
+        <TextView
+            android:id="@+id/tvFreeBenefits"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="• 1200 tokens/semana\n• Até 2 agendamentos\n• Anúncios ativados\n\nFaça upgrade para StarkAid Premium e tenha:\n• 4500 tokens/semana\n• Agendamentos ilimitados\n• Anúncios removidos\n• +50 StarkCoins todo mês"
+            android:textSize="14sp"/>
+
+        <Button
+            android:id="@+id/btnUpgradePremium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Assinar StarkAid Premium"
+            android:backgroundTint="@android:color/holo_blue_dark"
+            android:textColor="@android:color/white"/>
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/planosRecyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:padding="8dp"
-        app:layout_constraintTop_toBottomOf="@id/btnContratarNovoPlano"
+        app:layout_constraintTop_toBottomOf="@id/cardFreeBenefits"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -53,7 +78,7 @@
         android:gravity="center"
         android:padding="32dp"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/btnContratarNovoPlano"
+        app:layout_constraintTop_toBottomOf="@id/cardFreeBenefits"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">

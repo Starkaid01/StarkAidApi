@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using StarkAid.Api.Data;
 using StarkAid.Api.Entities;
+using StarkAid.Api.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,12 +16,19 @@ namespace StarkAid.Api.Services.V1.Devices
         private readonly DeviceService _deviceService;
         private readonly IMqttClientService _mqttClient;
         private readonly ILogger<AgendamentoService> _logger;
+        private readonly PlanoLimitesService _planoLimites;
 
-        public AgendamentoService(AppDbContext context, IMqttClientService mqttClient, DeviceService deviceService, ILogger<AgendamentoService> logger)
+        public AgendamentoService(
+            AppDbContext context,
+            IMqttClientService mqttClient,
+            DeviceService deviceService,
+            PlanoLimitesService planoLimites,
+            ILogger<AgendamentoService> logger)
         {
             _context = context;
             _mqttClient = mqttClient;
             _deviceService = deviceService;
+            _planoLimites = planoLimites;
             _logger = logger;
         }
 
@@ -54,6 +62,8 @@ namespace StarkAid.Api.Services.V1.Devices
 
         public async Task<Agendamento> CreateAsync(Guid userId, Guid deviceId, DateTimeOffset agendadoPara, string comando, string? recorrencia)
         {
+            await ValidarLimiteAgendamentos(userId);
+
             var agendamento = new Agendamento
             {
                 Id = Guid.NewGuid(),
@@ -74,6 +84,8 @@ namespace StarkAid.Api.Services.V1.Devices
         // Mantém compatibilidade com código existente
         public async Task<Agendamento> CriarAsync(Guid userId, Guid deviceId, DateTime agendadoPara, string comando, string? recorrencia = null)
         {
+            await ValidarLimiteAgendamentos(userId);
+
             var agendamentoUtc = agendadoPara.Kind == DateTimeKind.Utc
                 ? agendadoPara
                 : agendadoPara.ToUniversalTime();
@@ -97,6 +109,8 @@ namespace StarkAid.Api.Services.V1.Devices
         // Criar agendamento para dispositivo ESP
         public async Task<Agendamento> CriarAgendamentoEspAsync(Guid userId, Guid dispositivoEspId, DateTime data, int hora, int minuto, string recorrencia)
         {
+            await ValidarLimiteAgendamentos(userId);
+
             // Criar DateTime local e converter para DateTimeOffset UTC
             var dataHoraLocal = new DateTime(data.Year, data.Month, data.Day, hora, minuto, 0, DateTimeKind.Local);
             var timeZone = TimeZoneInfo.Local;
@@ -123,6 +137,8 @@ namespace StarkAid.Api.Services.V1.Devices
         // Criar agendamento para dispositivo Starkswitch
         public async Task<Agendamento> CriarAgendamentoStarkswitchAsync(Guid userId, Guid deviceId, string acao, DateTime data, int hora, int minuto, string recorrencia)
         {
+            await ValidarLimiteAgendamentos(userId);
+
             // Criar DateTime local e converter para DateTimeOffset UTC
             var dataHoraLocal = new DateTime(data.Year, data.Month, data.Day, hora, minuto, 0, DateTimeKind.Local);
             var timeZone = TimeZoneInfo.Local;
@@ -149,6 +165,8 @@ namespace StarkAid.Api.Services.V1.Devices
         // Criar agendamento para dispositivo Ewelink
         public async Task<Agendamento> CriarAgendamentoEwelinkAsync(Guid userId, string ewelinkDeviceId, string acao, DateTime data, int hora, int minuto, string recorrencia)
         {
+            await ValidarLimiteAgendamentos(userId);
+
             // Criar DateTime local e converter para DateTimeOffset UTC
             var dataHoraLocal = new DateTime(data.Year, data.Month, data.Day, hora, minuto, 0, DateTimeKind.Local);
             var timeZone = TimeZoneInfo.Local;
@@ -305,6 +323,18 @@ namespace StarkAid.Api.Services.V1.Devices
         {
             _context.Agendamentos.Update(agendamento);
             await _context.SaveChangesAsync();
+        }
+
+        private async Task ValidarLimiteAgendamentos(Guid userId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId)
+                ?? throw new InvalidOperationException("Usuário não encontrado.");
+
+            var count = await _context.Agendamentos.CountAsync(a => a.UserId == userId);
+            if (!_planoLimites.PodeCriarAgendamento(user, count))
+            {
+                throw new InvalidOperationException("Limite de agendamentos atingido para o plano atual.");
+            }
         }
     }
 }

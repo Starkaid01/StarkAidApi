@@ -90,6 +90,7 @@ import com.starkaid.starkaidapp.models.ComandoSocialDao
 import com.starkaid.starkaidapp.models.ComandoSocialEntity
 import com.starkaid.starkaidapp.models.Device
 import com.starkaid.starkaidapp.models.HubListener
+import com.starkaid.starkaidapp.models.EconomicPayload
 import com.starkaid.starkaidapp.services.ApiClient
 import com.starkaid.starkaidapp.services.AuthService
 import com.starkaid.starkaidapp.services.CommandApi
@@ -288,7 +289,16 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     private lateinit var tvStarkcoins: TextView
     private lateinit var recogActive: TextView //recognition_active
 
+    private lateinit var tvPlanLimitsTitle: TextView
+    private lateinit var tvPlanFreeLine: TextView
+    private lateinit var tvPlanPremiumLine: TextView
+
     private var starkCoins: Float = 0.0F
+    private var saldoStarkcoinsInt: Int = 0
+    private var iaLimitReached: Boolean = false
+    private var aguardandoLiberarConsumoStarkcoins: Boolean = false
+    private var iaUsandoStarkCoins: Boolean = false
+    private var isSwitchIaChangingProgrammatically: Boolean = false
     private var recogInitialized = false
 
     private lateinit var switchSpotify: SwitchCompat
@@ -340,6 +350,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         try {
 
             setContentView(R.layout.activity_main)
+            logNetworkEnvironment()
 
 
             setupViews()
@@ -361,6 +372,10 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             lastResumeTime = System.currentTimeMillis()
             tvStarkcoins = findViewById(R.id.tvStarkcoins)
             recogActive = findViewById(R.id.recognition_active)
+
+            tvPlanLimitsTitle = findViewById(R.id.tvPlanLimitsTitle)
+            tvPlanFreeLine = findViewById(R.id.tvPlanFreeLine)
+            tvPlanPremiumLine = findViewById(R.id.tvPlanPremiumLine)
 
             switchSpotify = findViewById(R.id.switchSpotify)
             switchWhatsapp = findViewById(R.id.switchWhatsapp)
@@ -588,13 +603,31 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
             switchIa.isChecked = isIaEnabled
             switchIa.setOnCheckedChangeListener { _, isChecked ->
+                // Se o switch está sendo alterado programaticamente, não resetar flags
+                if (isSwitchIaChangingProgrammatically) {
+                    Log.d("TestandoIA", "⚠️ Switch alterado programaticamente - ignorando listener")
+                    return@setOnCheckedChangeListener
+                }
+                
+                // Se atingiu limite, perguntar antes de reativar com StarkCoins
+                if (isChecked && iaLimitReached) {
+                    isSwitchIaChangingProgrammatically = true
+                    switchIa.isChecked = false
+                    isSwitchIaChangingProgrammatically = false
+                    mostrarDialogLimiteIa()
+                    return@setOnCheckedChangeListener
+                }
+
                 prefs.edit().putBoolean("ia_enabled", isChecked).apply()
                 if (isChecked) {
-                    //
                     lifecycleScope.launch {
                         chamarIaSuper("ativar inteligencia", true)
                     }
                 } else {
+                    Log.d("TestandoIA", "⚠️ Switch IA desativado manualmente pelo usuário - resetando flags")
+                    iaLimitReached = false
+                    aguardandoLiberarConsumoStarkcoins = false
+                    iaUsandoStarkCoins = false
                     speakTextFromService("Inteligencia desativada.")
                     Toast.makeText(this, "IA desativada", Toast.LENGTH_SHORT).show()
                 }
@@ -1139,7 +1172,9 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                         val errorBody = response.errorBody()?.string()
                         Log.e("EWE_MAIN", "Erro ao carregar dispositivos: ${response.code()} - $errorBody")
                         if (showErrors) {
-                        Toast.makeText(this@MainActivity, "Erro ao carregar dispositivos: ${response.code()}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this@MainActivity, "Erro ao carregar dispositivos: ${response.code()}", Toast.LENGTH_LONG).show()
+                        } else {
+                            Unit
                         }
                     }
                 }
@@ -1147,7 +1182,9 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                 Log.e("EWE_MAIN", "Erro ao carregar dispositivos", e)
                 withContext(Dispatchers.Main) {
                     if (showErrors) {
-                    Toast.makeText(this@MainActivity, "Erro: ${e.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MainActivity, "Erro: ${e.message}", Toast.LENGTH_LONG).show()
+                    } else {
+                        Unit
                     }
                 }
             }
@@ -2546,14 +2583,16 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                 
                 if (response.isSuccessful && response.body() != null) {
                     val user = response.body()!!
-                    val saldo = user.starkCoins
-                starkCoins = saldo.toFloat()
+                    val economy = user.economy ?: EconomicPayload()
+                    val saldo = economy.balance().toDouble()
+                    starkCoins = saldo.toFloat()
 
-                runOnUiThread {
-                    tvStarkcoins.text = String.format("%.2f SC", saldo)
-                    Log.d("SaldoUI", "Saldo atualizado na UI: $saldo SC")
-                }
-            } else {
+                    runOnUiThread {
+                        tvStarkcoins.text = String.format("%.0f SC", saldo)
+                        Log.d("SaldoUI", "Saldo atualizado na UI: $saldo SC")
+                        updatePlanLimitsCard(economy)
+                    }
+                } else {
                     val errorBody = response.errorBody()?.string() ?: "Erro desconhecido"
                     Log.e("MainActivity", "Erro ao buscar saldo: ${response.code()} - $errorBody")
                 runOnUiThread {
@@ -2635,6 +2674,31 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                 Log.e("UnityAds", "Erro ao verificar planos ativos", e)
             }
         }
+    }
+
+    private fun logNetworkEnvironment() {
+        // Proxy padrão do Android
+        val host = android.net.Proxy.getDefaultHost()
+        val port = android.net.Proxy.getDefaultPort()
+        Log.i("NetworkEnv", "Default proxy: $host:$port")
+
+        // Proxies via system properties (http/https)
+        val httpProxy = "${System.getProperty("http.proxyHost")}:${System.getProperty("http.proxyPort")}"
+        val httpsProxy = "${System.getProperty("https.proxyHost")}:${System.getProperty("https.proxyPort")}"
+        Log.i("NetworkEnv", "System proxy http: $httpProxy, https: $httpsProxy")
+
+        // Conectividade e VPN
+        val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        val active = cm.activeNetwork
+        val caps = cm.getNetworkCapabilities(active)
+        val transports = mutableListOf<String>()
+        if (caps != null) {
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) transports.add("WIFI")
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) transports.add("CELLULAR")
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) transports.add("ETHERNET")
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) transports.add("VPN")
+        }
+        Log.i("NetworkEnv", "Active transports: ${transports.joinToString()}")
     }
 
     private fun initAds(context: Context) {
@@ -2880,6 +2944,55 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                             if(!it.isNotEmpty())
                                 return
 
+                            Log.d("TestandoIA", "[speechReceiver] Texto recebido: '$it', aguardandoLiberarConsumoStarkcoins: $aguardandoLiberarConsumoStarkcoins")
+
+                            if (aguardandoLiberarConsumoStarkcoins) {
+                                // Remover prefixos "parcial:" e "speaking:" antes de processar
+                                var textToProcess = it
+                                if (it.lowercase().contains("parcial:"))
+                                    textToProcess = it.replace("parcial:", "", ignoreCase = true)
+                                if (it.lowercase().contains("speaking:"))
+                                    textToProcess = textToProcess.replace("speaking:", "", ignoreCase = true)
+                                
+                                val normalized = cleanText(textToProcess)
+                                Log.d("TestandoIA", "[speechReceiver] Verificando resposta. Texto original: '$it', processado: '$textToProcess', normalizado: '$normalized'")
+                                Log.d("TestandoIA", "[speechReceiver] isPositiveAnswer: ${isPositiveAnswer(normalized)}, isNegativeAnswer: ${isNegativeAnswer(normalized)}")
+                                
+                                if (isPositiveAnswer(normalized)) {
+                                    Log.d("TestandoIA", "[speechReceiver] ✅ Resposta POSITIVA! Reativando IA.")
+                                    aguardandoLiberarConsumoStarkcoins = false
+                                    if (saldoStarkcoinsInt > 0) {
+                                        iaLimitReached = false
+                                        iaUsandoStarkCoins = true
+                                        runOnUiThread {
+                                            isSwitchIaChangingProgrammatically = true
+                                            switchIa.isChecked = true
+                                            prefs.edit().putBoolean("ia_enabled", true).apply()
+                                            isSwitchIaChangingProgrammatically = false
+                                        }
+                                        speakTextFromService("Ok, inteligência reativada usando StarkCoins.")
+                                    } else {
+                                        speakTextFromService("Saldo insuficiente. Adicione StarkCoins e tente novamente.")
+                                    }
+                                    return
+                                }
+                                if (isNegativeAnswer(normalized)) {
+                                    Log.d("TestandoIA", "[speechReceiver] ✅ Resposta NEGATIVA! Desativando IA.")
+                                    aguardandoLiberarConsumoStarkcoins = false
+                                    iaLimitReached = true
+                                    iaUsandoStarkCoins = false // Garantir que flag está false quando usuário recusa
+                                    runOnUiThread {
+                                        isSwitchIaChangingProgrammatically = true
+                                        switchIa.isChecked = false
+                                        prefs.edit().putBoolean("ia_enabled", false).apply()
+                                        isSwitchIaChangingProgrammatically = false
+                                    }
+                                    speakTextFromService("Ok, inteligência não será ativada.")
+                                    return
+                                } else {
+                                    Log.d("TestandoIA", "[speechReceiver] ⚠️ Resposta não reconhecida. Texto: '$normalized'")
+                                }
+                            }
 
                             if(confirmContato.get()){
                                 if(cleanText(it).contains("sim")
@@ -2924,9 +3037,11 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                         else{
                             // Só mostrar "Dormindo" se o reconhecimento estiver ativo
                             if (isListening) {
-                            runOnUiThread {
-                                tvSpeechText.text = "Dormindo...(Chame pelo Assistente)"
+                                runOnUiThread {
+                                    tvSpeechText.text = "Dormindo...(Chame pelo Assistente)"
                                 }
+                            } else {
+                                Unit
                             }
                         }
 
@@ -3094,26 +3209,27 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         val connectionStatus = findViewById<TextView>(R.id.connectionStatus)
         val connectionStrength = findViewById<TextView>(R.id.connectionStrength)
 
-        // Simulação de status de conexão (substitua com sua lógica real)
-        val isConnected = checkInternetConnection()
-        val signalStrength = calculateSignalStrength()
+        CoroutineScope(Dispatchers.IO).launch {
+            val isOnline = isOnline()
+            var apiOk = false
+            try {
+                val retrofit = ApiClient.getClient(this@MainActivity)
+                val api = retrofit.create(UsersApi::class.java)
+                val resp = api.getCurrentUser()
+                apiOk = resp.isSuccessful
+            } catch (_: Exception) {
+                apiOk = false
+            }
 
-        runOnUiThread {
-            connectionStatus.text = if (isConnected) "●" else "○"
-            connectionStatus.setTextColor(if (isConnected) getColor(R.color.green_active) else getColor(R.color.red_inactive))
+            val ok = isOnline && apiOk
+            val strength = if (ok) 100 else 0
 
-            connectionStrength.text = if (isConnected) "$signalStrength%" else "0%"
+            runOnUiThread {
+                connectionStatus.text = if (ok) "●" else "○"
+                connectionStatus.setTextColor(if (ok) getColor(R.color.green_active) else getColor(R.color.red_inactive))
+                connectionStrength.text = "$strength%"
+            }
         }
-    }
-
-    private fun checkInternetConnection(): Boolean {
-        // Implemente sua lógica real de verificação de conexão aqui
-        return isOnline()
-    }
-
-    private fun calculateSignalStrength(): Int {
-        // Implemente sua lógica real de cálculo de força de sinal aqui
-        return (80..98).random()
     }
 
 
@@ -4079,18 +4195,62 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         val currentTime = System.currentTimeMillis()
 
 
-        var cleanText = cleanText(result).trim()
-
-        if (!result.lowercase().contains("parcial:"))
-            cleanText = result.replace("parcial:","")
-        if (!result.lowercase().contains("speaking:"))
-            cleanText = result.replace("speaking:","")
-
-
-        // 🔹 Converte tudo pra minúsculas
-
+        // Remover prefixos "parcial:" e "speaking:" ANTES de processar o texto
+        var textToProcess = result
+        if (result.lowercase().contains("parcial:"))
+            textToProcess = result.replace("parcial:", "", ignoreCase = true)
+        if (result.lowercase().contains("speaking:"))
+            textToProcess = textToProcess.replace("speaking:", "", ignoreCase = true)
+        
+        // Agora processar o texto limpo
+        var cleanText = cleanText(textToProcess).trim()
 
         Log.d("TestandoIA", "Comando reconhecido processSpeechResult: $cleanText")
+        Log.d("TestandoIA", "aguardandoLiberarConsumoStarkcoins: $aguardandoLiberarConsumoStarkcoins")
+        
+        // Verificar se está aguardando resposta sobre usar StarkCoins (PRIORIDADE MÁXIMA)
+        if (aguardandoLiberarConsumoStarkcoins) {
+            Log.d("TestandoIA", "✅ Verificando resposta sobre StarkCoins. Texto original: '$result', limpo: '$cleanText'")
+            val normalized = cleanText
+            val isPositive = isPositiveAnswer(normalized)
+            val isNegative = isNegativeAnswer(normalized)
+            Log.d("TestandoIA", "isPositiveAnswer: $isPositive, isNegativeAnswer: $isNegative")
+            
+            if (isPositive) {
+                Log.d("TestandoIA", "✅ Resposta POSITIVA detectada! Reativando IA com StarkCoins.")
+                aguardandoLiberarConsumoStarkcoins = false
+                if (saldoStarkcoinsInt > 0) {
+                    iaLimitReached = false
+                    iaUsandoStarkCoins = true
+                    runOnUiThread {
+                        isSwitchIaChangingProgrammatically = true
+                        switchIa.isChecked = true
+                        prefs.edit().putBoolean("ia_enabled", true).apply()
+                        isSwitchIaChangingProgrammatically = false
+                    }
+                    speakTextFromService("Ok, inteligência reativada usando StarkCoins.")
+                } else {
+                    speakTextFromService("Saldo insuficiente. Adicione StarkCoins e tente novamente.")
+                }
+                return true
+            }
+            if (isNegative) {
+                Log.d("TestandoIA", "✅ Resposta NEGATIVA detectada! Desativando IA e resetando flags.")
+                aguardandoLiberarConsumoStarkcoins = false
+                iaLimitReached = true
+                iaUsandoStarkCoins = false // Garantir que flag está false quando usuário recusa
+                runOnUiThread {
+                    isSwitchIaChangingProgrammatically = true
+                    switchIa.isChecked = false
+                    prefs.edit().putBoolean("ia_enabled", false).apply()
+                    isSwitchIaChangingProgrammatically = false
+                }
+                speakTextFromService("Ok, inteligência não será ativada.")
+                return true
+            } else {
+                Log.d("TestandoIA", "⚠️ Resposta não reconhecida como positiva nem negativa. Texto normalizado: '$normalized'")
+            }
+        }
         
         // Se assistente está dormindo (escutando = false), não processar nenhum comando
         // (exceto o nome do assistente que já foi tratado no speechReceiver)
@@ -5619,14 +5779,96 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         }
 
         return try {
-            val dto = IaRequest(pergunta, person, ultimoContextoUser, ultimoContextoIA)
+            // Se o usuário autorizou uso de StarkCoins, enviar flag para o backend
+            val dto = IaRequest(pergunta, person, ultimoContextoUser, ultimoContextoIA, iaUsandoStarkCoins)
             val response = api.chamarSuperIA(dto)
+
+            if (response.code() == 402) {
+                var requiredCoins: Int? = null
+                try {
+                    val errJson = response.errorBody()?.string()
+                    if (!errJson.isNullOrBlank()) {
+                        val obj = JSONObject(errJson)
+                        if (obj.has("requiredCoins")) requiredCoins = obj.optInt("requiredCoins")
+                    }
+                } catch (_: Exception) { }
+
+                // Se já está usando StarkCoins e recebeu 402, significa que o saldo acabou
+                if (iaUsandoStarkCoins) {
+                    Log.d("TestandoIA", "⚠️ Saldo StarkCoins acabou - resetando flags")
+                    iaLimitReached = true
+                    iaUsandoStarkCoins = false
+                    aguardandoLiberarConsumoStarkcoins = false
+                    runOnUiThread {
+                        isSwitchIaChangingProgrammatically = true
+                        switchIa.isChecked = false
+                        prefs.edit().putBoolean("ia_enabled", false).apply()
+                        isSwitchIaChangingProgrammatically = false
+                    }
+                    speakTextFromService("Seu limite foi atingido para continuar usando a inteligência adicione fundos a sua conta.")
+                    return false
+                }
+
+                // Primeiro 402: perguntar se quer usar StarkCoins
+                iaLimitReached = true
+                aguardandoLiberarConsumoStarkcoins = true
+                Log.d("TestandoIA", "🔴 402 recebido - Flag aguardandoLiberarConsumoStarkcoins SETADA = $aguardandoLiberarConsumoStarkcoins")
+                runOnUiThread {
+                    isSwitchIaChangingProgrammatically = true // Marcar que estamos alterando programaticamente
+                    switchIa.isChecked = false
+                    prefs.edit().putBoolean("ia_enabled", false).apply()
+                    isSwitchIaChangingProgrammatically = false // Desmarcar após alterar
+                    // Verificar novamente após atualizar UI
+                    Log.d("TestandoIA", "🔴 [UI Thread] Flag aguardandoLiberarConsumoStarkcoins após UI update = $aguardandoLiberarConsumoStarkcoins")
+                }
+                val msg = if (requiredCoins != null && requiredCoins > 0)
+                    "Seu limite foi atingido. Precisamos de $requiredCoins StarkCoins para continuar. Deseja usar seu saldo?"
+                else
+                    "Seu limite foi atingido. Deseja usar seu saldo em StarkCoins para continuar usando a inteligência?"
+                speakTextFromService(msg)
+                // Verificar novamente após speakTextFromService
+                Log.d("TestandoIA", "🔴 [Após speakText] Flag aguardandoLiberarConsumoStarkcoins = $aguardandoLiberarConsumoStarkcoins")
+                return false
+            }
 
             if (response.isSuccessful) {
                 val iaResponse = response.body()
                 if (iaResponse != null) {
-                    val resposta = iaResponse.texto
-                    val novoSaldo = iaResponse.novoSaldo
+                        val resposta = iaResponse.resultado?.texto ?: ""
+                        if (resposta.isBlank()) {
+                            Log.d("TestandoIA", "⚠️ Resposta IA vazia - resetando flags")
+                            iaLimitReached = false
+                            aguardandoLiberarConsumoStarkcoins = false
+                            ultimaRespostaIA = ""
+                            return false
+                        }
+                        val economy = iaResponse.economy ?: EconomicPayload(
+                            planType = iaResponse.planType ?: "Free",
+                            starkCoinBalance = iaResponse.starkCoinBalance ?: 0,
+                            tokensConsumidosSemana = iaResponse.tokensConsumidosSemana ?: 0,
+                            tokensSemanaMax = iaResponse.tokensSemanaMax ?: 0,
+                            tokensRestantes = iaResponse.tokensRestantes ?: 0,
+                            adsEnabled = iaResponse.adsEnabled ?: true,
+                            agendamentosMax = iaResponse.agendamentosMax ?: 0,
+                            agendamentosRestantes = iaResponse.agendamentosMax ?: 0,
+                            rate = iaResponse.rate ?: 100
+                        )
+                        saldoStarkcoinsInt = economy.balance()
+                        updatePlanLimitsCard(economy)
+                        iaLimitReached = false
+                        Log.d("TestandoIA", "⚠️ Resposta IA bem-sucedida - resetando aguardandoLiberarConsumoStarkcoins")
+                        aguardandoLiberarConsumoStarkcoins = false
+
+                        // Se o saldo zerou e estava usando StarkCoins, desativar
+                        if (iaUsandoStarkCoins && saldoStarkcoinsInt <= 0) {
+                            iaUsandoStarkCoins = false
+                            runOnUiThread {
+                                switchIa.isChecked = false
+                                prefs.edit().putBoolean("ia_enabled", false).apply()
+                            }
+                            speakTextFromService("Seu saldo de StarkCoins acabou. Adicione fundos para continuar usando a inteligência.")
+                        }
+                    val novoSaldo = economy?.balance() ?: iaResponse.novoSaldo
                     Log.d("TestandoIA", "iasuper: $resposta")
                     // 🔹 Verifica saldo insuficiente
                     if (resposta.contains("saldo insuficiente", ignoreCase = true)) {
@@ -5655,7 +5897,12 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
 
                         // 🔹 Atualiza UI do saldo
-                        novoSaldo?.let { atualizarSaldoUI(it) }
+                        novoSaldo?.let { atualizarSaldoUI(it.toDouble()) }
+                        economy?.let {
+                            runOnUiThread {
+                                tvStarkcoins.text = "${it.balance()} SC"
+                            }
+                        }
 
                         true
                     }
@@ -5973,18 +6220,92 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     val description = weatherArray.getJSONObject(0).getString("description")
                     val temp = json.getJSONObject("main").getDouble("temp")
                     val result = "O tempo em $cityName está $description com ${temp.toInt()} graus."
-                    
+
                     // Atualizar UI com dados do clima
                     runOnUiThread {
                         updateWeatherUI(cityName, temp.toInt(), description)
                     }
-                    
+
                     callback(result)
                 } else {
                     callback(null)
                 }
             }
         })
+    }
+
+    private fun isPositiveAnswer(text: String): Boolean {
+        return text.contains("sim") ||
+                text.contains("pode sim") ||
+                text.contains("pode usar") ||
+                text.contains("claro") ||
+                text.contains("ativar") ||
+                text.contains("reativar")
+    }
+
+    private fun isNegativeAnswer(text: String): Boolean {
+        return text.contains("nao") ||
+                text.contains("não") ||
+                text.contains("pode nao") ||
+                text.contains("não precisa") ||
+                text.contains("não obrigado") ||
+                text.contains("quero nao") ||                
+                text.contains("não quero") ||
+                text.contains("nao quero") ||
+                text.contains("desativar") ||
+                text.contains("cancelar")
+    }
+
+    private fun updatePlanLimitsCard(economy: EconomicPayload) {
+        val activeColor = ContextCompat.getColor(this, R.color.jarvis_cyan)
+        val inactiveColor = ContextCompat.getColor(this, R.color.jarvis_text_secondary)
+        val primaryColor = ContextCompat.getColor(this, R.color.jarvis_text_primary)
+
+        val planRaw = economy.planType?.trim() ?: ""
+        val role = sessionManager.fetchUserRole()?.trim() ?: ""
+        val plan = planRaw.lowercase()
+        val roleLower = role.lowercase()
+        // Considera Premium se planType indicar premium/nivel2/removal ads, se agendamentos for ilimitado, ou se role for UserNivel2
+        val isPremium = plan.contains("premium") ||
+                plan.contains("nivel2") ||
+                plan.contains("removal") ||
+                economy.agendamentosMax == -1 ||
+                roleLower.contains("nivel2")
+
+        runOnUiThread {
+            tvPlanLimitsTitle.text = if (isPremium) "Plano atual: Premium" else "Plano atual: Free"
+
+            tvPlanPremiumLine.setTextColor(if (isPremium) activeColor else inactiveColor)
+            tvPlanPremiumLine.setTypeface(null, if (isPremium) Typeface.BOLD else Typeface.NORMAL)
+
+            tvPlanFreeLine.setTextColor(if (!isPremium) activeColor else inactiveColor)
+            tvPlanFreeLine.setTypeface(null, if (!isPremium) Typeface.BOLD else Typeface.NORMAL)
+
+            // título em cor primária
+            tvPlanLimitsTitle.setTextColor(primaryColor)
+        }
+    }
+    private fun mostrarDialogLimiteIa() {
+        runOnUiThread {
+            AlertDialog.Builder(this)
+                .setTitle("Limite atingido")
+                .setMessage("Você atingiu os limites do seu plano. Deseja usar seu saldo de StarkCoins para continuar usando a Inteligência?")
+                .setPositiveButton("Usar StarkCoins para Inteligência") { _, _ ->
+                    iaLimitReached = false
+                    aguardandoLiberarConsumoStarkcoins = false
+                    iaUsandoStarkCoins = true
+                    switchIa.isChecked = true
+                    prefs.edit().putBoolean("ia_enabled", true).apply()
+                    speakTextFromService("IA reativada usando StarkCoins.")
+                }
+                .setNegativeButton("Cancelar") { _, _ ->
+                    iaLimitReached = true
+                    switchIa.isChecked = false
+                    prefs.edit().putBoolean("ia_enabled", false).apply()
+                    speakTextFromService("IA permanece desativada.")
+                }
+                .show()
+        }
     }
 
     // Função para atualizar UI do card de clima

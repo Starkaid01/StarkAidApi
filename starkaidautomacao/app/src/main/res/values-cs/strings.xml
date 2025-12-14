@@ -645,7 +645,8 @@
   <string name="ipc_motion_time_unit">Minuta</string>
   <string name="ipc_motion_time_unit_mins">Minuta</string>
   <string name="ipc_motion_tracking_settings">Sledování pohybu</string>
-  <string name="ipc_panel_baterrylevel">Zbývající životnost baterie: %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Zbývající životnost baterie: %s%%</string>
   <string name="ipc_panel_button_alarm">Alarm</string>
   <string name="ipc_panel_button_calendar">Datum</string>
   <string name="ipc_panel_button_cruise">Hlídka</string>

@@ -104,7 +104,8 @@
   <string name="bleconfig_ble_scan_tip">Proses pelacakan akan membutuhkan 2 menit, mohon jangan melakukan apa-apa.</string>
   <string name="bleconfig_open_gps_tip">Bluetooh biasanya digunakan untuk skenario yang berhubungan dengan lokasi. Aktifkan GPS (positioning) untuk dapat menggunakan layanan ini.</string>
   <string name="bleconfig_scan_know_mesh_tip">%1$s perangkat seperti %2$s</string>
-  <string name="bleconfig_scan_know_mesh_tip_android">%2$s perangkat seperti% 1 $ s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+  <string name="bleconfig_scan_know_mesh_tip_android" formatted="false">%2$s perangkat seperti% 1 $ s</string>
   <string name="bleconfig_scan_unknow_mesh_tip">%d New Bluetooth Mesh Device(s)</string>
   <string name="bluemesh_config_fail_tip">Gagal menambahkan perangkat %s. Coba tambahkan lagi</string>
   <string name="bluemesh_deal_with">Diproses%s</string>
@@ -754,7 +755,8 @@
   <string name="ipc_notifi_center_all">Semua</string>
   <string name="ipc_notifi_center_select_all">Pilih semua</string>
   <string name="ipc_ota_update_remind">1. Pastikan perangkat anda terkoneksi dengan sumber listrik  selama proses upgrade.\n2. Upgrade ini akan membutuhkan waktu 3 sampai 5 menit. Pada masa ini, perangkat anda tidak bisa dipakai.</string>
-  <string name="ipc_panel_baterrylevel">Sisa baterai:%s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Sisa baterai:%s%%</string>
   <string name="ipc_panel_button_alarm">Alarm</string>
   <string name="ipc_panel_button_calendar">Tanggal</string>
   <string name="ipc_panel_button_cruise">Menjelajah</string>
@@ -1359,7 +1361,8 @@
   <string name="scene_face_detect">Pengenalan wajah</string>
   <string name="scene_find_new_actionexecutor">Versi aplikasi yang ssekarang tidak dapat menunjukkan atau menjalankan perintah. Harap perbarui ke versi terbaru</string>
   <string name="scene_group_none">Grup kosong</string>
-  <string name="scene_humidity_tip">Kering (0%-40%), Nyaman (40%-70%), Lembab (70%-100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">Kering (0%-40%), Nyaman (40%-70%), Lembab (70%-100%)</string>
   <string name="scene_is_deleting">Menghapus</string>
   <string name="scene_is_validating">Memeriksa</string>
   <string name="scene_local_manual">Skenario lokal</string>

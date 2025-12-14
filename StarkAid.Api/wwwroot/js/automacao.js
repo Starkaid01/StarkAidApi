@@ -1,15 +1,20 @@
-// Usar API_BASE_URL do config.js se disponível, senão usar window.location.origin
-const API_BASE_URL = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : window.location.origin;
+// Resolver API base; permite override por config.js ou app-config do backend
+let API_BASE = (typeof window !== 'undefined' && typeof window.API_BASE_URL !== 'undefined')
+    ? window.API_BASE_URL
+    : (typeof window !== 'undefined' ? window.location.origin : '');
+let HUB_BASE = API_BASE;
+let WS_BASE = API_BASE.replace(/^http/, 'ws');
 
 let currentUser = null;
 let authToken = null;
 let refreshToken = null;
 let currentUserIdForDetails = null;
 let userDetailsCache = null; // Cache para dados do usuário atual
+// let transcribeSocket = null; // Removido - Transcrição em tempo real não será mais usada no frontend HTML
 
 // Configurações do app (carregadas do endpoint)
 let appConfig = {
-    apiBaseUrl: API_BASE_URL,
+    apiBaseUrl: API_BASE,
     spotify: {
         clientId: null,
         clientSecret: null,
@@ -25,7 +30,7 @@ let appConfig = {
 // Carregar configuração do app na inicialização
 (async function loadAppConfig() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/Config/app-config`, {
+        const response = await fetch(`${API_BASE}/api/v1/Config/app-config`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -35,7 +40,7 @@ let appConfig = {
         if (response.ok) {
             const config = await response.json();
             appConfig = {
-                apiBaseUrl: config.apiBaseUrl || API_BASE_URL,
+                apiBaseUrl: config.apiBaseUrl || API_BASE,
                 spotify: {
                     clientId: config.spotify?.clientId || null,
                     clientSecret: config.spotify?.clientSecret || null,
@@ -47,6 +52,7 @@ let appConfig = {
                     redirectUri: config.ewelink?.redirectUri || null
                 }
             };
+            resolveApiBase(config.apiBaseUrl);
             console.log('Configuração do app carregada:', { 
                 apiBaseUrl: appConfig.apiBaseUrl,
                 hasSpotify: !!appConfig.spotify.clientId,
@@ -62,6 +68,16 @@ let appConfig = {
         console.warn('Usando valores padrão devido ao erro');
     }
 })();
+
+function resolveApiBase(configBase) {
+    const origin = (typeof window !== 'undefined') ? window.location.origin : '';
+    // Em dev (localhost ou 192.168.x.x), prioriza same-origin para evitar CORS
+    const isDevHost = origin.includes('localhost') || origin.includes('192.168.');
+    const base = isDevHost ? origin : (configBase || API_BASE);
+    API_BASE = base;
+    HUB_BASE = base;
+    WS_BASE = base.replace(/^http/, 'ws');
+}
 
 // Função para fazer requisições com refresh automático de token
 async function fetchWithAuth(url, options = {}) {
@@ -79,7 +95,7 @@ async function fetchWithAuth(url, options = {}) {
     if (response.status === 401 && refreshToken) {
         console.log('Token expirado, tentando refresh...');
         try {
-            const refreshResponse = await fetch(`${API_BASE_URL}/api/v1/Auth/refresh-token`, {
+            const refreshResponse = await fetch(`${API_BASE}/api/v1/Auth/refresh-token`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ refreshToken })
@@ -108,7 +124,26 @@ async function fetchWithAuth(url, options = {}) {
         }
     }
 
+    // Tratar pagamento requerido (402) e exibir CTA
+    if (response.status === 402) {
+        try {
+            const body = await response.clone().json().catch(() => ({}));
+            showPaymentRequiredBanner(body);
+        } catch (err) {
+            console.warn('Falha ao ler payload 402:', err);
+        }
+    }
+
     return response;
+}
+
+function applyEconomyFromPayload(payload) {
+    if (!payload) return;
+    if (payload.economy) {
+        applyEconomyToUi(payload.economy);
+    } else if (typeof payload === 'object' && (payload.StarkCoinBalance !== undefined || payload.planType !== undefined || payload.PlanType !== undefined)) {
+        applyEconomyToUi(payload);
+    }
 }
 
 // Initialize
@@ -119,9 +154,109 @@ document.addEventListener('DOMContentLoaded', () => {
     setupModal();
     loadUserLicenses();
     
+    // setupTranscribeUi(); // Removido - Transcrição em tempo real não será mais usada no frontend HTML
     // Verificar se há código Ewelink na URL (caso o callback tenha redirecionado para cá)
     checkEwelinkCallbackFromUrl();
 });
+
+// Removido - Transcrição em tempo real não será mais usada no frontend HTML
+// O frontend HTML será somente para interações manuais do usuário e configurações
+/*
+function setupTranscribeUi() {
+    const startBtn = document.getElementById('btn-start-transcribe');
+    const stopBtn = document.getElementById('btn-stop-transcribe');
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            const lang = document.getElementById('transcribe-language')?.value || 'pt-BR';
+            connectTranscribe(lang);
+        });
+    }
+    if (stopBtn) {
+        stopBtn.addEventListener('click', stopTranscribe);
+    }
+}
+
+function connectTranscribe(language = 'pt-BR') {
+    if (transcribeSocket && transcribeSocket.readyState === WebSocket.OPEN) {
+        return;
+    }
+    const apiKey = window.currentUserData?.apiKey;
+    if (!apiKey) {
+        alert('API Key não encontrada. Faça login novamente.');
+        return;
+    }
+    const wsBase = WS_BASE;
+    const url = `${wsBase}/ws/transcribe?apiKey=${encodeURIComponent(apiKey)}&language=${encodeURIComponent(language)}`;
+    transcribeSocket = new WebSocket(url);
+    updateTranscribeStatus('Conectando...');
+
+    transcribeSocket.onopen = () => updateTranscribeStatus('Conectado');
+    transcribeSocket.onclose = () => updateTranscribeStatus('Parado');
+    transcribeSocket.onerror = () => updateTranscribeStatus('Erro');
+    transcribeSocket.onmessage = (evt) => {
+        try {
+            const data = parseTranscribeMessage(evt.data);
+            window.handleTranscribeMessage(data);
+            updateTranscribeFromPayload(data);
+        } catch (err) {
+            console.warn('Erro ao processar mensagem WS Transcribe:', err);
+        }
+    };
+}
+
+function parseTranscribeMessage(raw) {
+    if (typeof raw !== 'string') return raw;
+    try {
+        return JSON.parse(raw);
+    } catch {
+        // fallback para mensagens simples
+        if (raw === 'AUTH_OK' || raw === 'WAITING' || raw === 'PING') {
+            return { message: raw };
+        }
+        if (raw.startsWith('[PARCIAL]')) {
+            return { message: 'PARTIAL', transcript: raw.replace('[PARCIAL]', '').trim(), isPartial: true };
+        }
+        if (raw.startsWith('[FINAL]')) {
+            return { message: 'FINAL', transcript: raw.replace('[FINAL]', '').trim(), isPartial: false };
+        }
+        return { message: raw };
+    }
+}
+
+function stopTranscribe() {
+    if (transcribeSocket) {
+        try { transcribeSocket.close(); } catch {}
+    }
+    transcribeSocket = null;
+    updateTranscribeStatus('Parado');
+}
+
+function updateTranscribeStatus(text) {
+    const el = document.getElementById('transcribe-status');
+    if (el) el.textContent = text;
+}
+
+function updateTranscribeFromPayload(data) {
+    if (!data) return;
+    if (data.economy) applyEconomyToUi(data.economy);
+
+    if (data.message) {
+        updateTranscribeStatus(data.message);
+    }
+    if (data.transcript) {
+        const partialEl = document.getElementById('transcribe-partial');
+        const finalEl = document.getElementById('transcribe-final');
+        if (data.isPartial) {
+            if (partialEl) partialEl.textContent = data.transcript;
+        } else {
+            if (finalEl) finalEl.textContent = data.transcript;
+        }
+    }
+    if (data.message === 'INSUFFICIENT_BALANCE' || data.reason === 'INSUFFICIENT_FUNDS' || data.error) {
+        showPaymentRequiredBanner(data);
+    }
+}
+*/
 
 // Verificar se há código Ewelink na URL ou sessionStorage
 function checkEwelinkCallbackFromUrl() {
@@ -193,7 +328,7 @@ async function processEwelinkLogin(code, region = null) {
             requestBody.region = region;
         }
         
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/login`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/Ewelink/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -306,7 +441,7 @@ async function handleLogin(e) {
     const password = document.getElementById('login-password').value;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/Auth/login`, {
+        const response = await fetch(`${API_BASE}/api/v1/Auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -359,7 +494,7 @@ async function handleRegister(e) {
     const password = document.getElementById('register-password').value;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/Auth/register`, {
+        const response = await fetch(`${API_BASE}/api/v1/Auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -432,7 +567,7 @@ async function loadNotifications() {
     } else {
         // Se não tem role no currentUser, verifica pela API
         try {
-            const roleResponse = await fetchWithAuth(`${API_BASE_URL}/api/v1/users/nivel`);
+            const roleResponse = await fetchWithAuth(`${API_BASE}/api/v1/users/nivel`);
             if (roleResponse.ok) {
                 const roleData = await roleResponse.json();
                 const role = roleData.nivel;
@@ -461,7 +596,7 @@ async function loadNotifications() {
     console.log('Container de notificações exibido');
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/notifications/unread-count`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/notifications/unread-count`);
         if (response.ok) {
             const data = await response.json();
             const count = data.count || 0;
@@ -491,7 +626,7 @@ async function loadNotificationsList() {
     notificationsList.innerHTML = '<div class="notification-loading">Carregando notificações...</div>';
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/notifications`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/notifications`);
         if (response.ok) {
             const notifications = await response.json();
             
@@ -565,7 +700,7 @@ function toggleNotifications() {
 
 async function markNotificationAsRead(notificationId) {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/notifications/${notificationId}/mark-as-read`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/notifications/${notificationId}/mark-as-read`, {
             method: 'POST'
         });
         
@@ -581,7 +716,7 @@ async function markNotificationAsRead(notificationId) {
 
 async function markAllAsRead() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/notifications/mark-all-as-read`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/notifications/mark-all-as-read`, {
             method: 'POST'
         });
         
@@ -601,7 +736,7 @@ async function removeNotification(notificationId) {
     }
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/notifications/${notificationId}`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/notifications/${notificationId}`, {
             method: 'DELETE'
         });
         
@@ -635,7 +770,7 @@ document.addEventListener('click', (e) => {
 // Check user role and show appropriate dashboard
 async function checkUserRole() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/users/nivel`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/users/nivel`);
 
         if (!response.ok) {
             throw new Error('Erro ao verificar role');
@@ -895,11 +1030,7 @@ function setupAdminTabs() {
 // Load Stats (Admin only)
 async function loadStats() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/admin/stats`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/stats`);
 
         if (!response.ok) {
             throw new Error('Erro ao carregar estatísticas');
@@ -926,11 +1057,7 @@ async function loadStats() {
 // Load Users
 async function loadUsers() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/admin/users`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/users`);
 
         if (!response.ok) {
             throw new Error('Erro ao carregar usuários');
@@ -940,8 +1067,10 @@ async function loadUsers() {
         displayUsers(users);
     } catch (error) {
         console.error('Erro ao carregar usuários:', error);
-        document.getElementById('users-table-body').innerHTML = 
-            '<tr><td colspan="7" class="loading">Erro ao carregar usuários</td></tr>';
+        const tbody = document.getElementById('users-table-body');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" class="loading">Erro ao carregar usuários</td></tr>';
+        }
     }
 }
 
@@ -956,12 +1085,12 @@ function displayUsers(users) {
 
     tbody.innerHTML = users.map(user => `
         <tr>
-            <td>${user.name}</td>
-            <td>${user.email}</td>
-            <td><span class="role-badge">${user.role}</span></td>
+            <td>${user.name || ''}</td>
+            <td>${user.email || ''}</td>
+            <td><span class="role-badge">${user.role || ''}</span></td>
             <td><span class="status-badge ${user.isActive ? 'active' : 'inactive'}">${user.isActive ? 'Ativo' : 'Inativo'}</span></td>
-            <td>${user.starkCoins.toFixed(2)}</td>
-            <td>${new Date(user.createdAt).toLocaleDateString('pt-BR')}</td>
+            <td>${(user.starkCoinBalance || 0).toFixed(2)}</td>
+            <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString('pt-BR') : ''}</td>
             <td>
                 <div class="action-buttons">
                     <button class="action-btn view" onclick="viewUserDetails('${user.id}')">Ver Detalhes</button>
@@ -981,11 +1110,7 @@ function refreshUsers() {
 // Edit User
 async function editUser(userId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/users/${userId}`);
 
         if (!response.ok) {
             throw new Error('Erro ao carregar usuário');
@@ -997,15 +1122,15 @@ async function editUser(userId) {
         ensureRemovalAdsField();
         
         document.getElementById('edit-user-id').value = user.id;
-        document.getElementById('edit-name').value = user.name;
-        document.getElementById('edit-email').value = user.email;
-        document.getElementById('edit-role').value = user.role;
+        document.getElementById('edit-name').value = user.name || '';
+        document.getElementById('edit-email').value = user.email || '';
+        document.getElementById('edit-role').value = user.role || '';
         document.getElementById('edit-active').value = user.isActive.toString();
-        document.getElementById('edit-coins').value = user.starkCoins;
+        document.getElementById('edit-coins').value = user.starkCoinBalance || 0;
         
         const removalAdsField = document.getElementById('edit-removal-ads');
         if (removalAdsField) {
-            removalAdsField.value = user.removalAds || 'Desativado';
+            removalAdsField.value = user.removalAds || user.RemovalAds || 'Desativado';
         } else {
             console.error('Campo edit-removal-ads ainda não existe após ensureRemovalAdsField!');
         }
@@ -1023,11 +1148,8 @@ async function deleteUser(userId) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/users/${userId}`, {
+            method: 'DELETE'
         });
 
         if (!response.ok) {
@@ -1118,16 +1240,15 @@ function setupModal() {
             email: document.getElementById('edit-email').value,
             role: document.getElementById('edit-role').value,
             isActive: document.getElementById('edit-active').value === 'true',
-            starkCoins: parseFloat(document.getElementById('edit-coins').value),
+            StarkCoinBalance: parseInt(document.getElementById('edit-coins').value) || 0,
             removalAds: document.getElementById('edit-removal-ads').value
         };
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}`, {
+            const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/users/${userId}`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(updateData)
             });
@@ -1163,16 +1284,8 @@ async function viewUserDetails(userId) {
     try {
         // Buscar detalhes e dashboard em paralelo
         const [detailsResponse, dashboardResponse] = await Promise.all([
-            fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}/details`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                }
-            }),
-            fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}/dashboard`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                }
-            })
+            fetchWithAuth(`${API_BASE}/api/v1/admin/users/${userId}/details`),
+            fetchWithAuth(`${API_BASE}/api/v1/admin/users/${userId}/dashboard`)
         ]);
 
         if (!detailsResponse.ok) {
@@ -1217,11 +1330,7 @@ async function refreshDashboardSection(userId) {
     }
     
     try {
-        const dashboardResponse = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}/dashboard`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        const dashboardResponse = await fetchWithAuth(`${API_BASE}/api/v1/admin/users/${userId}/dashboard`);
 
         if (!dashboardResponse.ok) {
             throw new Error('Erro ao atualizar dashboard');
@@ -1315,7 +1424,7 @@ async function refreshLastCommandsSection(userId) {
     }
     
     try {
-        const dashboardResponse = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}/dashboard`, {
+        const dashboardResponse = await fetch(`${API_BASE}/api/v1/admin/users/${userId}/dashboard`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
@@ -1788,9 +1897,8 @@ function editDevice(deviceId, name, comando) {
 function deleteDevice(deviceId) {
     if (!confirm('Tem certeza que deseja deletar este dispositivo?')) return;
 
-    fetch(`${API_BASE_URL}/api/v1/admin/devices/${deviceId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${authToken}` }
+    fetchWithAuth(`${API_BASE}/api/v1/admin/devices/${deviceId}`, {
+        method: 'DELETE'
     })
     .then(res => res.json())
     .then(data => {
@@ -1819,9 +1927,8 @@ function editComandoSocial(comandoId, comando, resposta, respostasAleatorias) {
 function deleteComandoSocial(comandoId) {
     if (!confirm('Tem certeza que deseja deletar este comando social?')) return;
 
-    fetch(`${API_BASE_URL}/api/v1/admin/comandos-sociais/${comandoId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${authToken}` }
+    fetchWithAuth(`${API_BASE}/api/v1/admin/comandos-sociais/${comandoId}`, {
+        method: 'DELETE'
     })
     .then(res => res.json())
     .then(data => {
@@ -1850,9 +1957,8 @@ function editAgendamento(agendamentoId, comando, agendadoPara, recorrencia, exec
 function deleteAgendamento(agendamentoId) {
     if (!confirm('Tem certeza que deseja deletar este agendamento?')) return;
 
-    fetch(`${API_BASE_URL}/api/v1/admin/agendamentos/${agendamentoId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${authToken}` }
+    fetchWithAuth(`${API_BASE}/api/v1/admin/agendamentos/${agendamentoId}`, {
+        method: 'DELETE'
     })
     .then(res => res.json())
     .then(data => {
@@ -1876,11 +1982,10 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/admin/devices/${deviceId}`, {
+                const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/devices/${deviceId}`, {
                     method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(updateData)
                 });
@@ -1909,11 +2014,10 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/admin/comandos-sociais/${comandoId}`, {
+                const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/comandos-sociais/${comandoId}`, {
                     method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(updateData)
                 });
@@ -1946,11 +2050,10 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/admin/agendamentos/${agendamentoId}`, {
+                const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/agendamentos/${agendamentoId}`, {
                     method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(updateData)
                 });
@@ -2060,7 +2163,7 @@ async function loadUserDashboard() {
 async function loadUserStats() {
     try {
         console.log('Carregando estatísticas do usuário...');
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/users/stats`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/users/stats`);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -2095,7 +2198,7 @@ async function loadUserStats() {
 // Load User Info
 async function loadUserInfo() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/users/me`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/users/me`);
 
         if (!response.ok) throw new Error('Erro ao carregar informações do usuário');
 
@@ -2103,8 +2206,9 @@ async function loadUserInfo() {
 
         document.getElementById('user-name').textContent = user.name || '';
         document.getElementById('user-email').textContent = user.email || '';
-        document.getElementById('user-coins').textContent = (user.starkCoins || 0).toFixed(2);
         document.getElementById('user-api-key').textContent = user.apiKey || '';
+
+        applyEconomyToUi(user);
         
         // Armazenar dados do usuário para verificação de endereço
         window.currentUserData = user;
@@ -2113,10 +2217,105 @@ async function loadUserInfo() {
     }
 }
 
+function applyEconomyToUi(source) {
+    if (!source) return;
+    
+    const economy = source.economy ?? source;
+    const coins = economy.StarkCoinBalance ?? economy.starkCoinBalance ?? economy.starkCoins ?? 0;
+    const plan = economy.planType ?? economy.PlanType ?? 'Free';
+    const tokensUsados = economy.tokensConsumidosSemana ?? economy.TokensConsumidosSemana ?? economy.tokensConsumidos ?? 0;
+    const tokensMax = economy.tokensSemanaMax ?? economy.TokensSemanaMax ?? economy.tokenLimitWeekly ?? 0;
+    const tokensRestantes = economy.tokensRestantes ?? economy.TokensRestantes ?? Math.max(0, tokensMax - tokensUsados);
+    const agMax = economy.agendamentosMax ?? economy.AgendamentosMax ?? -1;
+    const agRest = economy.agendamentosRestantes ?? economy.AgendamentosRestantes ?? (agMax === -1 ? -1 : Math.max(0, agMax));
+    const ads = economy.adsEnabled ?? economy.AdsEnabled ?? (economy.removalAds === 'Desativado' ? false : true);
+
+    const coinsEl = document.getElementById('user-coins');
+    const planEl = document.getElementById('user-plan');
+    const tokensUsedEl = document.getElementById('user-tokens-used');
+    const tokensMaxEl = document.getElementById('user-tokens-max');
+    const tokensRemEl = document.getElementById('user-tokens-remaining');
+    const agMaxEl = document.getElementById('user-ag-max');
+    const agRestEl = document.getElementById('user-ag-restantes');
+    const adsEl = document.getElementById('user-ads');
+
+    if (coinsEl) coinsEl.textContent = coins.toFixed(0);
+    if (planEl) planEl.textContent = plan;
+    if (tokensUsedEl) tokensUsedEl.textContent = tokensUsados;
+    if (tokensMaxEl) tokensMaxEl.textContent = tokensMax;
+    if (tokensRemEl) tokensRemEl.textContent = tokensRestantes;
+    if (agMaxEl) agMaxEl.textContent = agMax === -1 ? 'Ilimitado' : agMax;
+    if (agRestEl) agRestEl.textContent = agRest === -1 ? 'Ilimitado' : agRest;
+    if (adsEl) adsEl.textContent = ads ? 'Ativos' : 'Desativados';
+
+    // CTA destaque
+    const planoBtn = document.querySelector('.welcome-actions .btn:nth-child(3)');
+    if (planoBtn) {
+        planoBtn.textContent = plan.toLowerCase() === 'free' ? 'Upgrade para Premium' : 'Gerenciar Plano';
+    }
+    const addFundsBtn = document.querySelector('.welcome-actions .btn:nth-child(2)');
+    if (addFundsBtn) {
+        if (coins <= 0) {
+            addFundsBtn.classList.add('pulse');
+        } else {
+            addFundsBtn.classList.remove('pulse');
+        }
+    }
+
+    // Atualiza banner de economia se estiver visível
+    hidePaymentRequiredBanner();
+}
+
+function showPaymentRequiredBanner(payload = {}) {
+    const banner = document.getElementById('economy-banner');
+    const msgEl = document.getElementById('economy-banner-message');
+    if (!banner || !msgEl) return;
+
+    const requiredCoins = payload.requiredCoins ?? payload.requiredcoins ?? payload.required ?? null;
+    const missingText = requiredCoins ? `Faltam ${requiredCoins} StarkCoins.` : 'Saldo insuficiente.';
+    msgEl.textContent = `Necessário saldo para continuar. ${missingText}`;
+    banner.style.display = 'block';
+
+    if (payload.economy) {
+        applyEconomyToUi(payload.economy);
+    }
+}
+
+function hidePaymentRequiredBanner() {
+    const banner = document.getElementById('economy-banner');
+    if (banner) banner.style.display = 'none';
+}
+
+// Removido - Handler de mensagens de WebSocket do Transcribe não será mais usado no frontend HTML
+/*
+// Handler público para mensagens de WebSocket do Transcribe (JSON)
+window.handleTranscribeMessage = function handleTranscribeMessage(raw) {
+    try {
+        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (!data) return;
+
+        if (data.economy) {
+            applyEconomyToUi(data.economy);
+        }
+
+        if (data.status === 'AUTH_OK' || data.status === 'WAITING' || data.status === 'PING') {
+            console.log('[Transcribe] Status:', data.status);
+        }
+
+        if (data.error || data.reason === 'INSUFFICIENT_FUNDS') {
+            showPaymentRequiredBanner(data);
+        }
+    } catch (err) {
+        console.warn('Erro ao processar mensagem de Transcribe:', err);
+    }
+};
+*/
+
 // Verificar endereço e redirecionar se necessário
 async function checkAddressAndRedirect() {
+    if (window._addressCheckDone) return;
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/users/me`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/users/me`);
         if (!response.ok) {
             // Se houver erro 500, pode ser que a migration não foi aplicada ainda
             // Tentar novamente após um delay maior
@@ -2159,6 +2358,7 @@ async function checkAddressAndRedirect() {
             }, 500);
         } else {
             console.log('✅ [Address Check] Dados de endereço completos.');
+            window._addressCheckDone = true;
         }
     } catch (error) {
         console.error('Erro ao verificar endereço:', error);
@@ -2172,7 +2372,7 @@ async function checkAddressAndRedirect() {
 // Load User Devices
 async function loadUserDevices() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/devices`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/devices`);
 
         if (!response.ok) throw new Error('Erro ao carregar dispositivos');
 
@@ -2232,12 +2432,12 @@ async function loadUserComandos() {
     try {
         console.log('Carregando comandos sociais...');
         // Tenta primeiro com ComandosSociais (padrão ASP.NET Core)
-        let response = await fetchWithAuth(`${API_BASE_URL}/api/v1/ComandosSociais`);
+        let response = await fetchWithAuth(`${API_BASE}/api/v1/ComandosSociais`);
 
         // Se 404, tenta com kebab-case
         if (response.status === 404) {
             console.log('Tentando com kebab-case...');
-            response = await fetchWithAuth(`${API_BASE_URL}/api/v1/comandos-sociais`);
+            response = await fetchWithAuth(`${API_BASE}/api/v1/comandos-sociais`);
         }
 
         if (!response.ok) {
@@ -2246,7 +2446,9 @@ async function loadUserComandos() {
             throw new Error('Erro ao carregar comandos sociais');
         }
 
-        const comandos = await response.json();
+        const payload = await response.json();
+        applyEconomyFromPayload(payload);
+        const comandos = Array.isArray(payload) ? payload : (Array.isArray(payload.data) ? payload.data : []);
         const comandosList = document.getElementById('comandos-list');
 
         if (comandos.length === 0) {
@@ -2619,7 +2821,7 @@ function setupUserForms() {
             const comando = document.getElementById('new-device-comando').value;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/devices`, {
+                const response = await fetch(`${API_BASE}/api/v1/devices`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2654,7 +2856,7 @@ function setupUserForms() {
             const comando = document.getElementById('edit-user-device-comando').value;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/devices/${deviceId}`, {
+                const response = await fetch(`${API_BASE}/api/v1/devices/${deviceId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2685,31 +2887,30 @@ function setupUserForms() {
 
             try {
                 // Tenta primeiro com ComandosSociais, depois com kebab-case
-                let response = await fetch(`${API_BASE_URL}/api/v1/ComandosSociais`, {
+                let response = await fetchWithAuth(`${API_BASE}/api/v1/ComandosSociais`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ comando, resposta, estilo })
                 });
 
                 if (response.status === 404) {
-                    response = await fetch(`${API_BASE_URL}/api/v1/comandos-sociais`, {
+                    response = await fetchWithAuth(`${API_BASE}/api/v1/comandos-sociais`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${authToken}`
                         },
                         body: JSON.stringify({ comando, resposta, estilo })
                     });
                 }
 
                 if (!response.ok) {
-                    const error = await response.json();
+                    const error = await response.json().catch(() => ({}));
                     throw new Error(error || 'Erro ao criar comando social');
                 }
 
+                applyEconomyFromPayload(await response.clone().json().catch(() => ({})));
                 alert('Comando social criado com sucesso!');
                 document.getElementById('add-comando-modal').style.display = 'none';
                 addComandoForm.reset();
@@ -2734,21 +2935,19 @@ function setupUserForms() {
 
             try {
                 // Tenta primeiro com ComandosSociais, depois com kebab-case
-                let response = await fetch(`${API_BASE_URL}/api/v1/ComandosSociais/${comandoId}`, {
+                let response = await fetchWithAuth(`${API_BASE}/api/v1/ComandosSociais/${comandoId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ comando, resposta, estilo })
                 });
 
                 if (response.status === 404) {
-                    response = await fetch(`${API_BASE_URL}/api/v1/comandos-sociais/${comandoId}`, {
+                    response = await fetchWithAuth(`${API_BASE}/api/v1/comandos-sociais/${comandoId}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${authToken}`
                         },
                         body: JSON.stringify({ comando, resposta, estilo })
                     });
@@ -2756,6 +2955,7 @@ function setupUserForms() {
 
                 if (!response.ok) throw new Error('Erro ao atualizar comando social');
 
+                applyEconomyFromPayload(await response.clone().json().catch(() => ({})));
                 alert('Comando social atualizado com sucesso!');
                 document.getElementById('edit-user-comando-modal').style.display = 'none';
                 loadUserComandos();
@@ -2778,7 +2978,7 @@ function setupUserForms() {
             const bairro = document.getElementById('edit-profile-bairro').value;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
+                const response = await fetch(`${API_BASE}/api/v1/users/me`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2802,39 +3002,54 @@ function setupUserForms() {
     }
 
     // Add Funds Form
-    const addFundsForm = document.getElementById('add-funds-form');
-    if (addFundsForm) {
-        addFundsForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const amount = parseFloat(document.getElementById('funds-amount').value);
+    // Função para comprar StarkCoins - chamada diretamente pelos botões
+    window.purchaseStarkCoins = async function(coins) {
+        if (![5, 15, 50, 120].includes(coins)) {
+            alert('Pacote inválido. Use 5, 15, 50 ou 120 StarkCoins.');
+            return;
+        }
 
-            if (amount <= 0) {
-                alert('Valor deve ser maior que zero');
+        try {
+            const response = await fetchWithAuth(`${API_BASE}/api/v1/users/add-funds`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ Coins: coins })
+            });
+
+            if (!response.ok) {
+                let errorMessage = 'Erro ao criar sessão de pagamento';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
+                } catch (e) {
+                    const errorText = await response.text();
+                    errorMessage = errorText || 'Erro desconhecido ao criar sessão de pagamento';
+                }
+                alert('Erro: ' + errorMessage);
+                console.error('Erro ao criar sessão de pagamento:', errorMessage);
                 return;
             }
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/users/add-funds`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({ amount })
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error || 'Erro ao criar sessão de pagamento');
-                }
-
-                const data = await response.json();
+            const data = await response.json();
+            applyEconomyFromPayload(data);
+            
+            // Fechar modal
+            document.getElementById('add-funds-modal').style.display = 'none';
+            
+            // Redirecionar para checkout
+            if (data.checkoutUrl) {
                 window.location.href = data.checkoutUrl;
-            } catch (error) {
-                alert('Erro: ' + error.message);
+            } else {
+                alert('Erro: URL de checkout não recebida');
             }
-        });
-    }
+        } catch (error) {
+            const errorMsg = error.message || 'Erro inesperado ao criar sessão de pagamento';
+            alert('Erro: ' + errorMsg);
+            console.error('Erro ao criar sessão de pagamento:', error);
+        }
+    };
 
     // Change Password Form
     const changePasswordForm = document.getElementById('change-password-form');
@@ -2856,7 +3071,7 @@ function setupUserForms() {
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/users/change-password`, {
+                const response = await fetch(`${API_BASE}/api/v1/users/change-password`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2891,7 +3106,7 @@ function setupUserForms() {
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
+                const response = await fetch(`${API_BASE}/api/v1/users/me`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2921,7 +3136,7 @@ function openAddDeviceModal() {
 
 function openEditProfileModal() {
     // Load current user data
-    fetch(`${API_BASE_URL}/api/v1/users/me`, {
+    fetch(`${API_BASE}/api/v1/users/me`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
     })
     .then(r => r.json())
@@ -2943,21 +3158,19 @@ function openAddFundsModal() {
     document.getElementById('add-funds-modal').style.display = 'block';
 }
 
-function setFundsAmount(amount) {
-    document.getElementById('funds-amount').value = amount;
-}
+// Função removida - não é mais necessária com os novos botões diretos
 
 function openPlanoModal() {
     document.getElementById('plano-modal').style.display = 'block';
 }
 
-async function contratarPlano(nivel) {
+async function contratarPlano() {
+    const nivel = 2; // Premium único
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/assinaturas/checkout`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/assinaturas/checkout`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ nivel })
         });
@@ -2978,6 +3191,7 @@ async function contratarPlano(nivel) {
         }
 
         const data = await response.json();
+        applyEconomyFromPayload(data);
         if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
         } else {
@@ -3000,7 +3214,7 @@ function openDeleteAccountModal() {
 
 async function editUserDevice(deviceId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/devices/${deviceId}`, {
+        const response = await fetch(`${API_BASE}/api/v1/devices/${deviceId}`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
@@ -3020,7 +3234,7 @@ async function deleteUserDevice(deviceId) {
     if (!confirm('Tem certeza que deseja excluir este dispositivo?')) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/devices/${deviceId}`, {
+        const response = await fetch(`${API_BASE}/api/v1/devices/${deviceId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
@@ -3037,7 +3251,7 @@ async function deleteUserDevice(deviceId) {
 
 async function acionarDevice(deviceId, comando) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/commands/publish`, {
+        const response = await fetch(`${API_BASE}/api/v1/commands/publish`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -3063,12 +3277,12 @@ async function acionarDevice(deviceId, comando) {
 async function editUserComando(comandoId) {
     try {
         // Tenta primeiro com ComandosSociais, depois com kebab-case
-        let response = await fetch(`${API_BASE_URL}/api/v1/ComandosSociais`, {
+        let response = await fetch(`${API_BASE}/api/v1/ComandosSociais`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
         if (response.status === 404) {
-            response = await fetch(`${API_BASE_URL}/api/v1/comandos-sociais`, {
+            response = await fetch(`${API_BASE}/api/v1/comandos-sociais`, {
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
         }
@@ -3095,13 +3309,13 @@ async function deleteUserComando(comandoId) {
 
     try {
         // Tenta primeiro com ComandosSociais, depois com kebab-case
-        let response = await fetch(`${API_BASE_URL}/api/v1/ComandosSociais/${comandoId}`, {
+        let response = await fetch(`${API_BASE}/api/v1/ComandosSociais/${comandoId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
         if (response.status === 404) {
-            response = await fetch(`${API_BASE_URL}/api/v1/comandos-sociais/${comandoId}`, {
+            response = await fetch(`${API_BASE}/api/v1/comandos-sociais/${comandoId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
@@ -3144,7 +3358,7 @@ let dispositivoEspHubConnection = null;
 function connectDispositivoEspHub() {
     if (!authToken) return;
 
-    const hubUrl = `${API_BASE_URL}/hubs/dispositivo-esp`;
+    const hubUrl = `${HUB_BASE}/hubs/dispositivo-esp`;
     
     dispositivoEspHubConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
@@ -3212,7 +3426,7 @@ function connectDispositivoEspHub() {
 async function loadOnlineUsers() {
     try {
         console.log('[loadOnlineUsers] Carregando usuários online...');
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/users/online`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/users/online`);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -3274,7 +3488,7 @@ function refreshOnlineUsers() {
 // Load Users with Active Plans
 async function loadUsersWithPlans() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/users-with-plans`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/users-with-plans`);
 
         if (!response.ok) throw new Error('Erro ao carregar usuários com planos ativos');
 
@@ -3302,7 +3516,7 @@ async function loadUsersWithPlans() {
                     <td>${escapeHtml(user.name)}</td>
                     <td>${escapeHtml(user.email)}</td>
                     <td><span class="role-badge">${escapeHtml(user.role)}</span></td>
-                    <td>${user.starkCoins.toFixed(2)}</td>
+                    <td>${(user.starkCoinBalance || 0).toFixed(2)}</td>
                     <td><span class="status-badge active">${escapeHtml(user.plano)}</span></td>
                     <td>R$ ${user.valor.toFixed(2)}</td>
                     <td><span class="status-badge active">${escapeHtml(user.status)}</span></td>
@@ -3331,7 +3545,7 @@ function refreshUsersWithPlans() {
 // Load Starkcoins Vendas
 async function loadStarkcoinsVendas() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/starkcoins-vendas`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/starkcoins-vendas`);
 
         if (!response.ok) throw new Error('Erro ao carregar vendas de StarkCoins');
 
@@ -3401,7 +3615,7 @@ async function deleteStarkcoinsVenda(vendaId) {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/starkcoins-vendas/${vendaId}`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/starkcoins-vendas/${vendaId}`, {
             method: 'DELETE'
         });
 
@@ -3421,7 +3635,7 @@ async function deleteStarkcoinsVenda(vendaId) {
 // Load Pagamentos com Falhas
 async function loadPagamentosFalhas() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/pagamentos-falhas`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/pagamentos-falhas`);
 
         if (!response.ok) throw new Error('Erro ao carregar pagamentos com falhas');
 
@@ -3482,7 +3696,7 @@ async function deletePagamentoFalha(pagamentoId) {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/pagamentos-falhas/${pagamentoId}`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/pagamentos-falhas/${pagamentoId}`, {
             method: 'DELETE'
         });
 
@@ -3502,7 +3716,7 @@ async function deletePagamentoFalha(pagamentoId) {
 // Load Error Logs Users
 async function loadErrorLogsUsers() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/error-logs/users`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/error-logs/users`);
 
         if (!response.ok) throw new Error('Erro ao carregar usuários com logs de erro');
 
@@ -3544,7 +3758,7 @@ function refreshErrorLogs() {
 // View Error Logs Soft
 async function viewErrorLogsSoft(userId) {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/error-logs/soft/${userId}`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/error-logs/soft/${userId}`);
 
         if (!response.ok) throw new Error('Erro ao carregar logs de erro');
 
@@ -3614,7 +3828,7 @@ async function viewErrorLogsSoft(userId) {
 async function viewErrorLogsApp(userId) {
     try {
         console.log('[viewErrorLogsApp] Carregando logs de erro do app para usuário:', userId);
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/error-logs/app/${userId}`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/error-logs/app/${userId}`);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -3695,7 +3909,7 @@ async function deleteErrorLogApp(logId, userId) {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/error-logs/app/${logId}`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/error-logs/app/${logId}`, {
             method: 'DELETE'
         });
 
@@ -3719,7 +3933,7 @@ async function deleteErrorLogSoft(logId, userId) {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/admin/error-logs/soft/${logId}`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/admin/error-logs/soft/${logId}`, {
             method: 'DELETE'
         });
 
@@ -3748,7 +3962,7 @@ async function consultarCodigoErroSoft() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/logs/error-code-soft/${encodeURIComponent(codigo)}`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/logs/error-code-soft/${encodeURIComponent(codigo)}`);
 
         if (!response.ok) throw new Error('Erro ao consultar código de erro');
 
@@ -3803,7 +4017,7 @@ async function consultarCodigoErroApp() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/logs/error-code-app/${encodeURIComponent(codigo)}`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/logs/error-code-app/${encodeURIComponent(codigo)}`);
 
         if (!response.ok) throw new Error('Erro ao consultar código de erro');
 
@@ -3858,7 +4072,7 @@ async function buscarSolucoesSoft() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/logs/error-solutions-soft/${encodeURIComponent(codigo)}`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/logs/error-solutions-soft/${encodeURIComponent(codigo)}`);
 
         if (!response.ok) {
             throw new Error('Erro ao buscar soluções');
@@ -3898,7 +4112,7 @@ async function buscarSolucoesApp() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/logs/error-solutions-app/${encodeURIComponent(codigo)}`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/logs/error-solutions-app/${encodeURIComponent(codigo)}`);
 
         if (!response.ok) {
             throw new Error('Erro ao buscar soluções');
@@ -3933,7 +4147,7 @@ async function disconnectUser(userId) {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/app/logout`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/app/logout`, {
             method: 'POST',
             body: JSON.stringify({ userId: userId })
         });
@@ -3961,7 +4175,7 @@ function sendMessageToUser(userId) {
 // Load User DispositivosESP
 async function loadUserDispositivosEsp() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/DispositivosEsp`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/DispositivosEsp`);
 
         if (!response.ok) throw new Error('Erro ao carregar dispositivos ESP');
 
@@ -4027,7 +4241,7 @@ function openAddDispositivoEspModal() {
 
 async function editDispositivoEsp(id) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/DispositivosEsp/${id}`, {
+        const response = await fetch(`${API_BASE}/api/v1/DispositivosEsp/${id}`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
@@ -4052,7 +4266,7 @@ async function deleteDispositivoEsp(id) {
     if (!confirm('Tem certeza que deseja excluir este dispositivo ESP?')) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/DispositivosEsp/${id}`, {
+        const response = await fetch(`${API_BASE}/api/v1/DispositivosEsp/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
@@ -4068,7 +4282,7 @@ async function deleteDispositivoEsp(id) {
 
 async function pingDispositivoEsp(id) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/DispositivosEsp/${id}/ping`, {
+        const response = await fetch(`${API_BASE}/api/v1/DispositivosEsp/${id}/ping`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
@@ -4103,7 +4317,7 @@ function setupDispositivosEspForms() {
             const comandToEsp = document.getElementById('new-esp-comandToEsp').value;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/DispositivosEsp`, {
+                const response = await fetch(`${API_BASE}/api/v1/DispositivosEsp`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4142,7 +4356,7 @@ function setupDispositivosEspForms() {
             const ligado = document.getElementById('edit-esp-ligado').checked;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/DispositivosEsp/${id}`, {
+                const response = await fetch(`${API_BASE}/api/v1/DispositivosEsp/${id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4170,7 +4384,7 @@ function setupDispositivosEspForms() {
             const comando = document.getElementById('comando-esp-texto').value;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/DispositivosEsp/enviar-comando`, {
+                const response = await fetch(`${API_BASE}/api/v1/DispositivosEsp/enviar-comando`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4200,7 +4414,7 @@ function setupDispositivosEspForms() {
 // Load User Agendamentos
 async function loadUserAgendamentos() {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Agendamentos`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/Agendamentos`);
         const agendamentosList = document.getElementById('agendamentos-list');
 
         if (!response.ok) {
@@ -4326,7 +4540,7 @@ async function loadPlanosAtivos() {
         }
 
         console.log('🔍 [Planos Ativos] Elemento encontrado, fazendo requisição...');
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Assinaturas/ativas`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/Assinaturas/ativas`);
         console.log('✅ [Planos Ativos] Resposta recebida:', response.status, response.statusText);
 
         if (!response.ok) {
@@ -4380,11 +4594,17 @@ async function loadPlanosAtivos() {
             return;
         }
 
+        // Não atualizar economy aqui - os dados já vêm corretos do /users/me
+        // Apenas renderizar os planos
+
         planosList.innerHTML = planos.map(plano => {
             const dataInicio = plano.iniciadaEm ? new Date(plano.iniciadaEm).toLocaleDateString('pt-BR') : 'N/A';
             const dataExpiracao = plano.expiraEm ? new Date(plano.expiraEm).toLocaleDateString('pt-BR') : 'Sem expiração';
             const dataCriacao = new Date(plano.dataCriacao).toLocaleDateString('pt-BR');
-            
+
+            const isPremiumLike = plano.nivel === 2 || (plano.nomePlano || '').toLowerCase().includes('remove ads');
+            const displayName = isPremiumLike ? 'StarkAid Premium' : plano.nomePlano;
+
             // Determinar cor do badge baseado no nível
             let badgeColor = 'var(--primary-color)';
             if (plano.nivel === 2) {
@@ -4396,7 +4616,7 @@ async function loadPlanosAtivos() {
             return `
                 <div class="item-card">
                     <div class="item-card-header">
-                        <div class="item-card-title">${plano.nomePlano}</div>
+                        <div class="item-card-title">${displayName}</div>
                         <div class="item-card-actions">
                             <span class="badge" style="background: ${badgeColor}; color: white; padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.875rem; font-weight: 600;">${plano.status}</span>
                             <button class="btn btn-secondary" onclick="cancelarPlano('${plano.id}')" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); margin-left: 0.5rem;">Cancelar Plano</button>
@@ -4470,7 +4690,7 @@ async function cancelarPlano(assinaturaId) {
 
     try {
         console.log('🛑 [Planos Ativos] Cancelando assinatura:', assinaturaId);
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Assinaturas/cancelar/${assinaturaId}`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/Assinaturas/cancelar/${assinaturaId}`, {
             method: 'POST'
         });
 
@@ -4513,7 +4733,7 @@ async function openCriarAgendamentoEspModal() {
     
     // Carregar dispositivos ESP
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/DispositivosEsp`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/DispositivosEsp`);
         if (response.ok) {
             const dispositivos = await response.json();
             select.innerHTML = '<option value="">Selecione um dispositivo ESP</option>';
@@ -4544,7 +4764,7 @@ async function openCriarAgendamentoStarkswitchModal() {
     
     // Carregar dispositivos Starkswitch
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/devices`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/devices`);
         if (response.ok) {
             const dispositivos = await response.json();
             select.innerHTML = '<option value="">Selecione um dispositivo Starkswitch</option>';
@@ -4575,7 +4795,7 @@ async function openCriarAgendamentoEwelinkModal() {
     
     // Carregar dispositivos Ewelink
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/dispositivos`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/Ewelink/dispositivos`);
         if (response.ok) {
             const dispositivos = await response.json();
             select.innerHTML = '<option value="">Selecione um dispositivo Ewelink</option>';
@@ -4605,7 +4825,7 @@ async function deleteUserAgendamento(agendamentoId) {
     if (!confirm('Tem certeza que deseja excluir este agendamento?')) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/Agendamentos/${agendamentoId}`, {
+        const response = await fetch(`${API_BASE}/api/v1/Agendamentos/${agendamentoId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${authToken}`
@@ -4640,7 +4860,7 @@ function setupAgendamentosForms() {
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/Agendamentos/esp`, {
+                const response = await fetch(`${API_BASE}/api/v1/Agendamentos/esp`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4705,7 +4925,7 @@ function setupAgendamentosForms() {
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/Agendamentos/starkswitch`, {
+                const response = await fetch(`${API_BASE}/api/v1/Agendamentos/starkswitch`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4771,7 +4991,7 @@ function setupAgendamentosForms() {
             }
 
             try {
-                const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Agendamentos/ewelink`, {
+                const response = await fetchWithAuth(`${API_BASE}/api/v1/Agendamentos/ewelink`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -4812,7 +5032,7 @@ async function requestPasswordReset() {
         if (!emailInput) return;
         
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/Users/request-password-reset`, {
+            const response = await fetch(`${API_BASE}/api/v1/Users/request-password-reset`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ Email: emailInput })
@@ -4836,7 +5056,7 @@ async function requestPasswordReset() {
     }
     
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/Users/request-password-reset`, {
+        const response = await fetch(`${API_BASE}/api/v1/Users/request-password-reset`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ Email: email })
@@ -4899,7 +5119,7 @@ async function loadUserLicenses() {
     try {
         licensesListContainer.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--light-text);">Carregando licenças...</div>';
 
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/licenses`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/licenses`);
 
         if (!response.ok) {
             if (response.status === 401) {
@@ -5028,7 +5248,7 @@ async function checkEwelinkStatus() {
     devicesList.innerHTML = '<div class="loading-spinner">Verificando status...</div>';
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/status`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/Ewelink/status`);
         
         if (!response.ok) {
             // Se for erro 500 ou outro erro, tratar como não logado
@@ -5136,7 +5356,7 @@ async function loadEwelinkDevices() {
     const devicesList = document.getElementById('ewelink-devices-list');
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/dispositivos`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/Ewelink/dispositivos`);
         
         if (!response.ok) {
             throw new Error('Erro ao carregar dispositivos');
@@ -5226,7 +5446,7 @@ async function loadEwelinkDevices() {
 // Controlar dispositivo Ewelink (ligar/desligar)
 async function controlEwelinkDevice(deviceId, switchOn) {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/dispositivos/${deviceId}/controlar`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/Ewelink/dispositivos/${deviceId}/controlar`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5256,7 +5476,7 @@ async function controlEwelinkDevice(deviceId, switchOn) {
 // Atualizar status de um dispositivo específico
 async function refreshEwelinkDeviceStatus(deviceId) {
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/dispositivos/${deviceId}/status`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/Ewelink/dispositivos/${deviceId}/status`);
         
         if (!response.ok) {
             throw new Error('Erro ao atualizar status');
@@ -5284,7 +5504,7 @@ async function syncEwelinkDevices() {
     devicesList.innerHTML = '<div class="loading-spinner">Sincronizando dispositivos...</div>';
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/sincronizar`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/Ewelink/sincronizar`, {
             method: 'POST'
         });
         
@@ -5396,7 +5616,7 @@ async function logoutEwelink() {
     }
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Ewelink/logout`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/Ewelink/logout`, {
             method: 'POST'
         });
         
@@ -5487,7 +5707,7 @@ async function loadWeatherForecast() {
     try {
         contentDiv.innerHTML = '<div class="loading-spinner">Carregando previsão do tempo...</div>';
 
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/weather/forecast`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/weather/forecast`);
 
         if (!response.ok) {
             let errorMessage = 'Erro ao carregar previsão do tempo';
@@ -5542,7 +5762,7 @@ function renderWeatherForecast(data) {
                         padding: 2rem; border-radius: 16px; margin-bottom: 2rem; 
                         border: 1px solid rgba(0, 180, 255, 0.2);">
                 <h3 style="margin: 0 0 1.5rem 0; color: var(--text-primary);">🌡️ Tempo Atual</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
                     <div style="background: rgba(0, 0, 0, 0.2); padding: 1.5rem; border-radius: 12px;">
                         <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Temperatura</div>
                         <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-color);">
@@ -5637,7 +5857,7 @@ async function iniciarManutencaoSoftware() {
     if (!userIdInput.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
         // Se for email, buscar userId do usuário atual via API
         try {
-            const userResponse = await fetchWithAuth(`${API_BASE_URL}/api/v1/Users/me`);
+            const userResponse = await fetchWithAuth(`${API_BASE}/api/v1/Users/me`);
             if (userResponse.ok) {
                 const currentUser = await userResponse.json();
                 if (currentUser && currentUser.id) {
@@ -5657,7 +5877,7 @@ async function iniciarManutencaoSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/iniciar`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/software/iniciar`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5693,7 +5913,7 @@ async function finalizarManutencaoSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/finalizar`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/software/finalizar`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5731,7 +5951,7 @@ async function alterarSenhaSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/alterar-senha`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/software/alterar-senha`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5767,7 +5987,7 @@ async function salvarNomeAssistenteSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/salvar-nome-assistente`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/software/salvar-nome-assistente`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5799,7 +6019,7 @@ async function obterUserId(userIdInput) {
     
     // Se for email, buscar userId via API
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/Users/by-email/${encodeURIComponent(userIdInput)}`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/Users/by-email/${encodeURIComponent(userIdInput)}`);
         if (response.ok) {
             const user = await response.json();
             return user?.id || user?.Id || null;
@@ -5825,7 +6045,7 @@ async function verDispositivosEspSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/dispositivos/${userId}`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/software/dispositivos/${userId}`);
         if (response.ok) {
             const dispositivos = await response.json();
             // Abrir modal com lista de dispositivos
@@ -5853,7 +6073,7 @@ async function verComandosSociaisSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/comandos-sociais/${userId}`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/software/comandos-sociais/${userId}`);
         if (response.ok) {
             const comandos = await response.json();
             // Abrir modal com lista de comandos
@@ -5881,7 +6101,7 @@ async function carregarUltimosComandosSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/ultimos-comandos/${userId}`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/software/ultimos-comandos/${userId}`);
         if (response.ok) {
             const dados = await response.json();
             document.getElementById('ultimo-comando-ia-soft').textContent = dados.ultimoComandoIA || '-';
@@ -5912,7 +6132,7 @@ async function limparCacheSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/limpar-cache`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/software/limpar-cache`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5949,7 +6169,7 @@ async function limparDadosSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/limpar-dados`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/software/limpar-dados`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -5986,7 +6206,7 @@ async function logoutSoftware() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/software/logout`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/software/logout`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -6014,7 +6234,7 @@ async function limparCacheApp() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/app/limpar-cache`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/app/limpar-cache`, {
             method: 'POST',
             body: JSON.stringify({ userId })
         });
@@ -6042,7 +6262,7 @@ async function limparDadosApp() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/app/limpar-dados`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/app/limpar-dados`, {
             method: 'POST',
             body: JSON.stringify({ userId })
         });
@@ -6070,7 +6290,7 @@ async function logoutApp() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/app/logout`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/app/logout`, {
             method: 'POST',
             body: JSON.stringify({ userId })
         });
@@ -6094,7 +6314,7 @@ async function carregarUltimosComandosApp() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/manutencao/app/ultimos-comandos/${userId}`);
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/manutencao/app/ultimos-comandos/${userId}`);
         if (response.ok) {
             const dados = await response.json();
             document.getElementById('ultimo-comando-ia-app').textContent = dados.ultimoComandoIA || '-';
@@ -6124,7 +6344,7 @@ async function conectarChatSuporte() {
 
     try {
         supportChatConnection = new signalR.HubConnectionBuilder()
-            .withUrl(`${API_BASE_URL}/hubs/support-chat?origem=software`, {
+            .withUrl(`${API_BASE}/hubs/support-chat?origem=software`, {
                 accessTokenFactory: () => authToken
             })
             .withAutomaticReconnect()
@@ -6263,7 +6483,7 @@ async function enviarFormularioLimite() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/v1/suporte/enviar-formulario-limite`, {
+        const response = await fetchWithAuth(`${API_BASE}/api/v1/suporte/enviar-formulario-limite`, {
             method: 'POST',
             body: JSON.stringify({ mensagem, detalhes })
         });
@@ -6294,7 +6514,7 @@ async function loadUsersForLicense() {
 
         select.innerHTML = '<option value="">Carregando usuários...</option>';
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/admin/users`, {
+        const response = await fetch(`${API_BASE}/api/v1/admin/users`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
@@ -6356,7 +6576,7 @@ async function createLicenseForUser() {
             requestBody.price = price;
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/licenses/admin/create`, {
+        const response = await fetch(`${API_BASE}/api/v1/licenses/admin/create`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${authToken}`,

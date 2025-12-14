@@ -385,7 +385,8 @@
   <string name="cannot_load_image">「イメージが読み込めません」</string>
   <string name="cant_share_reason">ブルートゥースMeshデバイス、Zigbeeデバイス、赤外線デバイスは単独でシェアすることが出来ませんので、関連している全てのデバイスを同時にシェアする事によって正常な操作が行われます。</string>
   <string name="car_alert_limit_tip">これ以上%sシーンを追加することはできません</string>
-  <string name="car_alert_tip_description">一般的な家庭では、%d個のシーンを%sに追加することしかできません。Pro特典に加入すると、シーンの最大数は車両システムの最大容量に達することができます。</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="car_alert_tip_description" formatted="false">一般的な家庭では、%d個のシーンを%sに追加することしかできません。Pro特典に加入すると、シーンの最大数は車両システムの最大容量に達することができます。</string>
   <string name="car_buy">今すぐ購入</string>
   <string name="car_buy_home_service">Smart Life Proを購読</string>
   <string name="car_data_config_tips">%1$sアプリ &gt; Me &gt; %2$s車両に移動して、設定します。</string>
@@ -1009,7 +1010,8 @@
   <string name="google_flip_success_tip_content">OK Google、ライトをつけて\n \nOK Google、ライトを明るくして\n \nOK Google、キッチンランプを青に変えて\n \nOK Google、ライトを50%に設定して</string>
   <string name="google_flip_unbind_info">認証はいつでもキャンセルできます。</string>
   <string name="google_flip_unbind_info_goto_app">バインドを解除するには、Google Home APPにアクセスしてアクションのリンクを解除してください</string>
-  <string name="google_flip_voice_demos">Turn on the bathroom lamps\"\n\"Turn off the lights\" \n\"Set the living room brightness to 50%%\" \n\"Is the light on in John\'s office?</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="google_flip_voice_demos" formatted="false">Turn on the bathroom lamps\"\n\"Turn off the lights\" \n\"Set the living room brightness to 50%%\" \n\"Is the light on in John\'s office?</string>
   <string name="google_home_dev_list_conncet">接続</string>
   <string name="google_home_dev_list_connect_tip">Google Homeを接続後、Google Homeアプリ内のデバイスを他のアプリと同期して制御できます。</string>
   <string name="google_home_dev_list_empty_tip">デバイスが見つかりませんでした</string>
@@ -1152,7 +1154,8 @@
   <string name="home_adv_remove_from_room">ルームから削除する</string>
   <string name="home_adv_remove_widget">ウィジェットを削除する</string>
   <string name="home_adv_room_device_num">%1$d個のお気に入りのデバイス</string>
-  <string name="home_adv_room_hint_num">%dシーン | %d デバイス</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="home_adv_room_hint_num" formatted="false">%dシーン | %d デバイス</string>
   <string name="home_adv_room_list_entry">ルームリスト</string>
   <string name="home_adv_room_no_device">デバイスがありません</string>
   <string name="home_adv_room_tab">ルーム</string>
@@ -1281,8 +1284,10 @@
   <string name="hometab_auto_start_tip">%s の起動モードを無効にしているため、次の機能が正常に動作しなくなる可能性があります。\nリアルタイムメッセージアラートを受信（セキュリティアラートが表示されない場合があります）\n 起動時にアプリケーションを自動的に起動しますか？</string>
   <string name="hometab_auto_start_title">自動スタートアップの提示</string>
   <string name="hometab_ignore_tip">この提示再度表示なし</string>
-  <string name="hosting_camera_used">カメラ %d/%d</string>
-  <string name="hosting_sensor_used">センサー %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_camera_used" formatted="false">カメラ %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_sensor_used" formatted="false">センサー %d/%d</string>
   <string name="hs_China_mainland">中国本土</string>
   <string name="hs_abnormal_device_number">個デバイスが異常</string>
   <string name="hs_abnormal_device_title">異常</string>
@@ -1396,8 +1401,10 @@
   <string name="hs_favorite_device_center_tips">上記のデバイスがデバイスページに表示されます。最大4つまで表示できます。</string>
   <string name="hs_favorite_device_footer_tips">デバイスは[デバイス]ページに表示されません</string>
   <string name="hs_favorite_device_tips">頻繁に使用するデバイスを[デバイス]ページに追加できます。最大4つまで表示できます。</string>
-  <string name="hs_gateway_armde_failed_ios">%d個のセキュリティゲートウェイ%sが失敗しました、確認します</string>
-  <string name="hs_gateway_armed_failed_android">%s個のセキュリティゲートウェイ%sが失敗しました、確認します</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armde_failed_ios" formatted="false">%d個のセキュリティゲートウェイ%sが失敗しました、確認します</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armed_failed_android" formatted="false">%s個のセキュリティゲートウェイ%sが失敗しました、確認します</string>
   <string name="hs_gateway_device">警備用ゲートウェイ</string>
   <string name="hs_geo_current_location">現在のロケーション</string>
   <string name="hs_go_setting">オンにします</string>
@@ -1420,13 +1427,15 @@
   <string name="hs_host_ipc_devices_android">カメラデバイス (%1$s/%2$s)</string>
   <string name="hs_host_sensor_devices_android">カメラ以外のデバイス (%1$s/%2$s)</string>
   <string name="hs_hosting">アラーム監視の設定</string>
-  <string name="hs_hosting_camera_valid">利用可能なカメラ：%d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_camera_valid" formatted="false">利用可能なカメラ：%d/%d</string>
   <string name="hs_hosting_device_select">デバイスを選択</string>
   <string name="hs_hosting_other_setting">その他の設定</string>
   <string name="hs_hosting_relative_tips">センサーはカメラにリンクされています。アラートがトリガーされると、対応するサービスプラットフォームにアラート情報が送信されます。</string>
   <string name="hs_hosting_remark">注記</string>
   <string name="hs_hosting_sensor">センサー</string>
-  <string name="hs_hosting_sensor_valid">利用可能なセンサー：%d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_sensor_valid" formatted="false">利用可能なセンサー：%d/%d</string>
   <string name="hs_image_des">画像に関する説明</string>
   <string name="hs_invitation_confirm_detail_ios">あなたは：\"%s\"賢い人生を楽しむために家に参加するよう招待されています。 この家に参加したいですか？</string>
   <string name="hs_ipc_device">カメラデバイス</string>
@@ -1476,12 +1485,14 @@
   <string name="hs_message_area">店舗のサイズ</string>
   <string name="hs_message_area_unit">%d m²</string>
   <string name="hs_message_contacts">連絡先</string>
-  <string name="hs_message_dispatcher_info">%s がタスク%sを作成する</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" formatted="false">%s がタスク%sを作成する</string>
   <string name="hs_message_dispatcher_info_ios">%1$s がタスク%2$sを作成する</string>
   <string name="hs_message_floor">フロア別</string>
   <string name="hs_message_floor_unit">%d F</string>
   <string name="hs_message_industry">業界別</string>
-  <string name="hs_message_receiver_info">%s がタスク%sを実行する</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" formatted="false">%s がタスク%sを実行する</string>
   <string name="hs_message_receiver_info_ios">%1$s がタスク%2$sを実行する</string>
   <string name="hs_mode_desc_allhours">終日</string>
   <string name="hs_mode_desc_leaving">不在</string>
@@ -1569,8 +1580,10 @@
   <string name="hs_servicemessage">サービスメッセージ</string>
   <string name="hs_settings">設定</string>
   <string name="hs_show_on_device_page">[デバイス]ページに表示されます</string>
-  <string name="hs_smart_gateway_armed_failed_android">%s セキュリティゲートウェイ%s が失敗しました。</string>
-  <string name="hs_smart_gateway_armed_failed_ios">%d セキュリティゲートウェイ%s が失敗しました。</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_android" formatted="false">%s セキュリティゲートウェイ%s が失敗しました。</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_ios" formatted="false">%d セキュリティゲートウェイ%s が失敗しました。</string>
   <string name="hs_sos_alarm_tips">解除を確認してアラームをキャンセルしますか?</string>
   <string name="hs_sos_alarmimg">警察を呼んで下さい</string>
   <string name="hs_sos_dispatch_tips">警報システムが作動しました。すぐに対処してください</string>
@@ -1857,7 +1870,8 @@
   <string name="ipc_cloud_download_encoding">データー変換中</string>
   <string name="ipc_cloud_download_failed">ダウンロード失敗しました</string>
   <string name="ipc_cloud_download_loading">ダウンロード中</string>
-  <string name="ipc_cloud_download_precent">%s%%をダウンロードしました</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" formatted="false">%s%%をダウンロードしました</string>
   <string name="ipc_cloud_download_start">ダウンロードを開始します</string>
   <string name="ipc_cloud_download_start_body">ダウンロードしたコンテンツに複数のエピソードが含まれている場合、1つのビデオに生成されます。ダウンロード中は、APPをそのまま保持してください。</string>
   <string name="ipc_cloud_empty_event_des">関連するイベント動画はありません</string>
@@ -2207,7 +2221,8 @@
   <string name="ipc_nvr_channel">チャンネル</string>
   <string name="ipc_nvr_channel_unit">チャンネル</string>
   <string name="ipc_ota_update_remind">1.アップグレードプロセス中は、デバイスの電源は常に接続した状況を保つようにしてください。\n2.デバイスのアップグレードプロセス中は使用できません。プロセス全体にかかる時間は約3〜5分です。お待ちください</string>
-  <string name="ipc_panel_baterrylevel">バッテリー残量: %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">バッテリー残量: %s%%</string>
   <string name="ipc_panel_button_alarm">アラーム</string>
   <string name="ipc_panel_button_calendar">日付</string>
   <string name="ipc_panel_button_cruise">パトロール</string>
@@ -3103,12 +3118,14 @@
   <string name="ota_back_to_home_title">プロンプト</string>
   <string name="ota_batch_upgrade_alert_all_update">すべてのデバイスを更新</string>
   <string name="ota_batch_upgrade_alert_confirm">更新を確認</string>
-  <string name="ota_batch_upgrade_alert_content">%d台のデバイスが更新されます。アップデート中は、%d台のデバイスが適切に動作しない場合があります。本当に更新を開始しますか？</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_content" formatted="false">%d台のデバイスが更新されます。アップデート中は、%d台のデバイスが適切に動作しない場合があります。本当に更新を開始しますか？</string>
   <string name="ota_batch_upgrade_alert_no_room">部屋がない</string>
   <string name="ota_batch_upgrade_alert_single_update">現在のデバイスのみを更新</string>
   <string name="ota_batch_upgrade_alert_tips">同じゲートウェイ下にある（%d台の）デバイスを無線で同時に更新できることが確認できました。これらを一括更新しますか？</string>
   <string name="ota_batch_upgrade_alert_title">一括更新</string>
-  <string name="ota_batch_upgrade_alert_unsupport_content">このアップデートでは、「%s」およびその他のデバイス（合計%dデバイス）を同時に更新することはできません。リストから手動で更新してください。</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_unsupport_content" formatted="false">このアップデートでは、「%s」およびその他のデバイス（合計%dデバイス）を同時に更新することはできません。リストから手動で更新してください。</string>
   <string name="ota_batch_upgrade_failure_reason">デバイスを個別に更新してください。</string>
   <string name="ota_batch_upgrade_no_device_to_upgrade">更新が必要なデバイスはありません。</string>
   <string name="ota_ble_device_before_upgrade_warning">ファームウェアのアップデート中は、Bluetoothデバイスが一時的に利用できなくなります。今すぐアップデートを開始しますか？</string>
@@ -3501,7 +3518,8 @@
   <string name="scene_geofence_dialog_explain_new">「ロケーションに基づくアクション（ベータ版)」は、Tuyaの実験的機能です。この機能を使用するには、常に位置情報へのアクセスを許可する必要があります。ユーザーの位置情報が他の目的で使用されることはありません。この機能は、ユーザーの位置情報がないと機能しません。\n 詳細は「%s」でご覧ください。</string>
   <string name="scene_geofence_explain_new">注意：上記の位置情報の条件は、ユーザーのスマートフォンの位置情報によって異なります。%sを参照してください。</string>
   <string name="scene_group_none">グループは空</string>
-  <string name="scene_humidity_tip">乾燥(0%-40%) 快適(40%-70%) 湿気(70%-100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">乾燥(0%-40%) 快適(40%-70%) 湿気(70%-100%)</string>
   <string name="scene_icon">アイコン</string>
   <string name="scene_if">次の場合</string>
   <string name="scene_if_condition">条件</string>
@@ -3856,7 +3874,8 @@
   <string name="thing_light_rhythm_scene_guide_title">生物リズム機能は、日中の光の明るさと色温度の変化をシミュレートできます。これにより、光が自然に戻ることを感じることができます。/n日の出時には、光が30分以内にゆっくりと点灯し、日の出時に最大になります。/n正午には、光が冷たい光にゆっくりと変わり、人々が目覚めて仕事がうまくいくようにします。/n日没時には、光が徐々に暖かい光に変わり、人々が休息状態に入ることを可能にします。/n光を消すと、30分以内に眠りにつきます。</string>
   <string name="thing_light_scene_batch_delete_tips">%d個のライトシーンを本当に削除しますか？</string>
   <string name="thing_light_scene_batch_delete_tips_detail">リンク先のスケジュールも削除されます。</string>
-  <string name="thing_light_scene_batch_delete_toast">削除完了：%d個のライトシーン。失敗：%d個のライトシーン。</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_light_scene_batch_delete_toast" formatted="false">削除完了：%d個のライトシーン。失敗：%d個のライトシーン。</string>
   <string name="thing_light_scene_create_all_on_all_off">すべての照明のオン/オフを設定する</string>
   <string name="thing_light_scene_create_all_on_all_off_tip">デバイスの性能の違いにより、グループコントロールでは一部のデバイスが想定通りに動作しない場合があります。一部のデバイスでは、「すべてオン/オフ」に対応していません。この機能がサポートされた後、タイムリーに通知されます。</string>
   <string name="thing_light_scene_delete">ライトシーンを削除する</string>
@@ -4048,7 +4067,8 @@
   <string name="thing_activator_accessory_not_connect">デバイスに接続できない場合</string>
   <string name="thing_activator_accessory_reset_ensure">%sがリセットされていることを確認します。</string>
   <string name="thing_activator_accessory_timeout">操作が時間切れです</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">関連デバイス：%sなどの %d 個デバイス</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">関連デバイス：%sなどの %d 個デバイス</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">関連デバイス：%s</string>
   <string name="thing_activator_activate_stop_dialog_title">「%s」を停止すると、関連する他のデバイスも一緒に停止します</string>
   <string name="thing_activator_addDevice">新しい機器</string>

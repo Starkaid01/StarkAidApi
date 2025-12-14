@@ -7,8 +7,6 @@ namespace StarkAid.WindowsForms.Forms;
 public partial class AddFundsForm : Form
 {
     private readonly ApiService _apiService;
-    private TextBox? _txtAmount;
-    private Button? _btnContinuar;
     private Button? _btnR10;
     private Button? _btnR25;
     private Button? _btnR50;
@@ -23,7 +21,7 @@ public partial class AddFundsForm : Form
     private void InitializeComponent()
     {
         this.Text = "Adicionar Fundos - StarkCoins";
-        this.Size = new Size(500, 400);
+        this.Size = new Size(500, 450); // Aumentado altura para acomodar todos os elementos
         this.StartPosition = FormStartPosition.CenterParent;
         this.BackColor = Color.FromArgb(15, 15, 25);
         this.FormBorderStyle = FormBorderStyle.None;
@@ -77,98 +75,102 @@ public partial class AddFundsForm : Form
         var contentPanel = new Panel
         {
             Dock = DockStyle.Fill,
-            Padding = new Padding(0, 20, 0, 0)
+            Padding = new Padding(0, 40, 0, 0) // Aumentado padding top para 40
         };
 
-        int yPos = 20;
+        int yPos = 0; // Começar do topo do padding
 
-        // Label Valor
+        // Label Pacotes
         var lblAmount = new Label
         {
-            Text = "Valor (R$)",
+            Text = "Escolha um pacote de StarkCoins:",
             Font = new Font("Segoe UI", 11, FontStyle.Bold),
             ForeColor = Color.White,
             AutoSize = true,
             Location = new Point(0, yPos)
         };
-        yPos += 30;
+        yPos += 40; // Espaço maior após o label
 
-        // Campo de valor
-        _txtAmount = new TextBox
-        {
-            Font = new Font("Segoe UI", 11),
-            BackColor = Color.FromArgb(35, 35, 45),
-            ForeColor = Color.White,
-            BorderStyle = BorderStyle.FixedSingle,
-            Size = new Size(420, 38),
-            Location = new Point(0, yPos),
-            Padding = new Padding(10, 0, 0, 0)
-        };
-        _txtAmount.KeyPress += (s, e) =>
-        {
-            // Permitir apenas números, vírgula e ponto
-            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && e.KeyChar != ',' && e.KeyChar != '.')
-            {
-                e.Handled = true;
-            }
-            // Converter ponto para vírgula
-            if (e.KeyChar == '.')
-            {
-                e.KeyChar = ',';
-            }
-        };
-        yPos += 55;
-
-        // Label Valores Sugeridos
-        var lblSuggested = new Label
-        {
-            Text = "Valores Sugeridos:",
-            Font = new Font("Segoe UI", 10),
-            ForeColor = Color.Gray,
-            AutoSize = true,
-            Location = new Point(0, yPos)
-        };
-        yPos += 30;
-
-        // Botões de valores sugeridos
+        // Botões de pacotes fixos de StarkCoins
         var buttonsPanel = new Panel
         {
-            Size = new Size(420, 50),
+            Size = new Size(420, 120), // Altura ajustada para 2 linhas de botões
             Location = new Point(0, yPos),
             BackColor = Color.Transparent
         };
 
-        _btnR10 = CreateSuggestedButton("R$ 10", 0, buttonsPanel);
-        _btnR25 = CreateSuggestedButton("R$ 25", 1, buttonsPanel);
-        _btnR50 = CreateSuggestedButton("R$ 50", 2, buttonsPanel);
-        _btnR100 = CreateSuggestedButton("R$ 100", 3, buttonsPanel);
+        // Criar botões diretamente com tamanho e posição corretos
+        _btnR10 = new Button
+        {
+            Text = "5 SC - R$ 4,90",
+            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            BackColor = Color.FromArgb(50, 50, 60),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Size = new Size(200, 50),
+            Location = new Point(0, 0),
+            Cursor = Cursors.Hand
+        };
+        _btnR10.FlatAppearance.BorderSize = 0;
+        _btnR10.MouseEnter += (s, e) => { _btnR10.BackColor = Color.FromArgb(70, 70, 80); SoundPlayer.PlayMouseMove(); };
+        _btnR10.MouseLeave += (s, e) => { _btnR10.BackColor = Color.FromArgb(50, 50, 60); };
+        _btnR10.Click += async (s, e) => { SoundPlayer.PlayClick(); await ProcessarPagamento(5); };
 
-        _btnR10.Click += (s, e) => { SoundPlayer.PlayClick(); _txtAmount!.Text = "10"; };
-        _btnR25.Click += (s, e) => { SoundPlayer.PlayClick(); _txtAmount!.Text = "25"; };
-        _btnR50.Click += (s, e) => { SoundPlayer.PlayClick(); _txtAmount!.Text = "50"; };
-        _btnR100.Click += (s, e) => { SoundPlayer.PlayClick(); _txtAmount!.Text = "100"; };
+        _btnR25 = new Button
+        {
+            Text = "15 SC - R$ 9,90",
+            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            BackColor = Color.FromArgb(50, 50, 60),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Size = new Size(200, 50),
+            Location = new Point(220, 0), // Espaço de 20px entre botões
+            Cursor = Cursors.Hand
+        };
+        _btnR25.FlatAppearance.BorderSize = 0;
+        _btnR25.MouseEnter += (s, e) => { _btnR25.BackColor = Color.FromArgb(70, 70, 80); SoundPlayer.PlayMouseMove(); };
+        _btnR25.MouseLeave += (s, e) => { _btnR25.BackColor = Color.FromArgb(50, 50, 60); };
+        _btnR25.Click += async (s, e) => { SoundPlayer.PlayClick(); await ProcessarPagamento(15); };
+
+        _btnR50 = new Button
+        {
+            Text = "50 SC - R$ 19,90",
+            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            BackColor = Color.FromArgb(50, 50, 60),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Size = new Size(200, 50),
+            Location = new Point(0, 60), // Segunda linha, espaço de 10px após primeira linha
+            Cursor = Cursors.Hand
+        };
+        _btnR50.FlatAppearance.BorderSize = 0;
+        _btnR50.MouseEnter += (s, e) => { _btnR50.BackColor = Color.FromArgb(70, 70, 80); SoundPlayer.PlayMouseMove(); };
+        _btnR50.MouseLeave += (s, e) => { _btnR50.BackColor = Color.FromArgb(50, 50, 60); };
+        _btnR50.Click += async (s, e) => { SoundPlayer.PlayClick(); await ProcessarPagamento(50); };
+
+        _btnR100 = new Button
+        {
+            Text = "120 SC - R$ 39,90",
+            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            BackColor = Color.FromArgb(50, 50, 60),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Size = new Size(200, 50),
+            Location = new Point(220, 60), // Segunda linha, segunda coluna
+            Cursor = Cursors.Hand
+        };
+        _btnR100.FlatAppearance.BorderSize = 0;
+        _btnR100.MouseEnter += (s, e) => { _btnR100.BackColor = Color.FromArgb(70, 70, 80); SoundPlayer.PlayMouseMove(); };
+        _btnR100.MouseLeave += (s, e) => { _btnR100.BackColor = Color.FromArgb(50, 50, 60); };
+        _btnR100.Click += async (s, e) => { SoundPlayer.PlayClick(); await ProcessarPagamento(120); };
 
         buttonsPanel.Controls.Add(_btnR10);
         buttonsPanel.Controls.Add(_btnR25);
         buttonsPanel.Controls.Add(_btnR50);
         buttonsPanel.Controls.Add(_btnR100);
-        yPos += 70;
+        yPos += 130; // Altura dos botões + espaçamento
 
-        // Botão Continuar
-        _btnContinuar = new Button
-        {
-            Text = "CONTINUAR PARA PAGAMENTO",
-            Font = new Font("Segoe UI", 12, FontStyle.Bold),
-            BackColor = Color.Cyan,
-            ForeColor = Color.Black,
-            FlatStyle = FlatStyle.Flat,
-            Size = new Size(420, 45),
-            Location = new Point(0, yPos),
-            Cursor = Cursors.Hand
-        };
-        _btnContinuar.FlatAppearance.BorderSize = 0;
-        _btnContinuar.Click += BtnContinuar_Click;
-        yPos += 60;
+        // Botão Continuar removido - os botões de pacote já processam o pagamento diretamente
 
         // Botão Cancelar
         var btnCancelar = new Button
@@ -186,10 +188,7 @@ public partial class AddFundsForm : Form
         btnCancelar.Click += (s, e) => { SoundPlayer.PlayClick(); this.Close(); };
 
         contentPanel.Controls.Add(lblAmount);
-        contentPanel.Controls.Add(_txtAmount);
-        contentPanel.Controls.Add(lblSuggested);
         contentPanel.Controls.Add(buttonsPanel);
-        contentPanel.Controls.Add(_btnContinuar);
         contentPanel.Controls.Add(btnCancelar);
 
         mainPanel.Controls.Add(titleBar);
@@ -198,55 +197,12 @@ public partial class AddFundsForm : Form
         this.Controls.Add(mainPanel);
     }
 
-    private Button CreateSuggestedButton(string text, int index, Panel parent)
+
+    private async Task ProcessarPagamento(int coins)
     {
-        var btn = new Button
-        {
-            Text = text,
-            Font = new Font("Segoe UI", 10),
-            BackColor = Color.FromArgb(50, 50, 60),
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Size = new Size(95, 40),
-            Location = new Point(index * 105, 5),
-            Cursor = Cursors.Hand
-        };
-        btn.FlatAppearance.BorderSize = 0;
-        btn.MouseEnter += (s, e) => { btn.BackColor = Color.FromArgb(70, 70, 80); SoundPlayer.PlayMouseMove(); };
-        btn.MouseLeave += (s, e) => { btn.BackColor = Color.FromArgb(50, 50, 60); };
-        return btn;
-    }
-
-    private async void BtnContinuar_Click(object? sender, EventArgs e)
-    {
-        SoundPlayer.PlayClick();
-
-        if (string.IsNullOrWhiteSpace(_txtAmount!.Text))
-        {
-            MessageBox.Show("Por favor, informe o valor desejado.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
-        }
-
-        // Converter valor (aceitar vírgula ou ponto)
-        var amountText = _txtAmount.Text.Replace(',', '.');
-        if (!decimal.TryParse(amountText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var amount))
-        {
-            MessageBox.Show("Valor inválido. Por favor, informe um valor numérico válido.", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            return;
-        }
-
-        if (amount <= 0)
-        {
-            MessageBox.Show("O valor deve ser maior que zero.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
-        }
-
-        _btnContinuar!.Enabled = false;
-        _btnContinuar.Text = "PROCESSANDO...";
-
         try
         {
-            var checkoutUrl = await _apiService.CreateAddFundsCheckoutAsync(amount);
+            var checkoutUrl = await _apiService.CreateAddFundsCheckoutAsync(coins);
             
             if (!string.IsNullOrEmpty(checkoutUrl))
             {
@@ -271,11 +227,6 @@ public partial class AddFundsForm : Form
         {
             SoundPlayer.PlayError();
             MessageBox.Show($"Erro ao processar pagamento: {ex.Message}", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-        finally
-        {
-            _btnContinuar.Enabled = true;
-            _btnContinuar.Text = "CONTINUAR PARA PAGAMENTO";
         }
     }
 }

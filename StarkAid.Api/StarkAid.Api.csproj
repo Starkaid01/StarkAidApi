@@ -14,7 +14,11 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\Debug\net8.0\StarkAid.Api.xml</DocumentationFile>
-    <NoWarn>1701;1702;1591</NoWarn>
+    <NoWarn>1701;1702;1591;CS8618;CS8604;CS8602;CS8600;CS8603;CS8601;CS8619;CS1998;ASP0000;CS0618;CS0162</NoWarn>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <NoWarn>1701;1702;1591;CS8618;CS8604;CS8602;CS8600;CS8603;CS8601;CS8619;CS1998;ASP0000;CS0618;CS0162</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

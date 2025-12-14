@@ -181,14 +181,8 @@ public class SupportChatHub : Hub
             var respostaFinal = await ProcessarComandoNaResposta(resposta ?? "Desculpe, não consegui processar sua mensagem. Por favor, tente novamente.", userId, origem);
 
             _logger.LogInformation("Enviando mensagem para usuário {UserId}: {Mensagem}", userId, respostaFinal?.Substring(0, Math.Min(100, respostaFinal?.Length ?? 0)));
-            await Clients.Caller.SendAsync("ReceiveMessage", new ChatMessageDto
-            {
-                Message = respostaFinal,
-                Sender = "ia",
-                Timestamp = DateTime.UtcNow,
-                UserId = userId,
-                Origem = origem
-            });
+            var msgDto = await BuildChatMessageDto(userId, origem, "ia", respostaFinal);
+            await Clients.Caller.SendAsync("ReceiveMessage", msgDto);
         }
         else
         {
@@ -229,14 +223,8 @@ public class SupportChatHub : Hub
             }
 
             _logger.LogInformation("Enviando mensagem para usuário {UserId}: {Mensagem}", userId, respostaFinal?.Substring(0, Math.Min(100, respostaFinal?.Length ?? 0)));
-            await Clients.Caller.SendAsync("ReceiveMessage", new ChatMessageDto
-            {
-                Message = respostaFinal,
-                Sender = "ia",
-                Timestamp = DateTime.UtcNow,
-                UserId = userId,
-                Origem = origem
-            });
+            var msgDto = await BuildChatMessageDto(userId, origem, "ia", respostaFinal);
+            await Clients.Caller.SendAsync("ReceiveMessage", msgDto);
         }
     }
 
@@ -255,14 +243,8 @@ public class SupportChatHub : Hub
             // Se há texto antes do comando, enviar primeiro
             if (!string.IsNullOrEmpty(respostaSemComando))
             {
-                await Clients.Caller.SendAsync("ReceiveMessage", new ChatMessageDto
-                {
-                    Message = respostaSemComando,
-                    Sender = "ia",
-                    Timestamp = DateTime.UtcNow,
-                    UserId = userId,
-                    Origem = origem
-                });
+                var msgDto = await BuildChatMessageDto(userId, origem, "ia", respostaSemComando);
+                await Clients.Caller.SendAsync("ReceiveMessage", msgDto);
             }
             
             // Enviar mensagem de processamento
@@ -275,14 +257,8 @@ public class SupportChatHub : Hub
                 _ => "Processando"
             };
             
-            await Clients.Caller.SendAsync("ReceiveMessage", new ChatMessageDto
-            {
-                Message = $"⏳ {acaoNome}...",
-                Sender = "ia",
-                Timestamp = DateTime.UtcNow,
-                UserId = userId,
-                Origem = origem
-            });
+            var processingDto = await BuildChatMessageDto(userId, origem, "ia", $"⏳ {acaoNome}...");
+            await Clients.Caller.SendAsync("ReceiveMessage", processingDto);
 
             // Enviar comando via SignalR
             if (origem == "software")
@@ -318,14 +294,8 @@ public class SupportChatHub : Hub
                 _ => comando
             };
             
-            await Clients.Caller.SendAsync("ReceiveMessage", new ChatMessageDto
-            {
-                Message = $"✅ {acaoNomeCompleto} concluída!\n\nPor favor, verifique se o problema foi resolvido. Se ainda não estiver funcionando, me avise e vou tentar outra solução.",
-                Sender = "ia",
-                Timestamp = DateTime.UtcNow,
-                UserId = userId,
-                Origem = origem
-            });
+            var doneDto = await BuildChatMessageDto(userId, origem, "ia", $"✅ {acaoNomeCompleto} concluída!\n\nPor favor, verifique se o problema foi resolvido. Se ainda não estiver funcionando, me avise e vou tentar outra solução.");
+            await Clients.Caller.SendAsync("ReceiveMessage", doneDto);
             
             // Retornar string vazia para não enviar mensagem duplicada
             return "";
@@ -413,27 +383,15 @@ public class SupportChatHub : Hub
         {
             var saudacao = await _iaService.GerarSaudacaoInicial(userId, user.Name, user.Email, origem, logs);
             
-            await Clients.Caller.SendAsync("ReceiveMessage", new ChatMessageDto
-            {
-                Message = saudacao,
-                Sender = "ia",
-                Timestamp = DateTime.UtcNow,
-                UserId = userId,
-                Origem = origem
-            });
+            var msgDto = await BuildChatMessageDto(userId, origem, "ia", saudacao);
+            await Clients.Caller.SendAsync("ReceiveMessage", msgDto);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao gerar saudação inicial");
             // Enviar mensagem padrão se houver erro
-            await Clients.Caller.SendAsync("ReceiveMessage", new ChatMessageDto
-            {
-                Message = $"Olá {user.Name}! 👋\n\nSou o assistente virtual de suporte da StarkAid. Como posso ajudá-lo hoje?",
-                Sender = "ia",
-                Timestamp = DateTime.UtcNow,
-                UserId = userId,
-                Origem = origem
-            });
+            var msgDto = await BuildChatMessageDto(userId, origem, "ia", $"Olá {user.Name}! 👋\n\nSou o assistente virtual de suporte da StarkAid. Como posso ajudá-lo hoje?");
+            await Clients.Caller.SendAsync("ReceiveMessage", msgDto);
         }
     }
 
@@ -441,13 +399,8 @@ public class SupportChatHub : Hub
     [Authorize(Policy = "AdministradorOnly")]
     public async Task SendSupportMessage(Guid userId, string message)
     {
-        await Clients.Group($"user_{userId}").SendAsync("ReceiveMessage", new ChatMessageDto
-        {
-            Message = message,
-            Sender = "support",
-            Timestamp = DateTime.UtcNow,
-            UserId = userId
-        });
+        var msgDto = await BuildChatMessageDto(userId, "software", "support", message);
+        await Clients.Group($"user_{userId}").SendAsync("ReceiveMessage", msgDto);
     }
 
     // Método para transferir para suporte humano
@@ -462,5 +415,28 @@ public class SupportChatHub : Hub
             await Clients.Group("support_staff").SendAsync("TransferRequest", new { userId });
             await Clients.Caller.SendAsync("TransferInitiated", new { message = "Sua solicitação foi transferida para suporte humano. Aguarde..." });
         }
+    }
+
+    private async Task<ChatMessageDto> BuildChatMessageDto(Guid userId, string origem, string sender, string? mensagem)
+    {
+        var economy = await _iaService.ObterEconomiaAsync(userId);
+
+        return new ChatMessageDto
+        {
+            Message = mensagem ?? string.Empty,
+            Sender = sender,
+            Timestamp = DateTime.UtcNow,
+            UserId = userId,
+            Origem = origem,
+            PlanType = economy?.planType,
+            StarkCoinBalance = economy?.StarkCoinBalance ?? 0,
+            TokensConsumidosSemana = economy?.tokensConsumidosSemana ?? 0,
+            TokensSemanaMax = economy?.tokensSemanaMax ?? 0,
+            TokensRestantes = economy?.tokensRestantes ?? 0,
+            AdsEnabled = economy?.adsEnabled ?? false,
+            AgendamentosMax = economy?.agendamentosMax ?? 0,
+            AgendamentosRestantes = economy?.agendamentosRestantes ?? 0,
+            Rate = economy?.rate ?? 100
+        };
     }
 }

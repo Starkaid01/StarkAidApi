@@ -710,7 +710,8 @@
   <string name="ipc_notifi_center_all">Όλα</string>
   <string name="ipc_notifi_center_select_all">Επιλογή όλων</string>
   <string name="ipc_ota_update_remind">1. Βεβαιωθείτε ότι η συσκευή σας είναι συνδεδεμένη σε παροχή ρεύματος κατά τη διάρκεια της αναβάθμισης \n2, Η αναβάθμιση διαρκεί από 3 ως 5 λεπτά, Σε αυτή τη διάρκεια η συσκευή σας δεν μπορεί να χρησμοποιηθεί.</string>
-  <string name="ipc_panel_baterrylevel">Μπαταρία: %s %%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Μπαταρία: %s %%</string>
   <string name="ipc_panel_button_alarm">Συναγερμός</string>
   <string name="ipc_panel_button_calendar">Ημερομηνία</string>
   <string name="ipc_panel_button_cruise">Περιπολία</string>

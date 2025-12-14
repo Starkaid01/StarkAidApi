@@ -387,7 +387,8 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="cannot_load_image">Impossible de charger l\'image</string>
   <string name="cant_share_reason">Le partage d\'un seul appareil n\'est temporairement pas pris en charge pour les appareils Bluetooth Mesh, Zigbee et infrarouge. Il est nécessaire de partager les appareils pertinents en même temps pour un fonctionnement normal.</string>
   <string name="car_alert_limit_tip">Vous ne pouvez pas ajouter plus de %s scène(s).</string>
-  <string name="car_alert_tip_description">Dans une maison ordinaire, vous ne pouvez ajouter que %d scène(s) à %s. Après avoir souscrit aux avantages Pro, le nombre maximum de scènes peut atteindre la capacité maximale du système de votre véhicule.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="car_alert_tip_description" formatted="false">Dans une maison ordinaire, vous ne pouvez ajouter que %d scène(s) à %s. Après avoir souscrit aux avantages Pro, le nombre maximum de scènes peut atteindre la capacité maximale du système de votre véhicule.</string>
   <string name="car_buy">Acheter maintenant</string>
   <string name="car_buy_home_service">S’abonner à Smart Life Pro</string>
   <string name="car_data_config_tips">Accédez à Application %1$s &gt; Moi &gt; véhicule %2$s pour la configuration.</string>
@@ -1010,7 +1011,8 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="google_flip_success_tip_content">OK Google, allume la lumière \n \n OK Google, illumine ma lumière \n \n OK Google, change la lampe de cuisine en bleu \n \n OK Google, règle ma lumière à 50%</string>
   <string name="google_flip_unbind_info">Vous pouvez annuler l’autorisation à tout moment.</string>
   <string name="google_flip_unbind_info_goto_app">Veuillez vous rendre dans l\'application Google Home pour dissocier l\'action.</string>
-  <string name="google_flip_voice_demos">Allumez les lampes de la salle de bain \ n Éteignez les lumières \ n Réglez la luminosité du salon à 50 %% \ n La lumière est-elle allumée dans le bureau de Thierry ?</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="google_flip_voice_demos" formatted="false">Allumez les lampes de la salle de bain \ n Éteignez les lumières \ n Réglez la luminosité du salon à 50 %% \ n La lumière est-elle allumée dans le bureau de Thierry ?</string>
   <string name="google_home_dev_list_conncet">Se connecter</string>
   <string name="google_home_dev_list_connect_tip">Après avoir connecté Google Home, vous pouvez synchroniser les appareils de l\'application Google Home avec l\'application pour les contrôler.</string>
   <string name="google_home_dev_list_empty_tip">Aucun appareil trouvé</string>
@@ -1153,7 +1155,8 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="home_adv_remove_from_room">Supprimer de la pièce</string>
   <string name="home_adv_remove_widget">Supprimer le widget</string>
   <string name="home_adv_room_device_num">%1$d appareil(s) favori(s)</string>
-  <string name="home_adv_room_hint_num">%d scène(s) | %d dispositif(s)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="home_adv_room_hint_num" formatted="false">%d scène(s) | %d dispositif(s)</string>
   <string name="home_adv_room_list_entry">Liste des pièces</string>
   <string name="home_adv_room_no_device">Aucun appareil</string>
   <string name="home_adv_room_tab">Pièce</string>
@@ -1282,8 +1285,10 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="hometab_auto_start_tip">Vous avez désactivé %s pour démarrer automatiquement, ce qui peut affecter la fonction suivante: \n Recevoir des messages en temps réel (vous risquez de manquer des alertes de sécurité.) \n Autorisez-vous l\'application à démarrer automatiquement lorsque votre téléphone est allumé?</string>
   <string name="hometab_auto_start_title">Rappel de démarrage automatique</string>
   <string name="hometab_ignore_tip">Ne plus montrer.</string>
-  <string name="hosting_camera_used">Caméra %d/%d</string>
-  <string name="hosting_sensor_used">Capteur %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_camera_used" formatted="false">Caméra %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_sensor_used" formatted="false">Capteur %d/%d</string>
   <string name="hs_China_mainland">Chine continentale</string>
   <string name="hs_abnormal_device_number">appareils sont anormaux</string>
   <string name="hs_abnormal_device_title">Anomalie</string>
@@ -1397,8 +1402,10 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="hs_favorite_device_center_tips">Les appareils ci-dessus seront affichés sur la page Appareils, et ce jusqu\'à 4 appareils</string>
   <string name="hs_favorite_device_footer_tips">Appareils non affichés sur la page Appareils</string>
   <string name="hs_favorite_device_tips">Vous pouvez ajouter des appareils fréquemment utilisés sur la page Appareils et en afficher jusqu\'à 4</string>
-  <string name="hs_gateway_armde_failed_ios">%s passerelles de sécurité sur %d ont échoué, vérifier</string>
-  <string name="hs_gateway_armed_failed_android">%s passerelles de sécurité sur %s ont échoué, vérifier</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armde_failed_ios" formatted="false">%s passerelles de sécurité sur %d ont échoué, vérifier</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armed_failed_android" formatted="false">%s passerelles de sécurité sur %s ont échoué, vérifier</string>
   <string name="hs_gateway_device">Passerelle de sécurité</string>
   <string name="hs_geo_current_location">Ce lieu</string>
   <string name="hs_go_setting">Activer</string>
@@ -1421,13 +1428,15 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="hs_host_ipc_devices_android">Appareil photo (%1$s/%2$s)</string>
   <string name="hs_host_sensor_devices_android">Appareil sans appareil photo (%1$s/%2$s)</string>
   <string name="hs_hosting">Surveillance des alarmes</string>
-  <string name="hs_hosting_camera_valid">Caméras disponibles : %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_camera_valid" formatted="false">Caméras disponibles : %d/%d</string>
   <string name="hs_hosting_device_select">Sélectionner un dispositif</string>
   <string name="hs_hosting_other_setting">Autres paramètres</string>
   <string name="hs_hosting_relative_tips">Les détecteurs sont couplés aux caméras. Une fois l’alerte déclenchée, les informations de l’alerte sont envoyées à la plateforme de service correspondante.</string>
   <string name="hs_hosting_remark">Remarques</string>
   <string name="hs_hosting_sensor">Détecteur</string>
-  <string name="hs_hosting_sensor_valid">Détecteurs disponibles : %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_sensor_valid" formatted="false">Détecteurs disponibles : %d/%d</string>
   <string name="hs_image_des">Description de l’image</string>
   <string name="hs_invitation_confirm_detail_ios">Vous êtes invité à rejoindre la maison：\"%s\"pour profiter d\'une vie intelligente. Voulez-vous rejoindre cette maison?</string>
   <string name="hs_ipc_device">Appareils photo</string>
@@ -1477,12 +1486,14 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="hs_message_area">Taille du magasin</string>
   <string name="hs_message_area_unit">%d m²</string>
   <string name="hs_message_contacts">Contact</string>
-  <string name="hs_message_dispatcher_info">%s a créé la tâche %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" formatted="false">%s a créé la tâche %s</string>
   <string name="hs_message_dispatcher_info_ios">%1$s a créé la tâche %2$s</string>
   <string name="hs_message_floor">Quel étage ?</string>
   <string name="hs_message_floor_unit">%d F</string>
   <string name="hs_message_industry">Quel secteur d’activité ?</string>
-  <string name="hs_message_receiver_info">%s a effectué la tâche %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" formatted="false">%s a effectué la tâche %s</string>
   <string name="hs_message_receiver_info_ios">%1$s a effectué la tâche %2$s</string>
   <string name="hs_mode_desc_allhours">Toute la journée</string>
   <string name="hs_mode_desc_leaving">Absent</string>
@@ -1570,8 +1581,10 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="hs_servicemessage">Message de service</string>
   <string name="hs_settings">Configurations</string>
   <string name="hs_show_on_device_page">Affiché sur la page Appareils</string>
-  <string name="hs_smart_gateway_armed_failed_android">Échec de %s la passerelle de sécurité %s.</string>
-  <string name="hs_smart_gateway_armed_failed_ios">Échec de %d passerelles de sécurité %s.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_android" formatted="false">Échec de %s la passerelle de sécurité %s.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_ios" formatted="false">Échec de %d passerelles de sécurité %s.</string>
   <string name="hs_sos_alarm_tips">Confirmer pour désarmer et annuler l\'alarme ?</string>
   <string name="hs_sos_alarmimg">alarme</string>
   <string name="hs_sos_dispatch_tips">Le système d\'alarme s\'est déclenché, veuillez y remédier immédiatement.</string>
@@ -1857,7 +1870,8 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="ipc_cloud_download_encoding">Transcodage</string>
   <string name="ipc_cloud_download_failed">Échec du téléchargement</string>
   <string name="ipc_cloud_download_loading">Téléchargement</string>
-  <string name="ipc_cloud_download_precent">%s%% téléchargé</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" formatted="false">%s%% téléchargé</string>
   <string name="ipc_cloud_download_start">Commencer Le Téléchargement</string>
   <string name="ipc_cloud_download_start_body">Si la vidéo que vous avez sélectionnée comprend plusieurs événements, ils seront fusionnés en une seule vidéo. Pendant le processus de téléchargement, veuillez garder l\'application en front-end.</string>
   <string name="ipc_cloud_empty_event_des">Aucune vidéo d\'événement pertinente</string>
@@ -2207,7 +2221,8 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="ipc_nvr_channel">Canal</string>
   <string name="ipc_nvr_channel_unit">chaîne</string>
   <string name="ipc_ota_update_remind">1. Assurez-vous que votre appareil est connecté à une source d’alimentation tout au long de la procédure de mise à jour. \n2. La mise à jour peut prendre 3 à 5 minutes. Pendant la mise à jour, vous ne pouvez pas utiliser votre appareil.</string>
-  <string name="ipc_panel_baterrylevel">Batterie restante : %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Batterie restante : %s%%</string>
   <string name="ipc_panel_button_alarm">Alarme</string>
   <string name="ipc_panel_button_calendar">Date</string>
   <string name="ipc_panel_button_cruise">Surveillance</string>
@@ -3099,12 +3114,14 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="ota_back_to_home_title">Message</string>
   <string name="ota_batch_upgrade_alert_all_update">Mettre à jour tous les appareils</string>
   <string name="ota_batch_upgrade_alert_confirm">Confirmer la mise à jour</string>
-  <string name="ota_batch_upgrade_alert_content">%d de vos appareils seront mis à jour. %d appareils peuvent ne pas fonctionner correctement pendant la mise à jour. Voulez-vous vraiment lancer la mise à jour ?</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_content" formatted="false">%d de vos appareils seront mis à jour. %d appareils peuvent ne pas fonctionner correctement pendant la mise à jour. Voulez-vous vraiment lancer la mise à jour ?</string>
   <string name="ota_batch_upgrade_alert_no_room">Aucune Pièce</string>
   <string name="ota_batch_upgrade_alert_single_update">Mettre à jour uniquement l’appareil actuel</string>
   <string name="ota_batch_upgrade_alert_tips">Des mises à jour par liaison radio (OTA) peuvent être effectuées simultanément sur %d appareils se trouvant sur le même portail. Voulez-vous les mettre à jour simultanément ?</string>
   <string name="ota_batch_upgrade_alert_title">Mise à jour en bloc</string>
-  <string name="ota_batch_upgrade_alert_unsupport_content">Dans cette mise à jour, \"%s\" et d\'autres appareils (%d appareils au total) ne peuvent pas être mis à jour simultanément. Veuillez les mettre à jour manuellement depuis la liste.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_unsupport_content" formatted="false">Dans cette mise à jour, \"%s\" et d\'autres appareils (%d appareils au total) ne peuvent pas être mis à jour simultanément. Veuillez les mettre à jour manuellement depuis la liste.</string>
   <string name="ota_batch_upgrade_failure_reason">Mettez à jour les appareils un par un.</string>
   <string name="ota_batch_upgrade_no_device_to_upgrade">Aucun appareil ne doit être mis à jour.</string>
   <string name="ota_ble_device_before_upgrade_warning">L’appareil Bluetooth sera temporairement indisponible pendant la mise à jour du firmware. Voulez-vous vraiment lancer la mise à jour maintenant ?</string>
@@ -3497,7 +3514,8 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="scene_geofence_dialog_explain_new">« En cas de changement de localisation (Bêta) » est une fonction expérimentale. Pour utiliser cette fonction, vous devez autoriser l’accès permanent à votre localisation. Vos informations de localisation sont utilisées à cette seule fin. Cette fonction ne fonctionne pas sans vos informations de localisation. \n Affichez « %s » pour en savoir plus.</string>
   <string name="scene_geofence_explain_new">Remarque : les conditions de localisation ci-dessus reposent sur l’emplacement de votre téléphone. Reportez-vous à %s.</string>
   <string name="scene_group_none">le groupe est vide</string>
-  <string name="scene_humidity_tip">Sec (0%-40%), Confortable (40%-70%), Humide (70%-100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">Sec (0%-40%), Confortable (40%-70%), Humide (70%-100%)</string>
   <string name="scene_icon">Icône</string>
   <string name="scene_if">Si</string>
   <string name="scene_if_condition">Si</string>
@@ -3852,7 +3870,8 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="thing_light_rhythm_scene_guide_title">La fonction de rythme biologique peut simuler les changements de luminosité de la lumière et de température de couleur pendant la journée, afin que nous puissions ressentir la lumière revenir à la nature./nAu lever du soleil, la lumière s\'allumera lentement en 30 minutes et atteindra son maximum au moment du lever du soleil./nÀ midi, les lumières se transformeront lentement en lumière froide pour aider les gens à rester éveillés et à mieux travailler./nAu coucher du soleil, la lumière deviendra progressivement chaude, permettant aux gens d\'entrer dans un état de repos./nLorsque vous éteignez la lumière, vous vous endormirez en 30 minutes.</string>
   <string name="thing_light_scene_batch_delete_tips">Voulez-vous vraiment supprimer %d scène(s) d’éclairage(s) ?</string>
   <string name="thing_light_scene_batch_delete_tips_detail">Les calendriers liés seront également supprimés.</string>
-  <string name="thing_light_scene_batch_delete_toast">Supprimé : %d scène(s) d’éclairage(s). Échec : %d scène(s) d’éclairage(s).</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_light_scene_batch_delete_toast" formatted="false">Supprimé : %d scène(s) d’éclairage(s). Échec : %d scène(s) d’éclairage(s).</string>
   <string name="thing_light_scene_create_all_on_all_off">Allumer/éteindre toutes les lumières</string>
   <string name="thing_light_scene_create_all_on_all_off_tip">En raison des différentes capacités des appareils, certains appareils peuvent ne pas fonctionner comme prévu dans le contrôle de groupe. Certains appareils ne prennent pas en charge la fonction Tout allumer/éteindre. Vous serez averti en temps opportun une fois que cette fonctionnalité sera prise en charge.</string>
   <string name="thing_light_scene_delete">Supprimer la scène d’éclairage</string>
@@ -4044,7 +4063,8 @@ Cette application peut également utiliser le Bluetooth pour localiser des appar
   <string name="thing_activator_accessory_not_connect">Impossible de se connecter à l’appareil ?</string>
   <string name="thing_activator_accessory_reset_ensure">Confirmez que %s a été réinitialisé.</string>
   <string name="thing_activator_accessory_timeout">L’opération a expiré.</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">Appareils associés:%s et autres appareils %d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">Appareils associés:%s et autres appareils %d</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">Appareils associé:%s</string>
   <string name="thing_activator_activate_stop_dialog_title">L\'arrêt de \"%s\" entraînera l\'arrêt des autres appareils associés</string>
   <string name="thing_activator_addDevice">Nouvel appareil</string>

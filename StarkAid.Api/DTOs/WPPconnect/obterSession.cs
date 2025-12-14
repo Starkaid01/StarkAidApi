@@ -2,6 +2,6 @@
 {
     public class obterSession
     {
-        public string sessionId { get; set; }
+public string sessionId { get; set; } = string.Empty;
     }
 }

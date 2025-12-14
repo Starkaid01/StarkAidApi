@@ -37,10 +37,11 @@ class PlanosAdapter(
     override fun onBindViewHolder(holder: PlanoViewHolder, position: Int) {
         val plano = planos[position]
 
-        holder.nomePlano.text = plano.nomePlano
+        val isPremium = plano.nivel == 2
+        holder.nomePlano.text = if (isPremium) "StarkAid Premium" else plano.nomePlano
         holder.status.text = plano.status
-        holder.nivel.text = "Nível ${plano.nivel}"
-        holder.valor.text = "R$ ${String.format("%.2f", plano.valor)}/mês"
+        holder.nivel.text = if (isPremium) "Premium" else "Nível ${plano.nivel}"
+        holder.valor.text = if (isPremium) "R$ 10,00/mês" else "R$ ${String.format("%.2f", plano.valor)}/mês"
 
         holder.iniciadaEm.text = "Iniciado em: ${formatDate(plano.iniciadaEm)}"
         holder.expiraEm.text = "Expira em: ${formatDate(plano.expiraEm) ?: "Sem expiração"}"
@@ -55,9 +56,8 @@ class PlanosAdapter(
 
         // Determinar cor do badge baseado no nível
         val badgeColor = when (plano.nivel) {
-            2 -> android.graphics.Color.parseColor("#10b981") // Verde para Remove Ads
-            in 3..7 -> android.graphics.Color.parseColor("#3b82f6") // Azul para planos de StarkCoins
-            else -> android.graphics.Color.parseColor("#6b7280") // Cinza padrão
+            2 -> android.graphics.Color.parseColor("#10b981") // Premium
+            else -> android.graphics.Color.parseColor("#6b7280")
         }
         holder.status.setBackgroundColor(badgeColor)
         holder.status.setTextColor(android.graphics.Color.WHITE)
@@ -75,7 +75,8 @@ class PlanosAdapter(
     override fun getItemCount(): Int = planos.size
 
     fun updatePlanos(newPlanos: List<PlanoAtivoResponse>) {
-        planos = newPlanos
+        // Somente exibe o plano Premium (nivel 2)
+        planos = newPlanos.filter { it.nivel == 2 }
         notifyDataSetChanged()
     }
 

@@ -6,6 +6,6 @@
         public string Password { get; set; } = string.Empty;
 
         // Origem do login: "app" ou "web"
-        public string Origem { get; set; }
+public string Origem { get; set; } = string.Empty;
     }
 }

@@ -101,41 +101,25 @@ class YouTubeMediaListenerService : Service() {
                                 PlaybackState.STATE_STOPPED ->
                                     Log.i(TAG, "nenhuma midia tocando")
 
-                                PlaybackState.STATE_BUFFERING -> {
-                                    TODO()
-                                }
+                                PlaybackState.STATE_BUFFERING -> { /* noop */ }
 
-                                PlaybackState.STATE_CONNECTING -> {
-                                    TODO()
-                                }
+                                PlaybackState.STATE_CONNECTING -> { /* noop */ }
 
-                                PlaybackState.STATE_ERROR -> {
-                                    TODO()
-                                }
+                                PlaybackState.STATE_ERROR -> { /* noop */ }
 
-                                PlaybackState.STATE_FAST_FORWARDING -> {
-                                    TODO()
-                                }
+                                PlaybackState.STATE_FAST_FORWARDING -> { /* noop */ }
 
-                                PlaybackState.STATE_NONE -> {
-                                    TODO()
-                                }
+                                PlaybackState.STATE_NONE -> { /* noop */ }
 
-                                PlaybackState.STATE_REWINDING -> {
-                                    TODO()
-                                }
+                                PlaybackState.STATE_REWINDING -> { /* noop */ }
 
-                                PlaybackState.STATE_SKIPPING_TO_NEXT -> {
-                                    TODO()
-                                }
+                                PlaybackState.STATE_SKIPPING_TO_NEXT -> { /* noop */ }
 
-                                PlaybackState.STATE_SKIPPING_TO_PREVIOUS -> {
-                                    TODO()
-                                }
+                                PlaybackState.STATE_SKIPPING_TO_PREVIOUS -> { /* noop */ }
 
-                                PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM -> {
-                                    TODO()
-                                }
+                                PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM -> { /* noop */ }
+
+                                else -> { /* estados não mapeados */ }
                             }
                         }
                     }

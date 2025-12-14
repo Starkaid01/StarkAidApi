@@ -180,18 +180,40 @@ public class ApiService
                 if (result != null)
                 {
                     var userObj = result["user"];
+                    var economyObj = result["economy"] ?? userObj?["economy"];
+                    
+                    var user = new User
+                    {
+                        Id = Guid.Parse(userObj?["id"]?.ToString() ?? Guid.Empty.ToString()),
+                        Name = userObj?["name"]?.ToString() ?? "",
+                        Email = userObj?["email"]?.ToString() ?? "",
+                        ApiKey = userObj?["apiKey"]?.ToString() ?? "",
+                        StarkCoinBalance = userObj?["starkCoinBalance"] != null ? Convert.ToInt32(userObj["starkCoinBalance"]) : 0,
+                        PlanType = userObj?["planType"]?.ToString() ?? "Free",
+                        Role = userObj?["role"]?.ToString() ?? "",
+                        Estado = userObj?["estado"]?.ToString(),
+                        Cidade = userObj?["cidade"]?.ToString(),
+                        Bairro = userObj?["bairro"]?.ToString()
+                    };
+                    
+                    // Se economy está presente, atualizar campos do User
+                    if (economyObj != null)
+                    {
+                        user.PlanType = economyObj["planType"]?.ToString() ?? user.PlanType;
+                        user.StarkCoinBalance = economyObj["starkCoinBalance"] != null ? Convert.ToInt32(economyObj["starkCoinBalance"]) : user.StarkCoinBalance;
+                        user.TokensConsumidosSemana = economyObj["tokensConsumidosSemana"] != null ? Convert.ToInt32(economyObj["tokensConsumidosSemana"]) : 0;
+                        user.TokensSemanaMax = economyObj["tokensSemanaMax"] != null ? Convert.ToInt32(economyObj["tokensSemanaMax"]) : 0;
+                        user.TokensRestantes = economyObj["tokensRestantes"] != null ? Convert.ToInt32(economyObj["tokensRestantes"]) : 0;
+                        user.AdsEnabled = economyObj["adsEnabled"] != null ? Convert.ToBoolean(economyObj["adsEnabled"]) : true;
+                        user.AgendamentosMax = economyObj["agendamentosMax"] != null ? Convert.ToInt32(economyObj["agendamentosMax"]) : 0;
+                        user.AgendamentosRestantes = economyObj["agendamentosRestantes"] != null ? Convert.ToInt32(economyObj["agendamentosRestantes"]) : 0;
+                    }
+                    
                     return new LoginResponse
                     {
                         Token = result["token"]?.ToString() ?? "",
                         RefreshToken = result["refreshToken"]?.ToString() ?? "",
-                        User = new User
-                        {
-                            Id = Guid.Parse(userObj?["id"]?.ToString() ?? Guid.Empty.ToString()),
-                            Name = userObj?["name"]?.ToString() ?? "",
-                            Email = userObj?["email"]?.ToString() ?? "",
-                            ApiKey = userObj?["apiKey"]?.ToString() ?? "",
-                            StarkCoins = userObj?["starkCoins"] != null ? Convert.ToDecimal(userObj["starkCoins"]) : 0
-                        }
+                        User = user
                     };
                 }
             }
@@ -218,6 +240,15 @@ public class ApiService
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject<JObject>(content);
+                
+                // Novo formato: { data: [...], economy: {...} }
+                if (result?["data"] != null)
+                {
+                    return result["data"].ToObject<List<ComandoSocial>>() ?? new List<ComandoSocial>();
+                }
+                
+                // Formato antigo (compatibilidade)
                 return JsonConvert.DeserializeObject<List<ComandoSocial>>(content) ?? new List<ComandoSocial>();
             }
         }
@@ -240,6 +271,15 @@ public class ApiService
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject<JObject>(responseContent);
+                
+                // Novo formato: { data: {...}, economy: {...} }
+                if (result?["data"] != null)
+                {
+                    return result["data"].ToObject<ComandoSocial>();
+                }
+                
+                // Formato antigo (compatibilidade)
                 return JsonConvert.DeserializeObject<ComandoSocial>(responseContent);
             }
             else
@@ -263,7 +303,23 @@ public class ApiService
             var json = JsonConvert.SerializeObject(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             var response = await _httpClient.PutAsync(BuildUrl($"ComandosSociais/{id}"), content);
-            return response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NoContent;
+            
+            // A resposta pode ser { data: {...}, economy: {...} } ou apenas sucesso
+            if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            {
+                return true;
+            }
+            
+            // Se houver erro 402, tratar
+            if (response.StatusCode == HttpStatusCode.PaymentRequired)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                throw new PaymentRequiredException("Saldo insuficiente para comando social.", body);
+            }
+        }
+        catch (PaymentRequiredException)
+        {
+            throw; // Re-lançar exceções de pagamento
         }
         catch (Exception ex)
         {
@@ -460,11 +516,38 @@ public class ApiService
             {
                 var content = await response.Content.ReadAsStringAsync();
                 System.Diagnostics.Debug.WriteLine($"Resposta GetCurrentUserAsync: {content}");
-                var user = JsonConvert.DeserializeObject<User>(content);
-                if (user != null)
+                
+                // Deserializar resposta com economy
+                var result = JsonConvert.DeserializeObject<JObject>(content);
+                if (result == null) return null;
+                
+                var economyObj = result["economy"];
+                var user = new User
                 {
-                    System.Diagnostics.Debug.WriteLine($"User deserializado: Name={user.Name}, Email={user.Email}, StarkCoins={user.StarkCoins}");
+                    Id = Guid.Parse(result["id"]?.ToString() ?? Guid.Empty.ToString()),
+                    Name = result["name"]?.ToString() ?? "",
+                    Email = result["email"]?.ToString() ?? "",
+                    ApiKey = result["apiKey"]?.ToString() ?? "",
+                    Role = result["role"]?.ToString() ?? "",
+                    Estado = result["estado"]?.ToString(),
+                    Cidade = result["cidade"]?.ToString(),
+                    Bairro = result["bairro"]?.ToString()
+                };
+                
+                // Atualizar campos do economy se presente
+                if (economyObj != null)
+                {
+                    user.PlanType = economyObj["planType"]?.ToString() ?? "Free";
+                    user.StarkCoinBalance = economyObj["starkCoinBalance"] != null ? Convert.ToInt32(economyObj["starkCoinBalance"]) : 0;
+                    user.TokensConsumidosSemana = economyObj["tokensConsumidosSemana"] != null ? Convert.ToInt32(economyObj["tokensConsumidosSemana"]) : 0;
+                    user.TokensSemanaMax = economyObj["tokensSemanaMax"] != null ? Convert.ToInt32(economyObj["tokensSemanaMax"]) : 0;
+                    user.TokensRestantes = economyObj["tokensRestantes"] != null ? Convert.ToInt32(economyObj["tokensRestantes"]) : 0;
+                    user.AdsEnabled = economyObj["adsEnabled"] != null ? Convert.ToBoolean(economyObj["adsEnabled"]) : true;
+                    user.AgendamentosMax = economyObj["agendamentosMax"] != null ? Convert.ToInt32(economyObj["agendamentosMax"]) : 0;
+                    user.AgendamentosRestantes = economyObj["agendamentosRestantes"] != null ? Convert.ToInt32(economyObj["agendamentosRestantes"]) : 0;
                 }
+                
+                System.Diagnostics.Debug.WriteLine($"User deserializado: Name={user.Name}, Email={user.Email}, StarkCoinBalance={user.StarkCoinBalance}, PlanType={user.PlanType}");
                 return user;
             }
             else
@@ -629,6 +712,11 @@ public class ApiService
                 await HandleRateLimitAsync(response);
                 System.Diagnostics.Debug.WriteLine("[PublishCommandAsync] Rate limit excedido. Limite: 5 req/min por usuário para IoT.");
             }
+            else if (response.StatusCode == HttpStatusCode.PaymentRequired)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                throw new PaymentRequiredException("Saldo insuficiente para comando.", body);
+            }
             else
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
@@ -654,7 +742,67 @@ public class ApiService
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<SuperIaResponse>(responseContent);
+                var result = JsonConvert.DeserializeObject<JObject>(responseContent);
+                if (result == null) return null;
+                
+                var responseObj = new SuperIaResponse();
+                
+                // Deserializar resultado aninhado
+                var resultadoObj = result["resultado"];
+                if (resultadoObj != null)
+                {
+                    responseObj.Resultado = new Models.IaResult
+                    {
+                        Texto = resultadoObj["texto"]?.ToString() ?? "",
+                        PromptTokens = resultadoObj["promptTokens"] != null ? Convert.ToInt32(resultadoObj["promptTokens"]) : 0,
+                        CompletionTokens = resultadoObj["completionTokens"] != null ? Convert.ToInt32(resultadoObj["completionTokens"]) : 0,
+                        Modelo = resultadoObj["modelo"]?.ToString()
+                    };
+                    // Compatibilidade: também definir campos diretos
+                    responseObj.Texto = responseObj.Resultado.Texto;
+                    responseObj.PromptTokens = responseObj.Resultado.PromptTokens;
+                    responseObj.CompletionTokens = responseObj.Resultado.CompletionTokens;
+                    responseObj.Modelo = responseObj.Resultado.Modelo ?? "";
+                }
+                
+                // Deserializar economy
+                var economyObj = result["economy"] ?? result;
+                if (economyObj != null)
+                {
+                    responseObj.Economy = new EconomicPayload
+                    {
+                        PlanType = economyObj["planType"]?.ToString() ?? result["planType"]?.ToString() ?? "Free",
+                        StarkCoinBalance = economyObj["starkCoinBalance"] != null ? Convert.ToInt32(economyObj["starkCoinBalance"]) : (result["starkCoinBalance"] != null ? Convert.ToInt32(result["starkCoinBalance"]) : 0),
+                        TokensConsumidosSemana = economyObj["tokensConsumidosSemana"] != null ? Convert.ToInt32(economyObj["tokensConsumidosSemana"]) : (result["tokensConsumidosSemana"] != null ? Convert.ToInt32(result["tokensConsumidosSemana"]) : 0),
+                        TokensSemanaMax = economyObj["tokensSemanaMax"] != null ? Convert.ToInt32(economyObj["tokensSemanaMax"]) : (result["tokensSemanaMax"] != null ? Convert.ToInt32(result["tokensSemanaMax"]) : 0),
+                        TokensRestantes = economyObj["tokensRestantes"] != null ? Convert.ToInt32(economyObj["tokensRestantes"]) : (result["tokensRestantes"] != null ? Convert.ToInt32(result["tokensRestantes"]) : 0),
+                        AdsEnabled = economyObj["adsEnabled"] != null ? Convert.ToBoolean(economyObj["adsEnabled"]) : (result["adsEnabled"] != null ? Convert.ToBoolean(result["adsEnabled"]) : true),
+                        AgendamentosMax = economyObj["agendamentosMax"] != null ? Convert.ToInt32(economyObj["agendamentosMax"]) : (result["agendamentosMax"] != null ? Convert.ToInt32(result["agendamentosMax"]) : 0),
+                        AgendamentosRestantes = economyObj["agendamentosRestantes"] != null ? Convert.ToInt32(economyObj["agendamentosRestantes"]) : (result["agendamentosRestantes"] != null ? Convert.ToInt32(result["agendamentosRestantes"]) : 0),
+                        Rate = economyObj["rate"] != null ? Convert.ToInt32(economyObj["rate"]) : (result["rate"] != null ? Convert.ToInt32(result["rate"]) : 100)
+                    };
+                    
+                    // Compatibilidade: também definir campos diretos
+                    responseObj.PlanType = responseObj.Economy.PlanType;
+                    responseObj.TokensRestantes = responseObj.Economy.TokensRestantes;
+                    responseObj.TokensConsumidosSemana = responseObj.Economy.TokensConsumidosSemana;
+                    responseObj.TokensSemanaMax = responseObj.Economy.TokensSemanaMax;
+                    responseObj.StarkCoinBalance = responseObj.Economy.StarkCoinBalance;
+                    responseObj.AdsEnabled = responseObj.Economy.AdsEnabled;
+                    responseObj.AgendamentosMax = responseObj.Economy.AgendamentosMax;
+                    responseObj.Rate = responseObj.Economy.Rate;
+                }
+                
+                return responseObj;
+            }
+
+            if (response.StatusCode == HttpStatusCode.PaymentRequired)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                var errorObj = JsonConvert.DeserializeObject<JObject>(body);
+                var requiredCoins = errorObj?["requiredCoins"]?.ToObject<int?>();
+                var message = errorObj?["message"]?.ToString() ?? "Saldo insuficiente para IA.";
+                throw new PaymentRequiredException(message, body, requiredCoins);
             }
             
             // Tratamento específico para Rate Limiting (429)
@@ -668,6 +816,10 @@ public class ApiService
                 var errorContent = await response.Content.ReadAsStringAsync();
                 System.Diagnostics.Debug.WriteLine($"Erro ao chamar Super IA: {response.StatusCode} - {errorContent}");
             }
+        }
+        catch (PaymentRequiredException)
+        {
+            throw; // Re-lançar exceções de pagamento
         }
         catch (Exception ex)
         {
@@ -1047,12 +1199,12 @@ public class ApiService
         return false;
     }
 
-    // Pagamentos - Adicionar Fundos
-    public async Task<string?> CreateAddFundsCheckoutAsync(decimal amount)
+    // Pagamentos - Adicionar Fundos (usa pacotes fixos de StarkCoins)
+    public async Task<string?> CreateAddFundsCheckoutAsync(int coins)
     {
         try
         {
-            var request = new { Amount = amount };
+            var request = new { Coins = coins };
             var json = JsonConvert.SerializeObject(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             var httpRequest = new HttpRequestMessage(HttpMethod.Post, BuildUrl("Users/add-funds"))
@@ -1203,6 +1355,31 @@ public class ApiService
             System.Diagnostics.Debug.WriteLine($"Erro ao controlar dispositivo Ewelink: {ex.Message}");
         }
         return false;
+    }
+    
+    // Obter status de dispositivo Starkswitch via MQTT
+    public async Task<string?> GetStarkswitchDeviceStatusAsync(Guid deviceId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync(BuildUrl($"Status/{deviceId}/status"));
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject<JObject>(content);
+                return result?["status"]?.ToString();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"Erro ao obter status do dispositivo Starkswitch: {response.StatusCode} - {errorContent}");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Erro ao obter status do dispositivo Starkswitch: {ex.Message}");
+        }
+        return null;
     }
 
     private string GetMachineId()

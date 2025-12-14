@@ -4,8 +4,8 @@ namespace StarkAid.Api.Services.V1.WPPconnect
 {
     public class Contato
     {
-        public string Nome { get; set; }
-        public string Numero { get; set; }
+public string Nome { get; set; } = string.Empty;
+public string Numero { get; set; } = string.Empty;
     }
 
     public static class ContatoFilter

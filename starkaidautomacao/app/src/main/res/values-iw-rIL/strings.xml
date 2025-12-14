@@ -387,7 +387,8 @@
   <string name="ipc_motion_time_order_wrong">זמן התחלה צריכה להיות מוקדם יותר זמן הסיום</string>
   <string name="ipc_motion_time_unit">דק</string>
   <string name="ipc_motion_time_unit_mins">דק</string>
-  <string name="ipc_panel_baterrylevel">סוללה: %s %%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">סוללה: %s %%</string>
   <string name="ipc_panel_button_alarm">מעורר</string>
   <string name="ipc_panel_button_calendar">תאריך</string>
   <string name="ipc_panel_button_cstorage">אחסון ענן</string>

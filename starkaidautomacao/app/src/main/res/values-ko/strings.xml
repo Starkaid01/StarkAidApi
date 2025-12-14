@@ -385,7 +385,8 @@
   <string name="cannot_load_image">이미지 로드에 실패했습니다.</string>
   <string name="cant_share_reason">단일 블루투스 매쉬 장치, 지그비 장치 또는 적외선(IR) 장치는 공유할 수 없습니다. 해당하는 장치는 관련 장치와만 공유할 수 있습니다.</string>
   <string name="car_alert_limit_tip">%s개 이상의 장면을 추가할 수 없습니다.</string>
-  <string name="car_alert_tip_description">일반적인 가정에서는 %d개의 장면만 %s에 추가할 수 있습니다. Pro 혜택을 구독하면, 장면의 최대 개수는 차량 시스템의 최대 용량에 도달할 수 있습니다.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="car_alert_tip_description" formatted="false">일반적인 가정에서는 %d개의 장면만 %s에 추가할 수 있습니다. Pro 혜택을 구독하면, 장면의 최대 개수는 차량 시스템의 최대 용량에 도달할 수 있습니다.</string>
   <string name="car_buy">지금 구매</string>
   <string name="car_buy_home_service">Smart Life Pro 구독하기</string>
   <string name="car_data_config_tips">구성하려면 %1$s 앱 &gt; 나 &gt; %2$s 차량으로 이동하십시오.</string>
@@ -1013,7 +1014,8 @@
   <string name="google_flip_success_tip_content">OK Google, 조명 켜주세요\n\nOK Google, 조명 밝기 올려주세요\n\nOK Google, 주방 램프 색상 변경해주세요\n\nOK Google, 조명 50%로 설정해주세요</string>
   <string name="google_flip_unbind_info">언제든지 승인을 취소할 수 있습니다.</string>
   <string name="google_flip_unbind_info_goto_app">연결을 해제하시려면 구글홈 앱으로 이동하십시오</string>
-  <string name="google_flip_voice_demos">욕실 램프 켜기\"\ n \"조명 끄기\"\ n \"거실 밝기를 50 %%로 설정하십시오.\"\ n \"존의 사무실에 불이 켜져 있습니까?</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="google_flip_voice_demos" formatted="false">욕실 램프 켜기\"\ n \"조명 끄기\"\ n \"거실 밝기를 50 %%로 설정하십시오.\"\ n \"존의 사무실에 불이 켜져 있습니까?</string>
   <string name="google_home_dev_list_conncet">연결</string>
   <string name="google_home_dev_list_connect_tip">Google Home을 연결한 후, Google Home 앱의 장비를 앱과 동기화하여 제어할 수 있습니다.</string>
   <string name="google_home_dev_list_empty_tip">장치를 찾을 수 없음</string>
@@ -1156,7 +1158,8 @@
   <string name="home_adv_remove_from_room">방에서 삭제</string>
   <string name="home_adv_remove_widget">위젯 제거</string>
   <string name="home_adv_room_device_num">%1$d개의 즐겨찾는 장치</string>
-  <string name="home_adv_room_hint_num">%d개 장면 | %d개 장치</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="home_adv_room_hint_num" formatted="false">%d개 장면 | %d개 장치</string>
   <string name="home_adv_room_list_entry">방 목록</string>
   <string name="home_adv_room_no_device">장치 없음</string>
   <string name="home_adv_room_tab">방</string>
@@ -1285,8 +1288,10 @@
   <string name="hometab_auto_start_tip">%s의 자동 시작 기능을 비활성화하여, 다음 기능에 영향을 줄 수 있습니다.\n 실시간 메시지 수신(보안 경고를 놓칠 수 있습니다.)\n 휴대전화가 켜져 있을 때 앱이 자동으로 시작되도록 허용할까요?</string>
   <string name="hometab_auto_start_title">자동 시작 미리 알림</string>
   <string name="hometab_ignore_tip">다시 표시하지 않기.</string>
-  <string name="hosting_camera_used">카메라 %d/%d</string>
-  <string name="hosting_sensor_used">센서 %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_camera_used" formatted="false">카메라 %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_sensor_used" formatted="false">센서 %d/%d</string>
   <string name="hs_China_mainland">중국 본토</string>
   <string name="hs_abnormal_device_number">장치 예외</string>
   <string name="hs_abnormal_device_title">비정상</string>
@@ -1400,8 +1405,10 @@
   <string name="hs_favorite_device_center_tips">위의 기기는 최대 4개까지 기기 페이지에 표시됩니다</string>
   <string name="hs_favorite_device_footer_tips">기기 페이지에 표시되지 않은 기기</string>
   <string name="hs_favorite_device_tips">자주 사용하는 기기를 기기 페이지에 추가하고 최대 4개까지 표시할 수 있습니다</string>
-  <string name="hs_gateway_armde_failed_ios">%d 개의 보안 게이트웨이%s이 (가) 실패했습니다.</string>
-  <string name="hs_gateway_armed_failed_android">%s 게이트웨이%s을 (를) 볼 수 없습니다.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armde_failed_ios" formatted="false">%d 개의 보안 게이트웨이%s이 (가) 실패했습니다.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armed_failed_android" formatted="false">%s 게이트웨이%s을 (를) 볼 수 없습니다.</string>
   <string name="hs_gateway_device">보안 게이트웨이</string>
   <string name="hs_geo_current_location">현재 위치</string>
   <string name="hs_go_setting">열기</string>
@@ -1424,13 +1431,15 @@
   <string name="hs_host_ipc_devices_android">카메라 장치(%1$s/%2$s)</string>
   <string name="hs_host_sensor_devices_android">비 카메라 장치(%1$s/%2$s)</string>
   <string name="hs_hosting">알람 모니터링</string>
-  <string name="hs_hosting_camera_valid">사용 가능한 카메라: %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_camera_valid" formatted="false">사용 가능한 카메라: %d/%d</string>
   <string name="hs_hosting_device_select">장치 선택</string>
   <string name="hs_hosting_other_setting">기타 설정</string>
   <string name="hs_hosting_relative_tips">센서는 카메라에 연결되었습니다. 경고가 발동된 후 경고 정보는 해당 서비스 플랫폼으로 전송됩니다.</string>
   <string name="hs_hosting_remark">비고</string>
   <string name="hs_hosting_sensor">센서</string>
-  <string name="hs_hosting_sensor_valid">사용 가능한 센서: %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_sensor_valid" formatted="false">사용 가능한 센서: %d/%d</string>
   <string name="hs_image_des">이미지 설명</string>
   <string name="hs_invitation_confirm_detail_ios">똑똑한 수명을 즐기기 위해 홈：\"%s\"에 가입하도록 초대받습니다. 이 집에 가입 하시겠습니까?</string>
   <string name="hs_ipc_device">카메라 장치</string>
@@ -1480,12 +1489,14 @@
   <string name="hs_message_area">매장의 크기</string>
   <string name="hs_message_area_unit">%d m²</string>
   <string name="hs_message_contacts">연락처</string>
-  <string name="hs_message_dispatcher_info">%s 이(가) %s 작업을 생성합니다.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" formatted="false">%s 이(가) %s 작업을 생성합니다.</string>
   <string name="hs_message_dispatcher_info_ios">%1$s 이(가) %2$s 작업을 생성합니다.</string>
   <string name="hs_message_floor">층 정보</string>
   <string name="hs_message_floor_unit">%d F</string>
   <string name="hs_message_industry">해당 산업</string>
-  <string name="hs_message_receiver_info">%s 이(가) %s 작업을 수행합니다.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" formatted="false">%s 이(가) %s 작업을 수행합니다.</string>
   <string name="hs_message_receiver_info_ios">%1$s 이(가) %2$s 작업을 수행합니다.</string>
   <string name="hs_mode_desc_allhours">온종일</string>
   <string name="hs_mode_desc_leaving">외출</string>
@@ -1573,8 +1584,10 @@
   <string name="hs_servicemessage">서비스 메시지</string>
   <string name="hs_settings">설정</string>
   <string name="hs_show_on_device_page">기기 페이지에 표시됨</string>
-  <string name="hs_smart_gateway_armed_failed_android">%s보안 게이트웨이%s이(가) 실패했습니다.</string>
-  <string name="hs_smart_gateway_armed_failed_ios">%d개의 보안 게이트웨이%s이(가) 실패했습니다.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_android" formatted="false">%s보안 게이트웨이%s이(가) 실패했습니다.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_ios" formatted="false">%d개의 보안 게이트웨이%s이(가) 실패했습니다.</string>
   <string name="hs_sos_alarm_tips">알람을 해제하고 취소하시겠습니까?</string>
   <string name="hs_sos_alarmimg">경보</string>
   <string name="hs_sos_dispatch_tips">경보 시스템이 작동되었습니다. 즉시 처리하시기 바랍니다.</string>
@@ -1861,7 +1874,8 @@
   <string name="ipc_cloud_download_encoding">트랜스 코딩</string>
   <string name="ipc_cloud_download_failed">다운로드 실패</string>
   <string name="ipc_cloud_download_loading">다운로드</string>
-  <string name="ipc_cloud_download_precent">%s%% 다운로드</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" formatted="false">%s%% 다운로드</string>
   <string name="ipc_cloud_download_start">다운로드가 시작됩니다</string>
   <string name="ipc_cloud_download_start_body">다운로드 한 콘텐츠에 여러 이벤트 클립이 포함되어 있으면 하나의 비디오로 병합됩니다. 다운로드 프로세스 중에 APP를 포 그라운드로 유지하십시오.</string>
   <string name="ipc_cloud_empty_event_des">관련 이벤트 영상이 없습니다</string>
@@ -2212,7 +2226,8 @@
   <string name="ipc_nvr_channel">채널</string>
   <string name="ipc_nvr_channel_unit">채널</string>
   <string name="ipc_ota_update_remind">1. 업그레이드 시 기기를 켜 두십시오.  \n2. 업그레이드는 3~5분 소요되며 이 시간 동안 해당 기기를 사용할 수 없습니다.</string>
-  <string name="ipc_panel_baterrylevel">배터리 잔량 : %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">배터리 잔량 : %s%%</string>
   <string name="ipc_panel_button_alarm">경보</string>
   <string name="ipc_panel_button_calendar">날짜</string>
   <string name="ipc_panel_button_cruise">자동 감시</string>
@@ -3089,12 +3104,14 @@
   <string name="ota_back_to_home_title">프롬프트</string>
   <string name="ota_batch_upgrade_alert_all_update">모든 장치 업데이트</string>
   <string name="ota_batch_upgrade_alert_confirm">업데이트 확인</string>
-  <string name="ota_batch_upgrade_alert_content">%d개의 장치가 업데이트됩니다. 업데이트 중에는 %d개의 장치가 제대로 작동하지 않을 수 있습니다. 업데이트를 시작하시겠습니까?</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_content" formatted="false">%d개의 장치가 업데이트됩니다. 업데이트 중에는 %d개의 장치가 제대로 작동하지 않을 수 있습니다. 업데이트를 시작하시겠습니까?</string>
   <string name="ota_batch_upgrade_alert_no_room">방 없음</string>
   <string name="ota_batch_upgrade_alert_single_update">현재 장치만 업데이트</string>
   <string name="ota_batch_upgrade_alert_tips">동일한 게이트웨이 아래에 있는 (%d)개의 장치가 OTA를 통해 동시에 업데이트될 수 있는 것으로 확인되었습니다. 함께 업데이트하시겠습니까?</string>
   <string name="ota_batch_upgrade_alert_title">일괄 업데이트</string>
-  <string name="ota_batch_upgrade_alert_unsupport_content">이 업데이트에서는 \"%s\" 및 기타 장치(%d개의 장치)가 동시에 업데이트될 수 없습니다. 목록에서 수동으로 업데이트하십시오.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_unsupport_content" formatted="false">이 업데이트에서는 \"%s\" 및 기타 장치(%d개의 장치)가 동시에 업데이트될 수 없습니다. 목록에서 수동으로 업데이트하십시오.</string>
   <string name="ota_batch_upgrade_failure_reason">장치를 개별적으로 업데이트하십시오.</string>
   <string name="ota_batch_upgrade_no_device_to_upgrade">업데이트할 장치가 없습니다.</string>
   <string name="ota_ble_device_before_upgrade_warning">펌웨어를 업데이트하는 동안에는 블루투스 장치를 일시적으로 사용할 수 없습니다. 지금 업데이트를 시작하시겠습니까?</string>
@@ -3488,7 +3505,8 @@
   <string name="scene_geofence_dialog_explain_new">“위치가 변경 시(베타)”는 실험 기능입니다. 이 기능을 사용하려면 항상 위치에 대한 액세스를 허용해야 합니다. 위치 정보는 다른 목적으로 사용되지 않습니다. 이 기능은 위치 정보 없이 작동하지 않습니다. \n 자세한 내용을 알아보려면 \"%s\"을 참조하십시오.</string>
   <string name="scene_geofence_explain_new">참고: 위의 위치 조건은 스마트폰의 위치를 기준으로 합니다. %s를 참조하십시오.</string>
   <string name="scene_group_none">그룹이 비어있습니다.</string>
-  <string name="scene_humidity_tip">건조(0%~40%), 쾌적(40%~70%), 습도(70%~100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">건조(0%~40%), 쾌적(40%~70%), 습도(70%~100%)</string>
   <string name="scene_icon">아이콘</string>
   <string name="scene_if">만약</string>
   <string name="scene_if_condition">조건</string>
@@ -3836,7 +3854,8 @@
   <string name="thing_light_rhythm_scene_guide_title">생물학적 리듬 기능은 하루 동안 빛의 밝기와 색온도의 변화를 시뮬레이션하여 빛이 자연으로 돌아오는 것을 느낄 수 있도록 합니다./n일출 시에 빛은 30분 내에 천천히 켜지고 일출 시에 최대에 도달합니다./n정오에는 빛이 차가운 빛으로 천천히 변하여 사람들이 깨어 있고 작업을 더 잘 할 수 있도록 돕습니다./n일몰 시에 빛은 점차 따뜻한 빛으로 변하여 사람들이 휴식 상태에 들어갈 수 있도록 합니다./n빛을 끄면 30분 내에 잠들게 됩니다.</string>
   <string name="thing_light_scene_batch_delete_tips">%d개의 조명 장면을 삭제하시겠습니까?</string>
   <string name="thing_light_scene_batch_delete_tips_detail">연결된 일정도 삭제됩니다.</string>
-  <string name="thing_light_scene_batch_delete_toast">삭제됨: %d개의 조명 장면. 실패함: %d개의 조명 장면.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_light_scene_batch_delete_toast" formatted="false">삭제됨: %d개의 조명 장면. 실패함: %d개의 조명 장면.</string>
   <string name="thing_light_scene_create_all_on_all_off">모든 조명 켜기/끄기 설정</string>
   <string name="thing_light_scene_create_all_on_all_off_tip">장치 기능이 달라서 특정 장치가 그룹 제어에서 예상한 대로 실행되지 않을 수 있습니다. 특정 장치는 모두 켜기/끄기를 지원하지 않습니다. 이 기능이 지원되면 적시에 알림을 받을 수 있습니다.</string>
   <string name="thing_light_scene_delete">조명 장면 삭제</string>
@@ -4029,7 +4048,8 @@
   <string name="thing_activator_accessory_not_connect">장치에 연결할 수 없습니까?</string>
   <string name="thing_activator_accessory_reset_ensure">%s이(가) 재설정되었는지 확인하십시오.</string>
   <string name="thing_activator_accessory_timeout">작동 시간 초과</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">관련 장치 : %s 및 기타 %d 장치</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">관련 장치 : %s 및 기타 %d 장치</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">관련 장비 : %s</string>
   <string name="thing_activator_activate_stop_dialog_title">\"%s\"을 (를) 중지하면 다른 관련 장치가 함께 중지됩니다.</string>
   <string name="thing_activator_addDevice">새로운 기기</string>

@@ -276,25 +276,6 @@ Output: 'Não poderei comparecer à reunião.'"
             };
         }
 
-        public decimal CalcularCustoUSD(IaResultado resultado)
-        {
-            decimal custo = 0;
-
-            if (resultado.Modelo == "groq-llama3-8b-8192")
-            {
-                custo += resultado.PromptTokens * (0.05m / 1_000_000m);
-                custo += resultado.CompletionTokens * (0.08m / 1_000_000m);
-            }
-            else if (resultado.Modelo == "openrouter-gpt-4o-mini")
-            {
-                custo += resultado.PromptTokens * (5m / 1_000_000m);
-                custo += resultado.CompletionTokens * (15m / 1_000_000m);
-            }
-
-            custo *= 1.03m;
-            return custo;
-        }
-
         public async Task<string> ResumirTexto(string texto, string estilo)
         {
             if (string.IsNullOrWhiteSpace(texto))

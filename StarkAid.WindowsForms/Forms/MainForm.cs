@@ -178,6 +178,22 @@ public partial class MainForm : Form
             }
         };
         
+        // Inscrever-se no evento de limite de IA atingido
+        _commandProcessor.IaLimitReached += async (s, e) =>
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke((MethodInvoker)async delegate
+                {
+                    await TratarLimiteIAAtingido(e.RequiredCoins);
+                });
+            }
+            else
+            {
+                await TratarLimiteIAAtingido(e.RequiredCoins);
+            }
+        };
+        
         // Verificar se o nome do assistente está configurado
         VerificarConfiguracaoAssistente();
         
@@ -224,12 +240,19 @@ public partial class MainForm : Form
                 if (updatedUser != null)
                 {
                     // Atualizar _currentUser
-                    _currentUser.StarkCoins = updatedUser.StarkCoins;
+                    _currentUser.StarkCoinBalance = updatedUser.StarkCoinBalance;
+                    _currentUser.PlanType = updatedUser.PlanType;
+                    _currentUser.TokensConsumidosSemana = updatedUser.TokensConsumidosSemana;
+                    _currentUser.TokensSemanaMax = updatedUser.TokensSemanaMax;
+                    _currentUser.TokensRestantes = updatedUser.TokensRestantes;
+                    _currentUser.AdsEnabled = updatedUser.AdsEnabled;
+                    _currentUser.AgendamentosMax = updatedUser.AgendamentosMax;
+                    _currentUser.AgendamentosRestantes = updatedUser.AgendamentosRestantes;
                     
                     // Atualizar label no formulário StarkCoins se estiver aberto
                     if (_openStarkCoinsForm != null && !_openStarkCoinsForm.IsDisposed)
                     {
-                        _openStarkCoinsForm.UpdateStarkCoins(updatedUser.StarkCoins);
+                        _openStarkCoinsForm.UpdateStarkCoins(updatedUser.StarkCoinBalance);
                         if (e.Type == "funds")
                         {
                             _openStarkCoinsForm.UpdateStatus("Pagamento concluído! Em breve será creditado os StarkCoins em sua conta.");
@@ -243,7 +266,7 @@ public partial class MainForm : Form
                     // Atualizar label no dashboard
                     if (_lblStarkCoins != null)
                     {
-                        _lblStarkCoins.Text = updatedUser.StarkCoins.ToString("F2");
+                        _lblStarkCoins.Text = $"{updatedUser.StarkCoinBalance} SC";
                     }
                 }
                 
@@ -1049,7 +1072,7 @@ public partial class MainForm : Form
         const int cardHeight = 100;
         const int initialCardWidth = 200; // Tamanho inicial, será ajustado no UpdateDashboardLayout
         
-        var cardStarkCoins = CreateStatCard("StarkCoins", _currentUser.StarkCoins.ToString("F2"), Color.Cyan, initialCardWidth, cardHeight);
+        var cardStarkCoins = CreateStatCard("StarkCoins", $"{_currentUser.StarkCoinBalance} SC", Color.Cyan, initialCardWidth, cardHeight);
         cardStarkCoins.Tag = "DashboardCard";
         var cardDevices = CreateStatCard("Dispositivos", "0", Color.Green, initialCardWidth, cardHeight);
         cardDevices.Tag = "DashboardCard";
@@ -1444,7 +1467,7 @@ public partial class MainForm : Form
                 if (isOnline)
                 {
                     // Se online, usar dados do _currentUser (atualizado pela API)
-                    _lblStarkCoins.Text = _currentUser.StarkCoins.ToString("F2");
+                    _lblStarkCoins.Text = $"{_currentUser.StarkCoinBalance} SC";
                 }
                 else
                 {
@@ -1452,12 +1475,12 @@ public partial class MainForm : Form
                     var lastStarkCoins = _database.GetLastStarkCoins();
                     if (lastStarkCoins.HasValue)
                     {
-                        _lblStarkCoins.Text = lastStarkCoins.Value.ToString("F2");
+                        _lblStarkCoins.Text = $"{(int)lastStarkCoins.Value} SC";
                     }
                     else
                     {
                         // Fallback para _currentUser se não houver dados locais
-                        _lblStarkCoins.Text = _currentUser.StarkCoins.ToString("F2");
+                        _lblStarkCoins.Text = $"{_currentUser.StarkCoinBalance} SC";
                     }
                 }
             }
@@ -1555,10 +1578,17 @@ public partial class MainForm : Form
                 if (updatedUser != null)
                 {
                     // Atualizar _currentUser
-                    _currentUser.StarkCoins = updatedUser.StarkCoins;
+                    _currentUser.StarkCoinBalance = updatedUser.StarkCoinBalance;
+                    _currentUser.PlanType = updatedUser.PlanType;
+                    _currentUser.TokensConsumidosSemana = updatedUser.TokensConsumidosSemana;
+                    _currentUser.TokensSemanaMax = updatedUser.TokensSemanaMax;
+                    _currentUser.TokensRestantes = updatedUser.TokensRestantes;
+                    _currentUser.AdsEnabled = updatedUser.AdsEnabled;
+                    _currentUser.AgendamentosMax = updatedUser.AgendamentosMax;
+                    _currentUser.AgendamentosRestantes = updatedUser.AgendamentosRestantes;
                     
                     // Salvar no banco local
-                    _database.SaveDadosUI(updatedUser.StarkCoins);
+                    _database.SaveDadosUI(updatedUser.StarkCoinBalance);
                     
                     // Atualizar label no dashboard (thread-safe)
                     if (this.InvokeRequired)
@@ -1567,7 +1597,7 @@ public partial class MainForm : Form
                         {
                             if (_lblStarkCoins != null)
                             {
-                                _lblStarkCoins.Text = updatedUser.StarkCoins.ToString("F2");
+                                _lblStarkCoins.Text = $"{updatedUser.StarkCoinBalance} SC";
                             }
                         });
                     }
@@ -1575,11 +1605,11 @@ public partial class MainForm : Form
                     {
                         if (_lblStarkCoins != null)
                         {
-                            _lblStarkCoins.Text = updatedUser.StarkCoins.ToString("F2");
+                            _lblStarkCoins.Text = $"{updatedUser.StarkCoinBalance} SC";
                         }
                     }
                     
-                    System.Diagnostics.Debug.WriteLine($"[STARKCOINS] Atualizado após comando IA: {updatedUser.StarkCoins:F2}");
+                    System.Diagnostics.Debug.WriteLine($"[STARKCOINS] Atualizado após comando IA: {updatedUser.StarkCoinBalance} SC");
                 }
             }
             else
@@ -1594,7 +1624,7 @@ public partial class MainForm : Form
                         {
                             if (_lblStarkCoins != null)
                             {
-                                _lblStarkCoins.Text = lastStarkCoins.Value.ToString("F2");
+                                _lblStarkCoins.Text = $"{(int)lastStarkCoins.Value} SC";
                             }
                         });
                     }
@@ -1602,17 +1632,49 @@ public partial class MainForm : Form
                     {
                         if (_lblStarkCoins != null)
                         {
-                            _lblStarkCoins.Text = lastStarkCoins.Value.ToString("F2");
+                            _lblStarkCoins.Text = $"{(int)lastStarkCoins.Value} SC";
                         }
                     }
                     
-                    System.Diagnostics.Debug.WriteLine($"[STARKCOINS] Usando valor local (offline): {lastStarkCoins.Value:F2}");
+                    System.Diagnostics.Debug.WriteLine($"[STARKCOINS] Usando valor local (offline): {(int)lastStarkCoins.Value} SC");
                 }
             }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Erro ao atualizar StarkCoins após comando IA: {ex.Message}");
+        }
+    }
+    
+    private async Task TratarLimiteIAAtingido(int? requiredCoins)
+    {
+        var message = requiredCoins.HasValue && requiredCoins.Value > 0
+            ? $"Seu limite semanal foi atingido. Precisamos de {requiredCoins.Value} StarkCoins para continuar. Deseja usar seu saldo?"
+            : "Seu limite semanal foi atingido. Deseja usar seu saldo em StarkCoins para continuar usando a inteligência?";
+        
+        var result = MessageBox.Show(
+            message,
+            "Limite Atingido",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+        
+        if (result == DialogResult.Yes)
+        {
+            // Usuário quer usar StarkCoins - tentar novamente com UseStarkCoins = true
+            // O CommandProcessor já tentou, então apenas informar que está usando StarkCoins
+            _speechService.Speak("Ok, usando StarkCoins para continuar.");
+        }
+        else
+        {
+            // Usuário não quer usar StarkCoins - desativar IA
+            _iaEnabled = false;
+            _commandProcessor.IaEnabled = false;
+            if (_btnToggleIA != null)
+            {
+                _btnToggleIA.Text = "🤖 Inteligência";
+                _btnToggleIA.BackColor = Color.FromArgb(239, 68, 68);
+            }
+            _speechService.Speak("Ok, inteligência não será ativada.");
         }
     }
 
@@ -1685,8 +1747,8 @@ public partial class MainForm : Form
             if (user != null)
             {
                 _database.SaveUser(user);
-                _database.SaveDadosUI(user.StarkCoins);
-                System.Diagnostics.Debug.WriteLine($"[MainForm] Usuário atualizado: {user.Name}, StarkCoins: {user.StarkCoins}");
+                _database.SaveDadosUI(user.StarkCoinBalance);
+                System.Diagnostics.Debug.WriteLine($"[MainForm] Usuário atualizado: {user.Name}, StarkCoinBalance: {user.StarkCoinBalance} SC");
             }
 
             // Buscar e salvar comandos sociais
@@ -1731,8 +1793,8 @@ public partial class MainForm : Form
         // Se está tentando ativar (não desativar), verificar StarkCoins
         if (!_iaEnabled)
         {
-            // Verificar se tem StarkCoins suficientes (mínimo 0.1)
-            if (_currentUser.StarkCoins < 0.1m)
+            // Verificar se tem StarkCoins suficientes (mínimo 1 SC)
+            if (_currentUser.StarkCoinBalance < 1)
             {
                 _speechService.Speak("Você não tem starkcoins suficiente");
                 return;
@@ -1764,19 +1826,142 @@ public partial class MainForm : Form
                         };
                         
                         var response = await _apiService.CallSuperIaAsync(request);
-                        if (response != null && !string.IsNullOrEmpty(response.Texto))
+                        if (response != null)
                         {
-                            if (this.InvokeRequired)
+                            var texto = response.GetTexto();
+                            if (!string.IsNullOrEmpty(texto))
                             {
-                                this.Invoke((MethodInvoker)delegate
+                                if (this.InvokeRequired)
                                 {
-                                    _speechService.Speak(response.Texto);
-                                });
+                                    this.Invoke((MethodInvoker)delegate
+                                    {
+                                        _speechService.Speak(texto);
+                                    });
+                                }
+                                else
+                                {
+                                    _speechService.Speak(texto);
+                                }
                             }
-                            else
+                            
+                            // Atualizar dados econômicos se presentes
+                            if (response.Economy != null)
                             {
-                                _speechService.Speak(response.Texto);
+                                _currentUser.PlanType = response.Economy.PlanType;
+                                _currentUser.StarkCoinBalance = response.Economy.StarkCoinBalance;
+                                _currentUser.TokensConsumidosSemana = response.Economy.TokensConsumidosSemana;
+                                _currentUser.TokensSemanaMax = response.Economy.TokensSemanaMax;
+                                _currentUser.TokensRestantes = response.Economy.TokensRestantes;
+                                _currentUser.AdsEnabled = response.Economy.AdsEnabled;
+                                _currentUser.AgendamentosMax = response.Economy.AgendamentosMax;
+                                _currentUser.AgendamentosRestantes = response.Economy.AgendamentosRestantes;
+                                
+                                // Atualizar UI
+                                if (this.InvokeRequired)
+                                {
+                                    this.Invoke((MethodInvoker)delegate
+                                    {
+                                        if (_lblStarkCoins != null)
+                                        {
+                                            _lblStarkCoins.Text = $"{_currentUser.StarkCoinBalance} SC";
+                                        }
+                                    });
+                                }
+                                else
+                                {
+                                    if (_lblStarkCoins != null)
+                                    {
+                                        _lblStarkCoins.Text = $"{_currentUser.StarkCoinBalance} SC";
+                                    }
+                                }
                             }
+                        }
+                    }
+                    catch (PaymentRequiredException ex)
+                    {
+                        // Tratar HTTP 402 - Saldo insuficiente
+                        var requiredCoins = ex.RequiredCoins ?? 0;
+                        var message = requiredCoins > 0 
+                            ? $"Seu limite semanal foi atingido. Precisamos de {requiredCoins} StarkCoins para continuar. Deseja usar seu saldo?"
+                            : "Seu limite semanal foi atingido. Deseja usar seu saldo em StarkCoins para continuar usando a inteligência?";
+                        
+                        if (this.InvokeRequired)
+                        {
+                            this.Invoke((MethodInvoker)delegate
+                            {
+                                var result = MessageBox.Show(
+                                    message,
+                                    "Limite Atingido",
+                                    MessageBoxButtons.YesNo,
+                                    MessageBoxIcon.Question);
+                                
+                                if (result == DialogResult.Yes)
+                                {
+                                    // Usuário quer usar StarkCoins - tentar novamente com UseStarkCoins = true
+                                    _ = Task.Run(async () =>
+                                    {
+                                        try
+                                        {
+                                            var request = new SuperIaRequest
+                                            {
+                                                Texto = "Ativar inteligencia",
+                                                ContextoUser = "",
+                                                ContextoIA = "",
+                                                Estilo = "",
+                                                UseStarkCoins = true
+                                            };
+                                            
+                                            var response = await _apiService.CallSuperIaAsync(request);
+                                            if (response != null)
+                                            {
+                                                var texto = response.GetTexto();
+                                                if (!string.IsNullOrEmpty(texto))
+                                                {
+                                                    this.Invoke((MethodInvoker)delegate
+                                                    {
+                                                        _speechService.Speak(texto);
+                                                    });
+                                                }
+                                                
+                                                // Atualizar dados econômicos
+                                                if (response.Economy != null)
+                                                {
+                                                    _currentUser.StarkCoinBalance = response.Economy.StarkCoinBalance;
+                                                    _currentUser.TokensConsumidosSemana = response.Economy.TokensConsumidosSemana;
+                                                    _currentUser.TokensRestantes = response.Economy.TokensRestantes;
+                                                    
+                                                    this.Invoke((MethodInvoker)delegate
+                                                    {
+                                                        if (_lblStarkCoins != null)
+                                                        {
+                                                            _lblStarkCoins.Text = $"{_currentUser.StarkCoinBalance} SC";
+                                                        }
+                                                    });
+                                                }
+                                            }
+                                        }
+                                        catch (PaymentRequiredException ex2)
+                                        {
+                                            // Saldo realmente insuficiente
+                                            this.Invoke((MethodInvoker)delegate
+                                            {
+                                                _speechService.Speak("Saldo insuficiente. Adicione StarkCoins e tente novamente.");
+                                                _btnToggleIA!.Text = "🤖 Inteligência";
+                                                _btnToggleIA.BackColor = Color.FromArgb(239, 68, 68);
+                                                _iaEnabled = false;
+                                            });
+                                        }
+                                    });
+                                }
+                                else
+                                {
+                                    // Usuário não quer usar StarkCoins - desativar IA
+                                    _speechService.Speak("Ok, inteligência não será ativada.");
+                                    _btnToggleIA!.Text = "🤖 Inteligência";
+                                    _btnToggleIA.BackColor = Color.FromArgb(239, 68, 68);
+                                    _iaEnabled = false;
+                                }
+                            });
                         }
                     }
                     catch (Exception ex)
@@ -2657,7 +2842,7 @@ public partial class MainForm : Form
             // Navegar apenas se ainda não navegou ou se não está pronto
             if (!_webViewReady || string.IsNullOrEmpty(WB.CoreWebView2.Source) || !WB.CoreWebView2.Source.Contains("recognizer.html"))
             {
-                WB.CoreWebView2.Navigate($"{ApiConfig.WebBaseUrl}/recognizer.html");
+                WB.CoreWebView2.Navigate($"https://starkaid.runasp.net/recognizer.html");
             }
             
             // Registrar handler apenas uma vez para evitar processamento duplicado

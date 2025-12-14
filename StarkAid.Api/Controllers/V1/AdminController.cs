@@ -64,7 +64,7 @@ namespace StarkAid.Api.Controllers.V1
                     u.IsActive,
                     u.CreatedAt,
                     u.LastUpdatedAt,
-                    u.StarkCoins,
+                    u.StarkCoinBalance,
                     u.RemovalAds
                 })
                 .OrderByDescending(u => u.CreatedAt)
@@ -86,7 +86,7 @@ namespace StarkAid.Api.Controllers.V1
                     u.IsActive,
                     u.CreatedAt,
                     u.LastUpdatedAt,
-                    u.StarkCoins,
+                    u.StarkCoinBalance,
                     u.RemovalAds,
                     u.ApiKey
                 })
@@ -117,8 +117,8 @@ namespace StarkAid.Api.Controllers.V1
             if (request.IsActive.HasValue)
                 user.IsActive = request.IsActive.Value;
 
-            if (request.StarkCoins.HasValue)
-                user.StarkCoins = request.StarkCoins.Value;
+            if (request.StarkCoinBalance.HasValue)
+                user.StarkCoinBalance = request.StarkCoinBalance.Value;
 
             if (!string.IsNullOrWhiteSpace(request.RemovalAds))
                 user.RemovalAds = request.RemovalAds;
@@ -162,7 +162,7 @@ namespace StarkAid.Api.Controllers.V1
                     u.Role,
                     u.IsActive,
                     u.CreatedAt,
-                    u.StarkCoins,
+                    u.StarkCoinBalance,
                     u.ApiKey,
                     u.Cidade,
                     u.Bairro
@@ -251,7 +251,7 @@ namespace StarkAid.Api.Controllers.V1
                     Role = u.Role,
                     IsActive = u.IsActive,
                     CreatedAt = u.CreatedAt,
-                    StarkCoins = u.StarkCoins,
+                    StarkCoinBalance = u.StarkCoinBalance,
                     ApiKey = u.ApiKey,
                     Cidade = u.Cidade,
                     Bairro = u.Bairro,
@@ -482,7 +482,7 @@ namespace StarkAid.Api.Controllers.V1
                     name = user.Name,
                     email = user.Email,
                     role = user.Role,
-                    starkCoins = user.StarkCoins,
+                    starkCoinBalance = user.StarkCoinBalance,
                     plano = tipoPlano,
                     valor = assinatura.Valor,
                     status = assinatura.Status,
@@ -726,7 +726,7 @@ namespace StarkAid.Api.Controllers.V1
         public string? Email { get; set; }
         public string? Role { get; set; }
         public bool? IsActive { get; set; }
-        public decimal? StarkCoins { get; set; }
+        public int? StarkCoinBalance { get; set; }
         public string? RemovalAds { get; set; }
         public string? Estado { get; set; }
         public string? Cidade { get; set; }

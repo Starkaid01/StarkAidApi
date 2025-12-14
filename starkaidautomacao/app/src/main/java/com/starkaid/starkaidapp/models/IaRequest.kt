@@ -10,5 +10,7 @@ data class IaRequest(
     @SerializedName("contextoUser")
     val contextoUser: String = "",
     @SerializedName("contextoIA")
-    val contextoIA: String = ""
+    val contextoIA: String = "",
+    @SerializedName("useStarkCoins")
+    val useStarkCoins: Boolean = false // Indica se o app autorizou uso de StarkCoins
 )

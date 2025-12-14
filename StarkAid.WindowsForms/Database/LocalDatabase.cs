@@ -1073,7 +1073,8 @@ public class LocalDatabase
         command.Parameters.AddWithValue("@Name", user.Name);
         command.Parameters.AddWithValue("@Email", user.Email);
         command.Parameters.AddWithValue("@ApiKey", user.ApiKey ?? (object)DBNull.Value);
-        command.Parameters.AddWithValue("@StarkCoins", user.StarkCoins);
+        // Converter int para decimal para compatibilidade com banco existente
+        command.Parameters.AddWithValue("@StarkCoins", (decimal)user.StarkCoinBalance);
         command.Parameters.AddWithValue("@Role", user.Role ?? (object)DBNull.Value);
         command.Parameters.AddWithValue("@Estado", user.Estado ?? (object)DBNull.Value);
         command.Parameters.AddWithValue("@Cidade", user.Cidade ?? (object)DBNull.Value);
@@ -1098,7 +1099,8 @@ public class LocalDatabase
                 Name = reader.GetString("Name"),
                 Email = reader.GetString("Email"),
                 ApiKey = reader.IsDBNull("ApiKey") ? string.Empty : reader.GetString("ApiKey"),
-                StarkCoins = reader.GetDecimal("StarkCoins"),
+                // Converter decimal para int (banco ainda usa REAL/decimal)
+                StarkCoinBalance = (int)reader.GetDecimal("StarkCoins"),
                 Role = reader.IsDBNull("Role") ? string.Empty : reader.GetString("Role"),
                 Estado = reader.IsDBNull("Estado") ? null : reader.GetString("Estado"),
                 Cidade = reader.IsDBNull("Cidade") ? null : reader.GetString("Cidade"),
@@ -1240,7 +1242,7 @@ public class LocalDatabase
     }
 
     // DadosUI
-    public void SaveDadosUI(decimal starkCoins)
+    public void SaveDadosUI(int starkCoinBalance)
     {
         using var connection = new SqliteConnection(_connectionString);
         connection.Open();
@@ -1248,9 +1250,16 @@ public class LocalDatabase
         command.CommandText = @"
             INSERT INTO DadosUI (StarkCoins, LastUpdated)
             VALUES (@StarkCoins, @LastUpdated)";
-        command.Parameters.AddWithValue("@StarkCoins", starkCoins);
+        // Converter int para decimal para compatibilidade com banco existente
+        command.Parameters.AddWithValue("@StarkCoins", (decimal)starkCoinBalance);
         command.Parameters.AddWithValue("@LastUpdated", DateTimeOffset.UtcNow.ToString("O"));
         command.ExecuteNonQuery();
+    }
+    
+    // Overload para compatibilidade
+    public void SaveDadosUI(decimal starkCoins)
+    {
+        SaveDadosUI((int)starkCoins);
     }
 
     public decimal? GetLastStarkCoins()

@@ -442,7 +442,8 @@
     <string name="cannot_load_image" translatable="false">Failed to load image</string>
     <string name="cant_share_reason" translatable="false">A single Bluetooth mesh device, Zigbee device, or infrared (IR) device cannot be shared. Such a device can be shared only with relevant devices.</string>
     <string name="car_alert_limit_tip" translatable="false">You can add no more than %s scene(s).</string>
-    <string name="car_alert_tip_description" translatable="false">In an ordinary home, you can only add %d scene(s) to %s. After subscribing to Pro benefits, the maximum number of scenes can reach the maximum capacity of your vehicle\'s system.</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="car_alert_tip_description" translatable="false" formatted="false">In an ordinary home, you can only add %d scene(s) to %s. After subscribing to Pro benefits, the maximum number of scenes can reach the maximum capacity of your vehicle\'s system.</string>
     <string name="car_buy" translatable="false">Buy Now</string>
     <string name="car_buy_home_service" translatable="false">Subscribe to Smart Life Pro</string>
     <string name="car_data_config_tips" translatable="false">Go to the %1$s app > Me > %2$s vehicle to configure.</string>
@@ -1071,7 +1072,8 @@
     <string name="google_flip_success_tip_content" translatable="false">OK Google, turn on light\n\nOK Google, brighten my light\n\nOK Google, change kitchen lamp to blue\n\nOK Google, set my light to 50%</string>
     <string name="google_flip_unbind_info" translatable="false">You can cancel the permission anytime.</string>
     <string name="google_flip_unbind_info_goto_app" translatable="false">Please go to Google Home App to disconnect action.</string>
-    <string name="google_flip_voice_demos" translatable="false">Turn on the bathroom lamps\"\n\"Turn off the lights\" \n\"Set the living room brightness to 50%%\" \n\"Is the light on in John\'s office?</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="google_flip_voice_demos" translatable="false" formatted="false">Turn on the bathroom lamps\"\n\"Turn off the lights\" \n\"Set the living room brightness to 50%%\" \n\"Is the light on in John\'s office?</string>
     <string name="google_home_dev_list_conncet" translatable="false">Connect</string>
     <string name="google_home_dev_list_connect_tip" translatable="false">After connecting to Google Home, you can sync the devices from the Google Home app to App for control.</string>
     <string name="google_home_dev_list_empty_tip" translatable="false">No device found</string>
@@ -1215,7 +1217,8 @@
     <string name="home_adv_remove_from_room" translatable="false">Remove from Room</string>
     <string name="home_adv_remove_widget" translatable="false">Remove Widget</string>
     <string name="home_adv_room_device_num" translatable="false">%1$d Favorite Device(s)</string>
-    <string name="home_adv_room_hint_num" translatable="false">%d Scene(s) | %d Device(s)</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="home_adv_room_hint_num" translatable="false" formatted="false">%d Scene(s) | %d Device(s)</string>
     <string name="home_adv_room_list_entry" translatable="false">Room List</string>
     <string name="home_adv_room_no_device" translatable="false">No Devices</string>
     <string name="home_adv_room_tab" translatable="false">Room</string>
@@ -1344,8 +1347,10 @@
     <string name="hometab_auto_start_tip" translatable="false">You have disabled %s to auto start, which may affect the following function:\n Receive real-time messages (You may miss security alerts.)\n Do you allow the app to auto start when your phone is turned on?</string>
     <string name="hometab_auto_start_title" translatable="false">Auto Start Reminder</string>
     <string name="hometab_ignore_tip" translatable="false">Do not show again.</string>
-    <string name="hosting_camera_used" translatable="false">Camera %d/%d</string>
-    <string name="hosting_sensor_used" translatable="false">Sensor %d/%d</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_camera_used" translatable="false" formatted="false">Camera %d/%d</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_sensor_used" translatable="false" formatted="false">Sensor %d/%d</string>
     <string name="hs_China_mainland" translatable="false">Mainland China</string>
     <string name="hs_abnormal_device_number" translatable="false">Abnormal device(s)</string>
     <string name="hs_abnormal_device_title" translatable="false">Anomaly</string>
@@ -1459,8 +1464,10 @@
     <string name="hs_favorite_device_center_tips" translatable="false">The above devices will be displayed on the device page, up to 4</string>
     <string name="hs_favorite_device_footer_tips" translatable="false">Devices not displayed on the Devices page</string>
     <string name="hs_favorite_device_tips" translatable="false">You can add frequently used devices to the Devices page and display up to 4</string>
-    <string name="hs_gateway_armde_failed_ios" translatable="false">%d security gateway%s failed, check</string>
-    <string name="hs_gateway_armed_failed_android" translatable="false">%s security gateway %s failed, check</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armde_failed_ios" translatable="false" formatted="false">%d security gateway%s failed, check</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armed_failed_android" translatable="false" formatted="false">%s security gateway %s failed, check</string>
     <string name="hs_gateway_device" translatable="false">Security gateway</string>
     <string name="hs_geo_current_location" translatable="false">This location</string>
     <string name="hs_go_setting" translatable="false">To open it</string>
@@ -1483,13 +1490,15 @@
     <string name="hs_host_ipc_devices_android" translatable="false">Camera device (%1$s/%2$s)</string>
     <string name="hs_host_sensor_devices_android" translatable="false">Non-camera device (%1$s/%2$s)</string>
     <string name="hs_hosting" translatable="false">Alarm Monitoring Settings</string>
-    <string name="hs_hosting_camera_valid" translatable="false">Available cameras: %d/%d</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_camera_valid" translatable="false" formatted="false">Available cameras: %d/%d</string>
     <string name="hs_hosting_device_select" translatable="false">Select Device</string>
     <string name="hs_hosting_other_setting" translatable="false">Other Settings</string>
     <string name="hs_hosting_relative_tips" translatable="false">Sensors are linked to cameras. After an alert is triggered, the alert information is sent to the corresponding service platform.</string>
     <string name="hs_hosting_remark" translatable="false">Remarks</string>
     <string name="hs_hosting_sensor" translatable="false">Sensor</string>
-    <string name="hs_hosting_sensor_valid" translatable="false">Available sensors: %d/%d</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_sensor_valid" translatable="false" formatted="false">Available sensors: %d/%d</string>
     <string name="hs_image_des" translatable="false">Image description</string>
     <string name="hs_invitation_confirm_detail_ios" translatable="false">You are invited to join the home：\"%s\"to enjoy a smart life. Do you want to join this home?</string>
     <string name="hs_ipc_device" translatable="false">Camera Devices</string>
@@ -1539,12 +1548,14 @@
     <string name="hs_message_area" translatable="false">Size of the shop</string>
     <string name="hs_message_area_unit" translatable="false">%d m²</string>
     <string name="hs_message_contacts" translatable="false">Contact</string>
-    <string name="hs_message_dispatcher_info" translatable="false">%s creates a task %s</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" translatable="false" formatted="false">%s creates a task %s</string>
     <string name="hs_message_dispatcher_info_ios" translatable="false">%1$s creates a task %2$s</string>
     <string name="hs_message_floor" translatable="false">Which floor</string>
     <string name="hs_message_floor_unit" translatable="false">%d F</string>
     <string name="hs_message_industry" translatable="false">Which industry</string>
-    <string name="hs_message_receiver_info" translatable="false">%s performs a task %s</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" translatable="false" formatted="false">%s performs a task %s</string>
     <string name="hs_message_receiver_info_ios" translatable="false">%1$s performs a task %2$s</string>
     <string name="hs_mode_desc_allhours" translatable="false">All Day</string>
     <string name="hs_mode_desc_leaving" translatable="false">Away</string>
@@ -1632,8 +1643,10 @@
     <string name="hs_servicemessage" translatable="false">Service message</string>
     <string name="hs_settings" translatable="false">Settings</string>
     <string name="hs_show_on_device_page" translatable="false">Displayed on the Devices page</string>
-    <string name="hs_smart_gateway_armed_failed_android" translatable="false">%s security gateway %s failed.</string>
-    <string name="hs_smart_gateway_armed_failed_ios" translatable="false">%d security gateways %s failed.</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_android" translatable="false" formatted="false">%s security gateway %s failed.</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_ios" translatable="false" formatted="false">%d security gateways %s failed.</string>
     <string name="hs_sos_alarm_tips" translatable="false">Confirm to disarm and cancel the alarm?</string>
     <string name="hs_sos_alarmimg" translatable="false">Alarm</string>
     <string name="hs_sos_dispatch_tips" translatable="false">The alarm system has been triggered, please deal with it immediately.</string>
@@ -1923,7 +1936,8 @@
     <string name="ipc_cloud_download_encoding" translatable="false">Encoding</string>
     <string name="ipc_cloud_download_failed" translatable="false">Download Failed</string>
     <string name="ipc_cloud_download_loading" translatable="false">Downloading</string>
-    <string name="ipc_cloud_download_precent" translatable="false">%s%% Download</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" translatable="false" formatted="false">%s%% Download</string>
     <string name="ipc_cloud_download_start" translatable="false">Start Download</string>
     <string name="ipc_cloud_download_start_body" translatable="false">If the video you selected include multiple events, they will be merged into one video. During the download process, please keep the app in the front-end.</string>
     <string name="ipc_cloud_empty_event_des" translatable="false">No relevant event video</string>
@@ -2276,7 +2290,8 @@
     <string name="ipc_nvr_channel" translatable="false">Channel</string>
     <string name="ipc_nvr_channel_unit" translatable="false">channel</string>
     <string name="ipc_ota_update_remind" translatable="false">1. Ensure your device is connected to a power supply throughout the update process.\n2. The update usually takes three to five minutes, during which time your device will be unusable.</string>
-    <string name="ipc_panel_baterrylevel" translatable="false">Battery Remaining: %s%%</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" translatable="false" formatted="false">Battery Remaining: %s%%</string>
     <string name="ipc_panel_button_alarm" translatable="false">Alarm</string>
     <string name="ipc_panel_button_calendar" translatable="false">Date</string>
     <string name="ipc_panel_button_cruise" translatable="false">Patrol</string>
@@ -3263,12 +3278,14 @@
     <string name="ota_back_to_home_title" translatable="false">Prompt</string>
     <string name="ota_batch_upgrade_alert_all_update" translatable="false">Update All Devices</string>
     <string name="ota_batch_upgrade_alert_confirm" translatable="false">Confirm Update</string>
-    <string name="ota_batch_upgrade_alert_content" translatable="false">%d of your devices will be updated. The %d devices might not work properly during the update. Are you sure to start the update?</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_content" translatable="false" formatted="false">%d of your devices will be updated. The %d devices might not work properly during the update. Are you sure to start the update?</string>
     <string name="ota_batch_upgrade_alert_no_room" translatable="false">No Room</string>
     <string name="ota_batch_upgrade_alert_single_update" translatable="false">Update Current Device Only</string>
     <string name="ota_batch_upgrade_alert_tips" translatable="false">It was found that (%d) devices under the same gateway can be simultaneously updated via OTA. Do you want to update them together?</string>
     <string name="ota_batch_upgrade_alert_title" translatable="false">Bulk Update</string>
-    <string name="ota_batch_upgrade_alert_unsupport_content" translatable="false">In this update, \"%s\" and other devices (%d devices in total) cannot be updated simultaneously. Please manually update them from the list.</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_unsupport_content" translatable="false" formatted="false">In this update, \"%s\" and other devices (%d devices in total) cannot be updated simultaneously. Please manually update them from the list.</string>
     <string name="ota_batch_upgrade_failure_reason" translatable="false">Please update the device individually.</string>
     <string name="ota_batch_upgrade_no_device_to_upgrade" translatable="false">No device needs to be updated.</string>
     <string name="ota_ble_device_before_upgrade_warning" translatable="false">The Bluetooth device will be temporarily unavailable during the firmware update. Are you sure to start the update now?</string>
@@ -3666,7 +3683,8 @@
     <string name="scene_geofence_dialog_explain_new" translatable="false">\"When location changes (Beta)\" is our experimental feature. To use this feature, you must always allow access to your location. Your location information will not be used for any other purposes. This feature does not work without your location information. \n View \"%s\" to learn more details.</string>
     <string name="scene_geofence_explain_new" translatable="false">Note: The above location conditions depend on your phone location. See %s.</string>
     <string name="scene_group_none" translatable="false">Empty group</string>
-    <string name="scene_humidity_tip" translatable="false">Dry (0%-40%), Comfortable (40%-70%), Moist (70%-100%)</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" translatable="false" formatted="false">Dry (0%-40%), Comfortable (40%-70%), Moist (70%-100%)</string>
     <string name="scene_icon" translatable="false">Icon</string>
     <string name="scene_if" translatable="false">If</string>
     <string name="scene_if_condition" translatable="false">If</string>
@@ -4027,7 +4045,8 @@
     <string name="thing_light_rhythm_scene_guide_title" translatable="false">Biological rhythm function can simulate the changes of light brightness and color temperature during the day, so that we can feel the light returning to nature./nAt sunrise, the light will light up slowly within 30 minutes and reach its maximum at sunrise time./nAt midday, the lights will slowly turn into cold light to help people stay awake and get better at work./nAt sunset, the light will gradually turn into warm light, allowing people to enter a state of rest./nWhen you turn off the light, you will fall asleep in 30 minutes.</string>
     <string name="thing_light_scene_batch_delete_tips" translatable="false">Are you sure to delete %d light scene(s)?</string>
     <string name="thing_light_scene_batch_delete_tips_detail" translatable="false">Linked schedules will also be deleted.</string>
-    <string name="thing_light_scene_batch_delete_toast" translatable="false">Deleted: %d light scene(s). Failed: %d light scene(s).</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_light_scene_batch_delete_toast" translatable="false" formatted="false">Deleted: %d light scene(s). Failed: %d light scene(s).</string>
     <string name="thing_light_scene_create_all_on_all_off" translatable="false">Set All Lights On/Off</string>
     <string name="thing_light_scene_create_all_on_all_off_tip" translatable="false">Due to different device capabilities, certain devices might not run as expected in group control. Certain devices do not support All On/Off. You will be notified timely after they support this feature.</string>
     <string name="thing_light_scene_delete" translatable="false">Delete Light Scene</string>
@@ -4221,7 +4240,8 @@
     <string name="thing_activator_accessory_not_connect" translatable="false">Unable to connect to the device?</string>
     <string name="thing_activator_accessory_reset_ensure" translatable="false">Confirm that %s is reset.</string>
     <string name="thing_activator_accessory_timeout" translatable="false">Operation timed out</string>
-    <string name="thing_activator_activate_stop_dialog_content_muti_device" translatable="false">Related %s devices: %d</string>
+    <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" translatable="false" formatted="false">Related %s devices: %d</string>
     <string name="thing_activator_activate_stop_dialog_content_one_device" translatable="false">Related device: %s</string>
     <string name="thing_activator_activate_stop_dialog_title" translatable="false">Other related devices will be affected if \"%s\"is stopped.</string>
     <string name="thing_activator_addDevice" translatable="false">New Device</string>

@@ -99,7 +99,7 @@ public partial class StarkCoinsPlanosForm : Form
 
         _lblStarkCoins = new Label
         {
-            Text = _currentUser.StarkCoins.ToString("F2") + "SC",
+            Text = $"{_currentUser.StarkCoinBalance} SC",
             Font = new Font("Segoe UI", 24, FontStyle.Bold),
             ForeColor = Color.Cyan,
             AutoSize = true,
@@ -192,7 +192,7 @@ public partial class StarkCoinsPlanosForm : Form
             var user = await _apiService.GetCurrentUserAsync();
             if (user != null && _lblStarkCoins != null)
             {
-                _lblStarkCoins.Text = user.StarkCoins.ToString("F2") + "SC";
+                _lblStarkCoins.Text = $"{user.StarkCoinBalance} SC";
             }
         }
         catch (Exception ex)
@@ -201,12 +201,18 @@ public partial class StarkCoinsPlanosForm : Form
         }
     }
 
-    public void UpdateStarkCoins(decimal newValue)
+    public void UpdateStarkCoins(int newValue)
     {
         if (_lblStarkCoins != null)
         {
-            _lblStarkCoins.Text = newValue.ToString("F2") + "SC";
+            _lblStarkCoins.Text = $"{newValue} SC";
         }
+    }
+    
+    // Overload para compatibilidade
+    public void UpdateStarkCoins(decimal newValue)
+    {
+        UpdateStarkCoins((int)newValue);
     }
 
     public void UpdateStatus(string message)

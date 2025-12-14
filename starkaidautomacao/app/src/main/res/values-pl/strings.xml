@@ -677,7 +677,8 @@
   <string name="ipc_motion_time_unit">Minuta</string>
   <string name="ipc_motion_time_unit_mins">Minuty</string>
   <string name="ipc_motion_tracking_settings">Ustawienia śledzenia ruchu</string>
-  <string name="ipc_panel_baterrylevel">Bateria: %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Bateria: %s%%</string>
   <string name="ipc_panel_button_alarm">Alarm</string>
   <string name="ipc_panel_button_calendar">Data</string>
   <string name="ipc_panel_button_cruise">Patrol</string>

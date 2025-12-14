@@ -6,6 +6,7 @@ import com.starkaid.starkaidapp.models.MusicaDto
 import com.starkaid.starkaidapp.models.MusicaResponse
 import com.starkaid.starkaidapp.models.UserRegisterRequest
 import com.starkaid.starkaidapp.models.UserRegisterResponse
+import com.starkaid.starkaidapp.models.EconomicPayload
 import retrofit2.Response
 import com.starkaid.starkaidapp.models.UsuarioResponse
 import retrofit2.http.Body
@@ -92,7 +93,8 @@ data class ResetSenhaRequest(
 // DTO para resposta dos updates
 data class UpdateStarkCoinsResponse(
     val message: String,
-    val saldoAtual: Double
+    val saldoAtual: Int,
+    val economy: EconomicPayload? = null
 )
 
 data class SetUserOnlineRequest(

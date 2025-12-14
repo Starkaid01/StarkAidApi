@@ -48,11 +48,10 @@ namespace StarkAid.Api.Controllers.V1
 
         using var ws = await HttpContext.WebSockets.AcceptWebSocketAsync();
 
-        // Mensagem inicial de autenticação OK
+        // Mensagem inicial de autenticação OK (com pacote econômico)
         if (ws.State == WebSocketState.Open)
         {
-            var msg = Encoding.UTF8.GetBytes("AUTH_OK");
-            await ws.SendAsync(msg, WebSocketMessageType.Text, true, CancellationToken.None);
+            await _proxy.SendAuthOkAsync(ws, user.Id);
         }
 
         // 🔹 Passa o userId para o proxy

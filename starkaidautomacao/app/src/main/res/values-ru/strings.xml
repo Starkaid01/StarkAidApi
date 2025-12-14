@@ -384,7 +384,8 @@
   <string name="cannot_load_image">«Не удалось загрузить изображение»</string>
   <string name="cant_share_reason">Общий доступ к одному устройству временно не поддерживается для устройств с Bluetooth соединением, устройств Zigbee и инфракрасных устройств. Используйте соответствующие устройства одновременно для выполнения обычных операций.</string>
   <string name="car_alert_limit_tip">Можно добавить не более %s сцен(-ы).</string>
-  <string name="car_alert_tip_description">В обычном доме можно добавить только %d сцен(-ы) в %s. После подписки на версию Pro максимальное количество сцен будет ограничиваться только возможностями системы вашего транспортного средства.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="car_alert_tip_description" formatted="false">В обычном доме можно добавить только %d сцен(-ы) в %s. После подписки на версию Pro максимальное количество сцен будет ограничиваться только возможностями системы вашего транспортного средства.</string>
   <string name="car_buy">Купить</string>
   <string name="car_buy_home_service">Подпишитесь на Smart Life Pro</string>
   <string name="car_data_config_tips">Для настройки перейдите в меню %1$s app &gt; Я &gt; ТС %2$s.</string>
@@ -1150,7 +1151,8 @@
   <string name="home_adv_remove_from_room">Удалить из комнаты</string>
   <string name="home_adv_remove_widget">Удалить виджет</string>
   <string name="home_adv_room_device_num">Избранных устройств: %1$d</string>
-  <string name="home_adv_room_hint_num">Сцены: %d | Устройства: %d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="home_adv_room_hint_num" formatted="false">Сцены: %d | Устройства: %d</string>
   <string name="home_adv_room_list_entry">Список комнат</string>
   <string name="home_adv_room_no_device">Нет устройств</string>
   <string name="home_adv_room_tab">Комната</string>
@@ -1279,8 +1281,10 @@
   <string name="hometab_auto_start_tip">Вы отключили %s из автоматического запуска, что может повлиять на следующую функцию: \n получать сообщения в режиме реального времени (вы можете пропустить предупреждения системы безопасности.) \n вы разрешаете приложению автоматически запускаться, когда ваш телефон включен?</string>
   <string name="hometab_auto_start_title">Напоминание по автоматическому запуску</string>
   <string name="hometab_ignore_tip">Больше не показывать.</string>
-  <string name="hosting_camera_used">Камера %d/%d</string>
-  <string name="hosting_sensor_used">Датчик %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_camera_used" formatted="false">Камера %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_sensor_used" formatted="false">Датчик %d/%d</string>
   <string name="hs_China_mainland">Материковый Китай</string>
   <string name="hs_abnormal_device_number">Ненормальное устройство(ы)</string>
   <string name="hs_abnormal_device_title">Сбой</string>
@@ -1395,8 +1399,10 @@
   <string name="hs_favorite_device_center_tips">Вышеуказанные устройства будут отображаться на странице устройств (макс. 4)</string>
   <string name="hs_favorite_device_footer_tips">Устройства не отображаются на странице устройств</string>
   <string name="hs_favorite_device_tips">Вы можете добавить до 4-х часто используемых устройств на страницу устройств</string>
-  <string name="hs_gateway_armde_failed_ios">%d шлюз безопасности %s нет сработал, просмотр</string>
-  <string name="hs_gateway_armed_failed_android">%s шлюз безопасности %s нет сработал, просмотр</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armde_failed_ios" formatted="false">%d шлюз безопасности %s нет сработал, просмотр</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armed_failed_android" formatted="false">%s шлюз безопасности %s нет сработал, просмотр</string>
   <string name="hs_gateway_device">Шлюз сигнализации</string>
   <string name="hs_geo_current_location">Текущий дом</string>
   <string name="hs_go_setting">Перейти к включению</string>
@@ -1419,13 +1425,15 @@
   <string name="hs_host_ipc_devices_android">Устройство камеры (%1$s/%2$s)</string>
   <string name="hs_host_sensor_devices_android">Устройство без камеры (%1$s/%2$s)</string>
   <string name="hs_hosting">Мониторинг сигналов тревоги</string>
-  <string name="hs_hosting_camera_valid">Доступные камеры: %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_camera_valid" formatted="false">Доступные камеры: %d/%d</string>
   <string name="hs_hosting_device_select">Выбрать устройство</string>
   <string name="hs_hosting_other_setting">Прочие настройки</string>
   <string name="hs_hosting_relative_tips">Датчики связаны с камерами. После срабатывания сигнала тревоги оповещение направляется на соответствующую сервисную платформу.</string>
   <string name="hs_hosting_remark">Примечания</string>
   <string name="hs_hosting_sensor">Датчик</string>
-  <string name="hs_hosting_sensor_valid">Доступные датчики: %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_sensor_valid" formatted="false">Доступные датчики: %d/%d</string>
   <string name="hs_image_des">Описание изображения</string>
   <string name="hs_invitation_confirm_detail_ios">Вам предлагается присоединиться к дому：\"%s\"чтобы насладиться умной жизнью. Хотите присоединиться к этому дому?</string>
   <string name="hs_ipc_device">Устройства камеры</string>
@@ -1475,12 +1483,14 @@
   <string name="hs_message_area">Размер магазина</string>
   <string name="hs_message_area_unit">%d m²</string>
   <string name="hs_message_contacts">Контакт</string>
-  <string name="hs_message_dispatcher_info">%s создает задачу %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" formatted="false">%s создает задачу %s</string>
   <string name="hs_message_dispatcher_info_ios">%1$s создает задачу %2$s</string>
   <string name="hs_message_floor">Этаж</string>
   <string name="hs_message_floor_unit">%d F</string>
   <string name="hs_message_industry">Отрасль</string>
-  <string name="hs_message_receiver_info">%s выполняет задачу %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" formatted="false">%s выполняет задачу %s</string>
   <string name="hs_message_receiver_info_ios">%1$s выполняет задачу %2$s</string>
   <string name="hs_mode_desc_allhours">Круглосуточно</string>
   <string name="hs_mode_desc_leaving">Отсутствие</string>
@@ -1568,8 +1578,10 @@
   <string name="hs_servicemessage">Сервисное сообщение</string>
   <string name="hs_settings">Настройки</string>
   <string name="hs_show_on_device_page">Отображается на странице устройств</string>
-  <string name="hs_smart_gateway_armed_failed_android">%s шлюз безопасности %s отказал.</string>
-  <string name="hs_smart_gateway_armed_failed_ios">%d шлюзов безопасности %s не удалось.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_android" formatted="false">%s шлюз безопасности %s отказал.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_ios" formatted="false">%d шлюзов безопасности %s не удалось.</string>
   <string name="hs_sos_alarm_tips">Подтвердить снятие с охраны и отмену тревоги?</string>
   <string name="hs_sos_alarmimg">тревога</string>
   <string name="hs_sos_dispatch_tips">Сработала сигнализация, немедленно разберитесь с ней.</string>
@@ -1855,7 +1867,8 @@
   <string name="ipc_cloud_download_encoding">Транскодирование</string>
   <string name="ipc_cloud_download_failed">Не удалось загрузить</string>
   <string name="ipc_cloud_download_loading">Загрузится</string>
-  <string name="ipc_cloud_download_precent">%s%% Загружено</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" formatted="false">%s%% Загружено</string>
   <string name="ipc_cloud_download_start">Загрузка начинается</string>
   <string name="ipc_cloud_download_start_body">Если выбранное вами видео включает в себя несколько событий, они будут объединены в одно видео. Во время процесса загрузки, пожалуйста, держите приложение на переднем плане.</string>
   <string name="ipc_cloud_empty_event_des">Нет релевантного видео события</string>
@@ -2205,7 +2218,8 @@
   <string name="ipc_nvr_channel">Канал</string>
   <string name="ipc_nvr_channel_unit">канал</string>
   <string name="ipc_ota_update_remind">1. Убедитесь, что устройство подключено к источнику питания на протяжении всего процесса обновления. \ N2. Обновление обычно занимает от трех до пяти минут. Не используйте устройство во время обновления.</string>
-  <string name="ipc_panel_baterrylevel">Батарея: %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Батарея: %s%%</string>
   <string name="ipc_panel_button_alarm">Сигнал тревоги</string>
   <string name="ipc_panel_button_calendar">Дата</string>
   <string name="ipc_panel_button_cruise">Патрулирование</string>
@@ -3039,12 +3053,14 @@
   <string name="ota_back_to_home_title">Подсказка</string>
   <string name="ota_batch_upgrade_alert_all_update">Обновить все устройства</string>
   <string name="ota_batch_upgrade_alert_confirm">Подтвердить обновление</string>
-  <string name="ota_batch_upgrade_alert_content">%d устр. будет обновлено. Во время обновления возможна неверная работа %d устр. Действительно запустить обновление?</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_content" formatted="false">%d устр. будет обновлено. Во время обновления возможна неверная работа %d устр. Действительно запустить обновление?</string>
   <string name="ota_batch_upgrade_alert_no_room">Не в помещении</string>
   <string name="ota_batch_upgrade_alert_single_update">Обновить только текущее устройство</string>
   <string name="ota_batch_upgrade_alert_tips">Обнаружено, что через OTA можно одновременно обновить устройства (%d), подключенные к одному шлюзу. Обновить их вместе?</string>
   <string name="ota_batch_upgrade_alert_title">Пакетное обновление</string>
-  <string name="ota_batch_upgrade_alert_unsupport_content">В этом обновлении \"%s\" и другие устройства (всего %d устройств) не могут быть обновлены одновременно. Пожалуйста, обновите их вручную из списка.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_unsupport_content" formatted="false">В этом обновлении \"%s\" и другие устройства (всего %d устройств) не могут быть обновлены одновременно. Пожалуйста, обновите их вручную из списка.</string>
   <string name="ota_batch_upgrade_failure_reason">Обновите устройство отдельно.</string>
   <string name="ota_batch_upgrade_no_device_to_upgrade">Нет устройств, для которых необходимо обновление.</string>
   <string name="ota_ble_device_before_upgrade_warning">Устройство Bluetooth будет временно недоступно во время обновления встроенного ПО. Действительно запустить обновление сейчас?</string>
@@ -3437,7 +3453,8 @@
   <string name="scene_geofence_dialog_explain_new">\"При смене местоположения (бета)\" — наша экспериментальная функция. Для использования этой функции вы должны всегда разрешать доступ к своему местоположению. Информация о вашем местоположении не будет использоваться для любых других целей. Эта функция не работает без информации о вашем местоположении. \n Подробности см. в \"%s\".</string>
   <string name="scene_geofence_explain_new">Примечание. Вышеуказанные условия местоположения зависят от местоположения телефона. См. %s.</string>
   <string name="scene_group_none">Группа пуста</string>
-  <string name="scene_humidity_tip">Сухо (0%–40%), комфортно (40%–70%), влажно (70%–100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">Сухо (0%–40%), комфортно (40%–70%), влажно (70%–100%)</string>
   <string name="scene_icon">Значок</string>
   <string name="scene_if">Если</string>
   <string name="scene_if_condition">Если</string>
@@ -3781,7 +3798,8 @@
   <string name="thing_light_rhythm_scene_default_name">Новый ритм</string>
   <string name="thing_light_scene_batch_delete_tips">Действительно удалить сцены освещения: %d?</string>
   <string name="thing_light_scene_batch_delete_tips_detail">Привязанные расписания также будут удалены.</string>
-  <string name="thing_light_scene_batch_delete_toast">Удалено: Сцены освещения: %d. Сбой: Сцены освещения: %d.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_light_scene_batch_delete_toast" formatted="false">Удалено: Сцены освещения: %d. Сбой: Сцены освещения: %d.</string>
   <string name="thing_light_scene_create_all_on_all_off">Задать включение/выключение всех источников света</string>
   <string name="thing_light_scene_create_all_on_all_off_tip">Из-за различных возможностей работа некоторых устройств может не соответствовать ожидаемой при групповом управлении. Некоторые устройства не поддерживают функцию \"Включить/выключить все\". Вы получите уведомление, когда они начнут поддерживать данную функцию.</string>
   <string name="thing_light_scene_delete">Удалить сцену освещения</string>
@@ -3970,7 +3988,8 @@
   <string name="thing_activator_accessory_not_connect">Не удалось подключиться к устройству?</string>
   <string name="thing_activator_accessory_reset_ensure">Убедитесь, что сброс %s выполнен.</string>
   <string name="thing_activator_accessory_timeout">Тайм-аут операции</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">Связанные устройства %s: %d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">Связанные устройства %s: %d</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">Связанные устройства: %s</string>
   <string name="thing_activator_activate_stop_dialog_title">Другие связанные устройства будут затронуты, если \"%s\"будет остановлено.</string>
   <string name="thing_activator_addDevice">Новое устройство</string>

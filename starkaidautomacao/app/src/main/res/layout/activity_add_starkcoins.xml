@@ -20,101 +20,60 @@
         android:layout_marginTop="50dp" />
 
     <TextView
-        android:id="@+id/labelAmount"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Valor (R$):"
-        android:textSize="16sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/titleTextView"
-        android:layout_marginTop="30dp" />
-
-    <EditText
-        android:id="@+id/fundsAmount"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="Ex: 10.00"
-        android:inputType="numberDecimal"
-        android:minHeight="48dp"
-        android:padding="12dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/labelAmount"
-        android:layout_marginTop="8dp" />
-
-    <TextView
         android:id="@+id/labelSuggested"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Valores Sugeridos:"
-        android:textSize="16sp"
+        android:text="Escolha um pacote:"
+        android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/fundsAmount"
-        android:layout_marginTop="24dp" />
+        app:layout_constraintTop_toBottomOf="@+id/titleTextView"
+        android:layout_marginTop="40dp" />
 
     <LinearLayout
-        android:id="@+id/suggestedValuesLayout"
+        android:id="@+id/packagesLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginTop="8dp"
+        android:orientation="vertical"
+        android:layout_marginTop="24dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/labelSuggested">
 
         <Button
             android:id="@+id/btnValue10"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="R$ 10"
-            android:layout_marginEnd="4dp"
-            android:textSize="14sp" />
+            android:text="5 StarkCoins — R$ 4,90"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp"
+            android:padding="16dp" />
 
         <Button
             android:id="@+id/btnValue25"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="R$ 25"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:textSize="14sp" />
+            android:text="15 StarkCoins — R$ 9,90"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp"
+            android:padding="16dp" />
 
         <Button
             android:id="@+id/btnValue50"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="R$ 50"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:textSize="14sp" />
+            android:text="50 StarkCoins — R$ 19,90"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp"
+            android:padding="16dp" />
 
         <Button
             android:id="@+id/btnValue100"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="R$ 100"
-            android:layout_marginStart="4dp"
-            android:textSize="14sp" />
+            android:text="120 StarkCoins — R$ 39,90"
+            android:textSize="16sp"
+            android:padding="16dp" />
     </LinearLayout>
-
-    <Button
-        android:id="@+id/payButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Continuar para Pagamento"
-        android:textSize="18sp"
-        android:backgroundTint="@android:color/holo_blue_dark"
-        android:textColor="@android:color/white"
-        android:layout_marginTop="40dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/suggestedValuesLayout" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

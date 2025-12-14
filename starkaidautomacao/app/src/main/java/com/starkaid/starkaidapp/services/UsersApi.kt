@@ -1,5 +1,6 @@
 package com.starkaid.starkaidapp.services
 
+import com.starkaid.starkaidapp.models.EconomicPayload
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -7,11 +8,12 @@ data class NivelResponse(val nivel: String)
 
 data class AdsResponse(val adsAtiv: String)
 
-data class AddFundsRequest(val amount: Double)
+data class AddFundsRequest(val coins: Int)
 
 data class AddFundsResponse(
     val checkoutUrl: String,
-    val sessionId: String
+    val sessionId: String,
+    val economy: EconomicPayload? = null
 )
 
 interface UsersApi {
@@ -43,11 +45,14 @@ data class CurrentUserResponse(
     val name: String,
     val email: String,
     val role: String,
-    val starkCoins: Double,
     val apiKey: String,
     val removalAds: String?,
+    val estado: String?,
+    val cidade: String?,
+    val bairro: String?,
     val isActive: Boolean,
-    val createdAt: String?
+    val createdAt: String?,
+    val economy: EconomicPayload? = null
 )
 
 data class DeleteAccountResponse(val message: String)

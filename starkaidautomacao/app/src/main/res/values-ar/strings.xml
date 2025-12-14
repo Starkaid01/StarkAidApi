@@ -384,7 +384,8 @@
   <string name="cant_share_reason">1. يمكن استخدام أجهزة Bluetooth Mesh داخل منزل واحد فقط، ويتعذر مشاركتها مع مستخدمين آخرين. 
 2. يتعذر مشاركة بعض أجهزة Bluetooth أحادية العقدة.</string>
   <string name="car_alert_limit_tip">لا يمكنك إضافة أكثر من %s من المشاهد.</string>
-  <string name="car_alert_tip_description">في المنزل العادي، يمكنك فقط إضافة %d من المشاهد إلى %s. بعد الاشتراك في مزايا Pro، يمكن أن يصل الحد الأقصى لعدد المشاهد إلى السعة القصوى لنظام مركبتك.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="car_alert_tip_description" formatted="false">في المنزل العادي، يمكنك فقط إضافة %d من المشاهد إلى %s. بعد الاشتراك في مزايا Pro، يمكن أن يصل الحد الأقصى لعدد المشاهد إلى السعة القصوى لنظام مركبتك.</string>
   <string name="car_buy">الشراء الآن</string>
   <string name="car_buy_home_service">اشترك في تطبيق Smart Life Pro</string>
   <string name="car_data_config_tips">انتقل إلى تطبيق %1$s &gt; حسابي &gt; قصة %2$s للتهيئة.</string>
@@ -1008,7 +1009,8 @@
   <string name="google_flip_success_tip_content">موافق جوجل، قم بتشغيل الضوء\n\nموافق جوجل، زّد سطوع الضوء الخاص بي\n\nموافق جوجل، غير لمبة المطبخ إلى اللون الأزرق\n\nموافق جوجل، ضبط ضوءي إلى 50%</string>
   <string name="google_flip_unbind_info">يمكنك إلغاء عملية الترخيص في أي وقت.</string>
   <string name="google_flip_unbind_info_goto_app">قم بإلغاء ربط الإجراء في تطبيق Google Home.</string>
-  <string name="google_flip_voice_demos">Turn on the bathroom lamps\"\n\"Turn off the lights\" \n\"Set the living room brightness to 50%%\" \n\"Is the light on in John\'s office?</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="google_flip_voice_demos" formatted="false">Turn on the bathroom lamps\"\n\"Turn off the lights\" \n\"Set the living room brightness to 50%%\" \n\"Is the light on in John\'s office?</string>
   <string name="google_home_dev_list_conncet">اتصال</string>
   <string name="google_home_dev_list_connect_tip">بعد توصيل جوجل هوم، يمكنك تزامن الأجهزة في تطبيق جوجل هوم مع تطبيق آخر للتحكم فيها.</string>
   <string name="google_home_dev_list_empty_tip">لم يتم العثور على جهاز</string>
@@ -1151,7 +1153,8 @@
   <string name="home_adv_remove_from_room">إزالة من الغرفة</string>
   <string name="home_adv_remove_widget">إزالة عنصر واجهة المستخدم</string>
   <string name="home_adv_room_device_num">‎%1$d‎ من الأجهزة المفضلة</string>
-  <string name="home_adv_room_hint_num">%d من المهام | %d من الأجهزة</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="home_adv_room_hint_num" formatted="false">%d من المهام | %d من الأجهزة</string>
   <string name="home_adv_room_list_entry">قائمة الغرف</string>
   <string name="home_adv_room_no_device">لا توجد أجهزة</string>
   <string name="home_adv_room_tab">الغرفة</string>
@@ -1280,8 +1283,10 @@
   <string name="hometab_auto_start_tip">لقد عطلت %s للبدء التلقائي، مما قد يؤثر على الوظيفة التالية:\n تمتع باستلام رسائل في الوقت الفعلي (قد تفوتك تنبيهات الأمان.)\n هل تسمح للتطبيق بالبدء تلقائيًا عند تشغيل هاتفك؟</string>
   <string name="hometab_auto_start_title">تذكير البدء التلقائي</string>
   <string name="hometab_ignore_tip">لا تعرض ذلك مُجددًا</string>
-  <string name="hosting_camera_used">كاميرا ‎%d/%d</string>
-  <string name="hosting_sensor_used">مستشعر ‎%d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_camera_used" formatted="false">كاميرا ‎%d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_sensor_used" formatted="false">مستشعر ‎%d/%d</string>
   <string name="hs_China_mainland">بر الصين الرئيسي</string>
   <string name="hs_abnormal_device_number">جهاز (أجهزة) غير طبيعي</string>
   <string name="hs_abnormal_device_title">النشاط غير الطبيعي</string>
@@ -1420,13 +1425,15 @@
   <string name="hs_host_ipc_devices_android">جهاز الكاميرا (%1$s/%2$s)</string>
   <string name="hs_host_sensor_devices_android">جهاز ليس مزودًا بكاميرا (%1$s/%2$s)</string>
   <string name="hs_hosting">مراقبة التنبيهات</string>
-  <string name="hs_hosting_camera_valid">الكاميرات المتاحة: ‎%d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_camera_valid" formatted="false">الكاميرات المتاحة: ‎%d/%d</string>
   <string name="hs_hosting_device_select">تحديد الجهاز</string>
   <string name="hs_hosting_other_setting">إعدادات أخرى</string>
   <string name="hs_hosting_relative_tips">تم توصيل أدوات الاستشعار بالكاميرات. فور تشغيل التنبيه، سيتم إرسال المعلومات التنبيهية إلى منصة الخدمة المناظرة.</string>
   <string name="hs_hosting_remark">ملاحظات</string>
   <string name="hs_hosting_sensor">أداة استشعار</string>
-  <string name="hs_hosting_sensor_valid">أدوات الاستشعار المتاحة: ‎%d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_sensor_valid" formatted="false">أدوات الاستشعار المتاحة: ‎%d/%d</string>
   <string name="hs_image_des">وصف الصورة</string>
   <string name="hs_invitation_confirm_detail_ios">أنت مدعو للانضمام إلى المنزل ：\"%s\"للاستمتاع بحياة ذكية. هل تريد الانضمام إلى هذا المنزل؟</string>
   <string name="hs_ipc_device">أجهزة الكاميرا</string>
@@ -1476,12 +1483,14 @@
   <string name="hs_message_area">حجم المحل</string>
   <string name="hs_message_area_unit">%d m²</string>
   <string name="hs_message_contacts">جهة الاتصال</string>
-  <string name="hs_message_dispatcher_info">%s ينشئ مهمة %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" formatted="false">%s ينشئ مهمة %s</string>
   <string name="hs_message_dispatcher_info_ios">%1$s ينشئ مهمة %2$s</string>
   <string name="hs_message_floor">أي طابق</string>
   <string name="hs_message_floor_unit">%d F</string>
   <string name="hs_message_industry">أي مجال</string>
-  <string name="hs_message_receiver_info">%s يؤدي مهمة %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" formatted="false">%s يؤدي مهمة %s</string>
   <string name="hs_message_receiver_info_ios">%1$s يؤدي مهمة %2$s</string>
   <string name="hs_mode_desc_allhours">طوال اليوم</string>
   <string name="hs_mode_desc_leaving">بالخارج</string>
@@ -1856,7 +1865,8 @@
   <string name="ipc_cloud_download_encoding">الترميز</string>
   <string name="ipc_cloud_download_failed">فشل التنزيل</string>
   <string name="ipc_cloud_download_loading">التنزيل</string>
-  <string name="ipc_cloud_download_precent">تنزيل ‎%s%%‎</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" formatted="false">تنزيل ‎%s%%‎</string>
   <string name="ipc_cloud_download_start">بدء التنزيل</string>
   <string name="ipc_cloud_download_start_body">إذا تضمن الفيديو الذي حددته عدة أحداث، فسيتم دمجها في فيديو واحد. أثناء عملية التنزيل، يُرجى إبقاء التطبيق في الواجهة الأمامية.</string>
   <string name="ipc_cloud_empty_event_des">لا يوجد فيديو حدث ذي صلة</string>
@@ -3040,12 +3050,14 @@
   <string name="ota_back_to_home_title">مطالبة</string>
   <string name="ota_batch_upgrade_alert_all_update">تحديث جميع الأجهزة</string>
   <string name="ota_batch_upgrade_alert_confirm">تأكيد التحديث</string>
-  <string name="ota_batch_upgrade_alert_content">سيتم تحديث %d من أجهزتك. قد لا تعمل الأجهزة %d بشكل سليم أثناء التحديث. هل تريد بالتأكيد بدء التحديث؟</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_content" formatted="false">سيتم تحديث %d من أجهزتك. قد لا تعمل الأجهزة %d بشكل سليم أثناء التحديث. هل تريد بالتأكيد بدء التحديث؟</string>
   <string name="ota_batch_upgrade_alert_no_room">لا توجد غرفة</string>
   <string name="ota_batch_upgrade_alert_single_update">تحديث الجهاز الحالي فقط</string>
   <string name="ota_batch_upgrade_alert_tips">تم اكتشاف أنه يمكن تحديث (%d) من الأجهزة ضمن البوابة نفسها في الوقت ذاته عبر OTA. هل تريد تحديثها معًا؟</string>
   <string name="ota_batch_upgrade_alert_title">تحديث شامل</string>
-  <string name="ota_batch_upgrade_alert_unsupport_content">في هذا التحديث، لا يمكن تحديث \"%s\" والأجهزة الأخرى (%d جهازًا إجمالاً) في نفس الوقت. يرجى تحديثها يدويًا من القائمة.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ota_batch_upgrade_alert_unsupport_content" formatted="false">في هذا التحديث، لا يمكن تحديث \"%s\" والأجهزة الأخرى (%d جهازًا إجمالاً) في نفس الوقت. يرجى تحديثها يدويًا من القائمة.</string>
   <string name="ota_batch_upgrade_failure_reason">يُرجى تحديث الجهاز بشكل فردي.</string>
   <string name="ota_batch_upgrade_no_device_to_upgrade">ليس هناك أجهزة بحاجة إلى التحديث.</string>
   <string name="ota_ble_device_before_upgrade_warning">لن يتوفر جهاز Bluetooth مؤقتًا أثناء تحديث البرنامج الثابت. هل تريد بالتأكيد بدء التحديث الآن؟</string>
@@ -3437,7 +3449,8 @@
   <string name="scene_geofence_dialog_explain_new">\"عندما يتغير الموقع (Beta)\" هي ميزتنا التجريبية. لاستخدام هذه الميزة، يجب أن تسمح دائمًا بالوصول إلى موقعك. لن يتم استخدام معلومات موقعك لأي أغراض أخرى. لا تعمل هذه الميزة بدون معلومات موقعك. \n اعرض \"%s\" لمعرفة المزيد من التفاصيل.</string>
   <string name="scene_geofence_explain_new">ملاحظة: تعتمد شروط الموقع أعلاه على موقع هاتفك. راجع %s.</string>
   <string name="scene_group_none">مجموعة فارغة</string>
-  <string name="scene_humidity_tip">مستوى الجفاف (0%-40%)، ومستوى الراحة (40%-70%)، ومستوى الرطوبة (70%-100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">مستوى الجفاف (0%-40%)، ومستوى الراحة (40%-70%)، ومستوى الرطوبة (70%-100%)</string>
   <string name="scene_icon">الرمز</string>
   <string name="scene_if">إذا</string>
   <string name="scene_if_condition">إذا</string>
@@ -3781,7 +3794,8 @@
   <string name="thing_light_rhythm_scene_default_name">إيقاع جديد</string>
   <string name="thing_light_scene_batch_delete_tips">هل ترغب بالتأكيد في حذف ‎%d‎ مشهد (مشاهد) ضوء؟</string>
   <string name="thing_light_scene_batch_delete_tips_detail">سيتم حذف الجداول المرتبطة أيضًا.</string>
-  <string name="thing_light_scene_batch_delete_toast">تم الحذف: ‎%d‎ مشهد (مشاهد) ضوء. فشل: ‎%d‎ مشهد (مشاهد) ضوء.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_light_scene_batch_delete_toast" formatted="false">تم الحذف: ‎%d‎ مشهد (مشاهد) ضوء. فشل: ‎%d‎ مشهد (مشاهد) ضوء.</string>
   <string name="thing_light_scene_create_all_on_all_off">تعيين تشغيل/إيقاف تشغيل لجميع الأضواء</string>
   <string name="thing_light_scene_create_all_on_all_off_tip">نظرًا إلى الاختلاف في إمكانات الأجهزة، قد لا تعمل بعض الأجهزة كما هو متوقع في عناصر تحكم المجموعة. بعض الأجهزة لا تدعم التشغيل/إيقاف التشغيل للكل. سيتم إخطارك في الوقت المناسب بعد دعمها لهذه الميزة.</string>
   <string name="thing_light_scene_delete">حذف مشهد ضوء</string>
@@ -3970,7 +3984,8 @@
   <string name="thing_activator_accessory_not_connect">ألا يمكنك الاتصال بالجهاز؟</string>
   <string name="thing_activator_accessory_reset_ensure">تأكد من إعادة تعيين ‎%s‎.</string>
   <string name="thing_activator_accessory_timeout">انقضت مهلة العملية</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">أجهزة %s‎ ذات الصلة: ‎%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">أجهزة %s‎ ذات الصلة: ‎%d</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">الجهاز ذو الصلة: %s</string>
   <string name="thing_activator_activate_stop_dialog_title">ستتأثر الأجهزة الأخرى ذات الصلة إذا تم إيقاف ‎\"%s\"‎.</string>
   <string name="thing_activator_addDevice">جهاز جديد</string>

@@ -62,7 +62,8 @@ class ComandosSociaisViewModel(application: Application) : AndroidViewModel(appl
                 if (isOnline()) {
                     val response = api.listarComandos()
                     if (response.isSuccessful) {
-                        val comandosRemotos = response.body() ?: emptyList()
+                        val wrapper = response.body()
+                        val comandosRemotos = wrapper?.data ?: emptyList()
                         _comandos.value = comandosRemotos
 
                         // Atualiza Room
@@ -99,9 +100,12 @@ class ComandosSociaisViewModel(application: Application) : AndroidViewModel(appl
         viewModelScope.launch {
             try {
                 val request = CriarComandoSocialRequest(comando = comando, resposta = resposta)
-                val response = api.criarComando(request)
+                    val response = api.criarComando(request)
 
-                if (response.isSuccessful) {
+                    if (response.code() == 402) {
+                        _errorMessage.value = "Saldo insuficiente. Recarregue ou faça upgrade."
+                        speakTextFromService("Você não tem StarkCoins suficientes.")
+                    } else if (response.isSuccessful) {
                     carregarComandos()
                     delay(600)                // pequeno “buffer” para garantir DB atualizado
                     comandosLocais = dao.getAll()
@@ -128,7 +132,10 @@ class ComandosSociaisViewModel(application: Application) : AndroidViewModel(appl
             try {
                 val response = api.atualizarComando(comandoSocial.id, comandoSocial)
 
-                if (response.isSuccessful) {
+                if (response.code() == 402) {
+                    _errorMessage.value = "Saldo insuficiente. Recarregue ou faça upgrade."
+                    speakTextFromService("Você não tem StarkCoins suficientes.")
+                } else if (response.isSuccessful) {
                     carregarComandos()
                     onSuccess()
                 } else {

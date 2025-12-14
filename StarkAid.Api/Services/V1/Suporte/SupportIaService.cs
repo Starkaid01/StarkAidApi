@@ -2,12 +2,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StarkAid.Api.Data;
+using StarkAid.Api.DTOs;
 using System.Text.Json;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 
 namespace StarkAid.Api.Services.V1.Suporte;
+
+public record IaSupportResult(string Texto, int PromptTokens, int CompletionTokens);
 
 public class SupportIaService : ISupportIaService
 {
@@ -16,6 +19,8 @@ public class SupportIaService : ISupportIaService
     private readonly HttpClient _httpClient;
     private readonly string _groApiKey;
     private readonly string _openRouterKey;
+    private readonly ITokenUsageService _tokenUsage;
+    private readonly PlanoLimitesService _planoLimites;
     private const string PROMPT_SUPORTE = @"Você é o Assistente de Suporte da StarkAid. Seu objetivo é diagnosticar problemas do usuário de forma técnica, clara e curta.
 
 REGRAS DE CONTEXTO:
@@ -69,13 +74,17 @@ Atender o usuário de forma direta, técnica e funcional, sem rodeios, usando o 
         AppDbContext context, 
         ILogger<SupportIaService> logger, 
         IHttpClientFactory httpClientFactory,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ITokenUsageService tokenUsage,
+        PlanoLimitesService planoLimites)
     {
         _context = context;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient();
         _groApiKey = configuration["IaApiKeys:GroApiKey"] ?? "";
         _openRouterKey = configuration["IaApiKeys:OpenRouterKEY"] ?? "";
+        _tokenUsage = tokenUsage;
+        _planoLimites = planoLimites;
     }
 
     public async Task<string> GerarSaudacaoInicial(Guid userId, string nome, string email, string origem, object logs)
@@ -118,11 +127,41 @@ Atender o usuário de forma direta, técnica e funcional, sem rodeios, usando o 
         
         // Adicionar mensagem atual do usuário
         mensagens.Add(new { role = "user", content = mensagem });
-        
-        // Chamar IA
+
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return "Usuário não encontrado.";
+
         var resposta = await ChatCompletion(mensagens);
-        
-        return resposta ?? "Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.";
+        if (resposta == null) return "Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente.";
+
+        var tokensUsados = resposta.PromptTokens + resposta.CompletionTokens;
+        var consumo = await _tokenUsage.TryConsumeTokensAsync(user, tokensUsados, false); // IA sempre pergunta antes de usar StarkCoins
+        if (!consumo.Success)
+            throw new TokenInsufficientException(consumo.RequiredCoins);
+
+        return resposta.Texto;
+    }
+
+    public async Task<EconomicPayload?> ObterEconomiaAsync(Guid userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return null;
+
+        var limite = _planoLimites.ObterLimiteTokensSemana(user);
+        var agMax = _planoLimites.ObterLimiteAgendamentos(user);
+        var agAtuais = await _context.Agendamentos.CountAsync(a => a.UserId == userId);
+        var agRest = agMax == -1 ? -1 : Math.Max(0, agMax - agAtuais);
+
+        return new EconomicPayload(
+            user.PlanType.ToString(),
+            user.StarkCoinBalance,
+            user.TokensConsumidosSemana,
+            limite,
+            Math.Max(0, limite - user.TokensConsumidosSemana),
+            _planoLimites.ExibeAnuncios(user),
+            agMax,
+            agRest,
+            100);
     }
     
     private async Task<string> GerarResumoConversa(Guid conversaId)
@@ -208,13 +247,13 @@ Atender o usuário de forma direta, técnica e funcional, sem rodeios, usando o 
         }
     }
     
-    private async Task<string?> ChatCompletion(List<object> mensagens)
+    private async Task<IaSupportResult?> ChatCompletion(List<object> mensagens)
     {
         try
         {
             // Tentar Groq primeiro
             var resultadoGroq = await ChamarGroq(mensagens.ToArray());
-            if (!string.IsNullOrEmpty(resultadoGroq))
+            if (resultadoGroq != null)
                 return resultadoGroq;
             
             // Se falhar, tentar OpenRouter
@@ -228,7 +267,7 @@ Atender o usuário de forma direta, técnica e funcional, sem rodeios, usando o 
         }
     }
     
-    private async Task<string?> ChamarGroq(object[] mensagens)
+    private async Task<IaSupportResult?> ChamarGroq(object[] mensagens)
     {
         if (string.IsNullOrEmpty(_groApiKey)) return null;
         
@@ -253,12 +292,19 @@ Atender o usuário de forma direta, técnica e funcional, sem rodeios, usando o 
             if (!response.IsSuccessStatusCode) return null;
             
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            var texto = doc.RootElement.GetProperty("choices")[0]
+            var root = doc.RootElement;
+            var texto = root.GetProperty("choices")[0]
                 .GetProperty("message")
                 .GetProperty("content")
                 .GetString()?.Trim();
-            
-            return texto;
+
+            var usage = root.TryGetProperty("usage", out var usageEl)
+                ? usageEl
+                : default;
+            var promptTokens = usage.ValueKind != JsonValueKind.Undefined && usage.TryGetProperty("prompt_tokens", out var pt) ? pt.GetInt32() : 0;
+            var completionTokens = usage.ValueKind != JsonValueKind.Undefined && usage.TryGetProperty("completion_tokens", out var ct) ? ct.GetInt32() : 0;
+
+            return new IaSupportResult(texto ?? string.Empty, promptTokens, completionTokens);
         }
         catch (Exception ex)
         {
@@ -267,7 +313,7 @@ Atender o usuário de forma direta, técnica e funcional, sem rodeios, usando o 
         }
     }
     
-    private async Task<string?> ChamarOpenRouter(object[] mensagens)
+    private async Task<IaSupportResult?> ChamarOpenRouter(object[] mensagens)
     {
         if (string.IsNullOrEmpty(_openRouterKey)) return null;
         
@@ -292,12 +338,19 @@ Atender o usuário de forma direta, técnica e funcional, sem rodeios, usando o 
             if (!response.IsSuccessStatusCode) return null;
             
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            var texto = doc.RootElement.GetProperty("choices")[0]
+            var root = doc.RootElement;
+            var texto = root.GetProperty("choices")[0]
                 .GetProperty("message")
                 .GetProperty("content")
                 .GetString()?.Trim();
-            
-            return texto;
+
+            var usage = root.TryGetProperty("usage", out var usageEl)
+                ? usageEl
+                : default;
+            var promptTokens = usage.ValueKind != JsonValueKind.Undefined && usage.TryGetProperty("prompt_tokens", out var pt) ? pt.GetInt32() : 0;
+            var completionTokens = usage.ValueKind != JsonValueKind.Undefined && usage.TryGetProperty("completion_tokens", out var ct) ? ct.GetInt32() : 0;
+
+            return new IaSupportResult(texto ?? string.Empty, promptTokens, completionTokens);
         }
         catch (Exception ex)
         {

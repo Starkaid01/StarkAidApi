@@ -14,12 +14,7 @@ public partial class PlanosForm : Form
         _apiService = apiService;
         _planos = new List<PlanoInfo>
         {
-            new PlanoInfo { Nivel = 2, Nome = "Remover Anuncios", Preco = 10.00m, Descricao = "" },
-            new PlanoInfo { Nivel = 3, Nome = "5,00 Starkcoins", Preco = 5.00m, Descricao = "" },
-            new PlanoInfo { Nivel = 4, Nome = "15,00 Starkcoins", Preco = 15.00m, Descricao = "" },
-            new PlanoInfo { Nivel = 5, Nome = "25,00 Starkcoins", Preco = 25.00m, Descricao = "" },
-            new PlanoInfo { Nivel = 6, Nome = "50,00 Starkcoins", Preco = 50.00m, Descricao = "" },
-            new PlanoInfo { Nivel = 7, Nome = "100,00 Starkcoins", Preco = 100.00m, Descricao = "" }
+            new PlanoInfo { Nivel = 2, Nome = "StarkAid Premium", Preco = 10.00m, Descricao = "4500 tokens/sem, agendamentos ilimitados, anúncios OFF, +50 SC/mês" }
         };
         InitializeComponent();
     }

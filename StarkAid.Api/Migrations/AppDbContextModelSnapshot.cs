@@ -931,6 +931,34 @@ namespace StarkAid.Api.Migrations
                     b.ToTable("ResolvendoSuportes", (string)null);
                 });
 
+            modelBuilder.Entity("StarkAid.Api.Entities.StarkCoinPurchase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("PackageType")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("StarkCoinsAmount")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("StarkCoinPurchases");
+                });
+
             modelBuilder.Entity("StarkAid.Api.Entities.SuporteAcao", b =>
                 {
                     b.Property<int>("Id")
@@ -1144,6 +1172,11 @@ namespace StarkAid.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("PlanType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("PreapprovalId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -1169,8 +1202,15 @@ namespace StarkAid.Api.Migrations
                     b.Property<DateTimeOffset?>("SpotifyTokenExpiresAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<decimal>("StarkCoins")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<int>("StarkCoinBalance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("TokensConsumidosSemana")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<DateTimeOffset?>("UltimoPagamentoConfirmadoEm")
                         .HasColumnType("datetimeoffset");
@@ -1534,6 +1574,17 @@ namespace StarkAid.Api.Migrations
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ResolvendoSuporte", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.StarkCoinPurchase", b =>
                 {
                     b.HasOne("StarkAid.Api.Entities.User", "User")
                         .WithMany()

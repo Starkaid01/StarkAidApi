@@ -176,9 +176,11 @@ public partial class PlanosAtivosForm : Form
 
         // Determinar cor do badge baseado no nível
         Color badgeColor = Color.FromArgb(0, 120, 215);
+        var nomePlano = plano.NomePlano;
         if (plano.Nivel == 2)
         {
-            badgeColor = Color.FromArgb(16, 185, 129); // Verde para Remove Ads
+            badgeColor = Color.FromArgb(16, 185, 129); // Verde para Premium
+            nomePlano = "StarkAid Premium"; // Garantir nome correto
         }
         else if (plano.Nivel >= 3 && plano.Nivel <= 7)
         {
@@ -188,7 +190,7 @@ public partial class PlanosAtivosForm : Form
         // Título do plano
         var lblNome = new Label
         {
-            Text = plano.NomePlano,
+            Text = nomePlano,
             Font = new Font("Segoe UI", 14, FontStyle.Bold),
             ForeColor = Color.White,
             AutoSize = true,

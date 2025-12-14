@@ -33,7 +33,7 @@ public class UserDto
     public string Role { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
-    public decimal StarkCoins { get; set; }
+    public int StarkCoinBalance { get; set; }
     public string? ApiKey { get; set; }
     public string? Estado { get; set; }
     public string? Cidade { get; set; }

@@ -10,13 +10,13 @@ public static class ApiConfig
     // CONFIGURAÇÃO DE AMBIENTE
     // ============================================
     // Altere este valor para true (desenvolvimento) ou false (produção)
-    private const bool IsDevelopment = false; // PRODUÇÃO
+    private const bool IsDevelopment = true;
     
     // ============================================
     // URLs DE DESENVOLVIMENTO
     // ============================================
-    private const string DevApiBaseUrl = "https://localhost:5001/api";
-    private const string DevWebBaseUrl = "https://localhost:5001";
+    private const string DevApiBaseUrl = "http://192.168.2.106:5000/api";
+    private const string DevWebBaseUrl = "http://192.168.2.106:5000";
     
     // ============================================
     // URLs DE PRODUÇÃO

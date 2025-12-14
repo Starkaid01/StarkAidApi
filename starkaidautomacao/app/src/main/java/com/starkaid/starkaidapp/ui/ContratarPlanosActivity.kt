@@ -40,13 +40,8 @@ class ContratarPlanosActivity : AppCompatActivity() {
             return
         }
 
-        // Configurar botões dos planos
+        // Apenas StarkAid Premium (plano nível 2 / remove ads)
         binding.btnNivel2.setOnClickListener { contratarPlano(2) }
-        binding.btnNivel3.setOnClickListener { contratarPlano(3) }
-        binding.btnNivel4.setOnClickListener { contratarPlano(4) }
-        binding.btnNivel5.setOnClickListener { contratarPlano(5) }
-        binding.btnNivel6.setOnClickListener { contratarPlano(6) }
-        binding.btnNivel7.setOnClickListener { contratarPlano(7) }
     }
 
     private fun contratarPlano(nivel: Int) {

@@ -2,9 +2,11 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StarkAid.Api.Data;
+using StarkAid.Api.DTOs;
 using StarkAid.Api.DTOs.V1.SocialCommand;
 using StarkAid.Api.Entities;
 using StarkAid.Api.Services.V1.SuperIA;
+using StarkAid.Api.Services;
 using System.Text.Json;
 
 namespace StarkAid.Api.Services.V1.SocialCommand;
@@ -13,11 +15,15 @@ public class ComandoSocialService
 {
     private readonly AppDbContext _context;
     private readonly IaService _iaService;
+    private readonly ITokenUsageService _tokenUsage;
+    private readonly PlanoLimitesService _planoLimites;
 
-    public ComandoSocialService(AppDbContext context, IaService iaService)
+    public ComandoSocialService(AppDbContext context, IaService iaService, ITokenUsageService tokenUsage, PlanoLimitesService planoLimites)
     {
         _context = context;
         _iaService = iaService;
+        _tokenUsage = tokenUsage;
+        _planoLimites = planoLimites;
     }
 
     public async Task<List<ComandoSocial>> GetAllAsync()
@@ -52,8 +58,8 @@ public class ComandoSocialService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return null;
 
-        // 🔹 Se o usuário não tiver saldo, salva sem variações
-        if (user.StarkCoins < 0.04m)
+        // 🔹 Se o usuário não tiver saldo de coins, salva sem variações
+        if (user.StarkCoinBalance <= 0)
         {
             var novo = new ComandoSocial
             {
@@ -75,6 +81,8 @@ public class ComandoSocialService
             if (string.IsNullOrWhiteSpace(resultado.Texto))
                 return null;
 
+            // ChamarStarkNlp não retorna contagem de tokens; não debita StarkCoins adicionais aqui.
+
             // 🔹 Tenta validar o JSON
             string jsonValido;
             try
@@ -90,14 +98,6 @@ public class ComandoSocialService
                     .ToArray();
                 jsonValido = System.Text.Json.JsonSerializer.Serialize(new { alternativas = partes });
             }
-
-            // 🔹 Calcula custo e debita saldo
-            var custoSC = 0.04m;
-
-            if (user.StarkCoins < custoSC)
-                throw new InvalidOperationException("Saldo insuficiente para adicionar comando.");
-
-            user.StarkCoins -= custoSC;
 
             var novo = new ComandoSocial
             {
@@ -120,7 +120,7 @@ public class ComandoSocialService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return null;
 
-        if (user.StarkCoins < 0.1m)
+        if (user.StarkCoinBalance <= 0)
             return new List<string> { resposta };
 
         var mensagens = new[]
@@ -134,15 +134,10 @@ public class ComandoSocialService
         if (resultado == null || string.IsNullOrWhiteSpace(resultado.Texto))
             return null;
 
-        // Cálculo de custo
-        var custoUsd = _iaService.CalcularCustoUSD(resultado);
-        var custoSC = custoUsd / 0.03m;
-        if (user.StarkCoins < custoSC)
-            throw new InvalidOperationException("Saldo insuficiente para gerar variações.");
-
-        // Debita saldo e salva
-        user.StarkCoins -= custoSC;
-        await _context.SaveChangesAsync();
+        var tokensUsados = Math.Max(0, resultado.PromptTokens) + Math.Max(0, resultado.CompletionTokens);
+        var consumo = await _tokenUsage.TryConsumeTokensAsync(user, tokensUsados); // Comandos sociais não consomem tokens/StarkCoins
+        if (!consumo.Success)
+            throw new TokenInsufficientException(consumo.RequiredCoins);
 
         // Desserializa retorno JSON
         try
@@ -173,14 +168,10 @@ public class ComandoSocialService
 
         var mensagemLimpa = LimparRespostaIA(resultado.Texto);
 
-        var custoUsd = _iaService.CalcularCustoUSD(resultado);
-        var custoSC = custoUsd / 0.02m;
-
-        if (user.StarkCoins < custoSC)
-            throw new InvalidOperationException("Saldo insuficiente para adicionar comando.");
-
-        user.StarkCoins -= custoSC;
-        await _context.SaveChangesAsync();
+        var tokensUsados = Math.Max(0, resultado.PromptTokens) + Math.Max(0, resultado.CompletionTokens);
+        var consumo = await _tokenUsage.TryConsumeTokensAsync(user, tokensUsados); // Comandos sociais não consomem tokens/StarkCoins
+        if (!consumo.Success)
+            throw new TokenInsufficientException(consumo.RequiredCoins);
 
         return mensagemLimpa;
     }
@@ -230,11 +221,13 @@ public class ComandoSocialService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return false;
 
-        if (user.StarkCoins > 0.04m)
+        if (user.StarkCoinBalance > 0)
         {
             var resultado = await _iaService.ChamarStarkNlp(resposta);
             if (string.IsNullOrWhiteSpace(resultado.Texto))
                 return false;
+
+            // ChamarStarkNlp não retorna contagem de tokens; mantemos sem débito adicional aqui.
 
             string jsonValido;
             try
@@ -250,19 +243,12 @@ public class ComandoSocialService
                 jsonValido = System.Text.Json.JsonSerializer.Serialize(new { alternativas = partes });
             }
 
-            var custoSC = 0.04m;
-
-            if (user.StarkCoins < custoSC)
-                throw new InvalidOperationException("Saldo insuficiente para adicionar comando.");
-
-            user.StarkCoins -= custoSC;
-
             comandoSocial.Comando = comando;
             comandoSocial.Resposta = resposta;
             comandoSocial.RespostasAleatorias = jsonValido;
         }
 
-        if (user.StarkCoins < 0.04m)
+        if (user.StarkCoinBalance <= 0)
         {
             comandoSocial.Comando = comando;
             comandoSocial.Resposta = resposta;
@@ -282,5 +268,27 @@ public class ComandoSocialService
         _context.ComandosSociais.Remove(comandoSocial);
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<EconomicPayload?> ObterEconomiaAsync(Guid userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return null;
+
+        var limite = _planoLimites.ObterLimiteTokensSemana(user);
+        var agMax = _planoLimites.ObterLimiteAgendamentos(user);
+        var agAtuais = await _context.Agendamentos.CountAsync(a => a.UserId == userId);
+        var agRest = agMax == -1 ? -1 : Math.Max(0, agMax - agAtuais);
+
+        return new EconomicPayload(
+            user.PlanType.ToString(),
+            user.StarkCoinBalance,
+            user.TokensConsumidosSemana,
+            limite,
+            Math.Max(0, limite - user.TokensConsumidosSemana),
+            _planoLimites.ExibeAnuncios(user),
+            agMax,
+            agRest,
+            100);
     }
 }

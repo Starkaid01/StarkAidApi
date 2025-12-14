@@ -45,7 +45,15 @@ public class AuthController : ControllerBase
         {
             token,
             refreshToken,
-            user = new { user.Id, user.Name, user.Email, user.ApiKey, user.StarkCoins }
+            user = new
+            {
+                user.Id,
+                user.Name,
+                user.Email,
+                user.ApiKey,
+                StarkCoinBalance = user.StarkCoinBalance,
+                PlanType = user.PlanType
+            }
         });
     }
 
@@ -91,11 +99,12 @@ public class AuthController : ControllerBase
             Email = request.Email,
             PasswordHash = _authService.HashPassword(request.Password),
             ApiKey = apiKey,
-            StarkCoins = 0,
+            StarkCoinBalance = 0,
             CreatedAt = DateTimeOffset.UtcNow,
             IsActive = true,
             Role = "UserNivel1",
             RemovalAds = "Desativado",
+            PlanType = UserPlanType.Free,
             Estado = request.Estado,
             Cidade = request.Cidade,
             Bairro = request.Bairro
@@ -112,7 +121,15 @@ public class AuthController : ControllerBase
         {
             token,
             refreshToken,
-            user = new { user.Id, user.Name, user.Email, user.ApiKey, user.StarkCoins }
+            user = new
+            {
+                user.Id,
+                user.Name,
+                user.Email,
+                user.ApiKey,
+                StarkCoinBalance = user.StarkCoinBalance,
+                PlanType = user.PlanType
+            }
         });
     }
 }

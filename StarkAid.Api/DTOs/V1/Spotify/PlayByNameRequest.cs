@@ -3,7 +3,7 @@
     public class PlayByNameRequest
     {
         public Guid UserId { get; set; }
-        public string TrackName { get; set; }
+public string TrackName { get; set; } = string.Empty;
     }
 
 }

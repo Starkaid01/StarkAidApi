@@ -46,6 +46,9 @@ public class CommandProcessor
     
     // Evento para notificar quando desativar inteligência por comando de voz
     public event EventHandler? DesativarInteligenciaRequested;
+    
+    // Evento para notificar que o limite de IA foi atingido
+    public event EventHandler<IaLimitReachedEventArgs>? IaLimitReached;
 
     public bool IaEnabled
     {
@@ -363,10 +366,14 @@ public class CommandProcessor
                 };
                 
                 var response = await _apiService.CallSuperIaAsync(request);
-                if (response != null && !string.IsNullOrEmpty(response.Texto))
+                if (response != null)
                 {
-                    _speechService.Speak(response.Texto);
-                    return true;
+                    var texto = response.GetTexto();
+                    if (!string.IsNullOrEmpty(texto))
+                    {
+                        _speechService.Speak(texto);
+                        return true;
+                    }
                 }
                 
                 return true;
@@ -952,7 +959,7 @@ public class CommandProcessor
             if (deveLigar && estadoAtual)
             {
                 System.Diagnostics.Debug.WriteLine("[EWELINK] Dispositivo já está ligado - não precisa fazer nada");
-                var resposta = $"{dispositivoEncontrado.Name}, já estava ligado";
+                var resposta = $"{dispositivoEncontrado.Name} já estava ligado";
                 _speechService.Speak(resposta);
                 
                 // Enviar resposta via WebSocket com prefixo toApp:
@@ -963,7 +970,7 @@ public class CommandProcessor
             if (!deveLigar && !estadoAtual)
             {
                 System.Diagnostics.Debug.WriteLine("[EWELINK] Dispositivo já está desligado - não precisa fazer nada");
-                var resposta = $"{dispositivoEncontrado.Name}, já estava desligado";
+                var resposta = $"{dispositivoEncontrado.Name} já estava desligado";
                 _speechService.Speak(resposta);
                 
                 // Enviar resposta via WebSocket com prefixo toApp:
@@ -974,17 +981,9 @@ public class CommandProcessor
             // Executar comando
             if (await _apiService.ControlEwelinkDeviceAsync(dispositivoEncontrado.DeviceId, deveLigar))
             {
-                var acao = deveLigar ? "ligado" : "desligado";
-                var respostasAleatorias = new[]
-                {
-                    $"{dispositivoEncontrado.Name} {acao}, posso ajudar em algo mais?",
-                    $"{dispositivoEncontrado.Name} {acao}, mais alguma coisa?",
-                    $"{dispositivoEncontrado.Name} {acao}, está tudo certo!",
-                    $"{dispositivoEncontrado.Name} {acao}, precisa de mais alguma coisa?",
-                    $"{dispositivoEncontrado.Name} {acao}, pronto!"
-                };
-                var random = new Random();
-                var resposta = respostasAleatorias[random.Next(respostasAleatorias.Length)];
+                // Mensagem conforme solicitado: "liguei nome do dispositivo" ou "desliguei nome do dispositivo"
+                var acao = deveLigar ? "liguei" : "desliguei";
+                var resposta = $"{acao} {dispositivoEncontrado.Name}";
                 
                 // IMPORTANTE: Respostas Ewelink devem manter acentuação e pontuação originais para fala natural
                 // NÃO aplicar NormalizeText nas respostas que serão faladas
@@ -1142,20 +1141,46 @@ public class CommandProcessor
             bool deveLigar = isDesligar ? false : isLigar;
             var comandoEnviar = deveLigar ? "ligar" : "desligar";
 
+            // Verificar estado atual antes de ligar/desligar
+            var statusAtual = await _apiService.GetStarkswitchDeviceStatusAsync(dispositivoEncontrado.Id);
+            bool estadoAtual = false;
+            
+            if (!string.IsNullOrEmpty(statusAtual))
+            {
+                // O status pode ser "ligar", "desligar", "on", "off", "1", "0", etc.
+                var statusLower = statusAtual.ToLower().Trim();
+                estadoAtual = statusLower == "ligar" || statusLower == "on" || statusLower == "1" || statusLower == "true";
+                
+                System.Diagnostics.Debug.WriteLine($"[STARKSWITCH] Status atual: '{statusAtual}' (interpretado como: {(estadoAtual ? "ligado" : "desligado")})");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("[STARKSWITCH] Não foi possível obter status atual do dispositivo - prosseguindo com comando");
+            }
+
+            // Se já está no estado desejado, informar
+            if (deveLigar && estadoAtual)
+            {
+                System.Diagnostics.Debug.WriteLine("[STARKSWITCH] Dispositivo já está ligado - não precisa fazer nada");
+                var resposta = $"{dispositivoEncontrado.Name} já estava ligado";
+                _speechService.Speak(resposta);
+                return true;
+            }
+
+            if (!deveLigar && !estadoAtual)
+            {
+                System.Diagnostics.Debug.WriteLine("[STARKSWITCH] Dispositivo já está desligado - não precisa fazer nada");
+                var resposta = $"{dispositivoEncontrado.Name} já estava desligado";
+                _speechService.Speak(resposta);
+                return true;
+            }
+
             // Enviar comando via MQTT
             if (await _apiService.PublishCommandAsync(dispositivoEncontrado.Id, comandoEnviar))
             {
-                var acao = deveLigar ? "ligado" : "desligado";
-                var respostasAleatorias = new[]
-                {
-                    $"{dispositivoEncontrado.Name} {acao}, posso ajudar em algo mais?",
-                    $"{dispositivoEncontrado.Name} {acao}, mais alguma coisa?",
-                    $"{dispositivoEncontrado.Name} {acao}, está tudo certo!",
-                    $"{dispositivoEncontrado.Name} {acao}, precisa de mais alguma coisa?",
-                    $"{dispositivoEncontrado.Name} {acao}, pronto!"
-                };
-                var random = new Random();
-                var resposta = respostasAleatorias[random.Next(respostasAleatorias.Length)];
+                // Mensagem conforme solicitado: "liguei nome do dispositivo" ou "desliguei nome do dispositivo"
+                var acao = deveLigar ? "liguei" : "desliguei";
+                var resposta = $"{acao} {dispositivoEncontrado.Name}";
                 _speechService.Speak(resposta);
                 
                 // Atualizar atividade do usuário
@@ -1809,28 +1834,42 @@ public class CommandProcessor
             };
 
             var response = await _apiService.CallSuperIaAsync(request);
-            if (response != null && !string.IsNullOrEmpty(response.Texto))
+            if (response != null)
             {
-                _ultimaRespostaIa = response.Texto;
-                // IMPORTANTE: Respostas da IA devem manter acentuação e pontuação originais para fala natural
-                // NÃO aplicar NormalizeText nas respostas que serão faladas
-                _speechService.Speak(response.Texto);
-                
-                // Salvar aprendizado se estiver ativado e o comando tiver mais de duas palavras
-                if (_aprendizadoEnabled && !string.IsNullOrEmpty(_ultimoComandoUser))
+                var texto = response.GetTexto();
+                if (!string.IsNullOrEmpty(texto))
                 {
-                    var palavrasComando = _ultimoComandoUser.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    if (palavrasComando.Length > 2)
+                    _ultimaRespostaIa = texto;
+                    // IMPORTANTE: Respostas da IA devem manter acentuação e pontuação originais para fala natural
+                    // NÃO aplicar NormalizeText nas respostas que serão faladas
+                    _speechService.Speak(texto);
+                    
+                    // Salvar aprendizado se estiver ativado e o comando tiver mais de duas palavras
+                    if (_aprendizadoEnabled && !string.IsNullOrEmpty(_ultimoComandoUser))
                     {
-                        _database.SaveAprendizado(_ultimoComandoUser, response.Texto);
+                        var palavrasComando = _ultimoComandoUser.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        if (palavrasComando.Length > 2)
+                        {
+                            _database.SaveAprendizado(_ultimoComandoUser, texto);
+                        }
                     }
+                    
+                    // Notificar que comando de IA foi executado (para atualizar StarkCoins)
+                    IaCommandExecuted?.Invoke(this, EventArgs.Empty);
+                    
+                    // Atualizar atividade do usuário
+                    _ = _apiService.UpdateUserActivityAsync(ultimoComandoIA: comando, ultimaRespostaIA: texto);
                 }
-                
-                // Notificar que comando de IA foi executado (para atualizar StarkCoins)
-                IaCommandExecuted?.Invoke(this, EventArgs.Empty);
-                
-                // Atualizar atividade do usuário
-                _ = _apiService.UpdateUserActivityAsync(ultimoComandoIA: comando, ultimaRespostaIA: response.Texto);
+                else
+                {
+                    // Registrar log de falha se não houve resposta
+                    _ = _apiService.AddLogFalhaSoftAsync(
+                        tipoFalha: "ErroComandoIA",
+                        descricao: "Falha ao processar comando de IA",
+                        comandoTentado: comando,
+                        erroDetalhado: "Resposta vazia ou nula da API"
+                    );
+                }
             }
             else
             {
@@ -1842,6 +1881,20 @@ public class CommandProcessor
                     erroDetalhado: "Resposta vazia ou nula da API"
                 );
             }
+        }
+        catch (PaymentRequiredException ex)
+        {
+            // HTTP 402 - Limite atingido, precisa usar StarkCoins
+            var requiredCoins = ex.RequiredCoins ?? 0;
+            var message = requiredCoins > 0 
+                ? $"Seu limite semanal foi atingido. Precisamos de {requiredCoins} StarkCoins para continuar."
+                : "Seu limite semanal foi atingido. Deseja usar seu saldo em StarkCoins para continuar usando a inteligência?";
+            
+            System.Diagnostics.Debug.WriteLine($"Erro: Limite atingido para IA: {ex.Message}");
+            _speechService.Speak(message);
+            
+            // Disparar evento para que o MainForm possa mostrar diálogo
+            IaLimitReached?.Invoke(this, new IaLimitReachedEventArgs { RequiredCoins = requiredCoins });
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("Saldo insuficiente") || ex.Message.Contains("StarkCoins"))
         {
@@ -1873,5 +1926,10 @@ public class CommandProcessor
                 _ultimoComandoUser, _ultimaRespostaIa, null);
         }
     }
+}
+
+public class IaLimitReachedEventArgs : EventArgs
+{
+    public int? RequiredCoins { get; set; }
 }
 

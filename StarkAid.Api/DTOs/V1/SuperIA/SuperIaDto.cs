@@ -8,6 +8,7 @@
         public string ContextoIA { get; set; } = string.Empty;   // última resposta
 
         public string Estilo { get; set; } = string.Empty;
+        public bool UseStarkCoins { get; set; } = false; // Indica se o app autorizou uso de StarkCoins
     }
 
 }

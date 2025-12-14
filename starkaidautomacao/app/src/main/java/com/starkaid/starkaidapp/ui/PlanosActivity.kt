@@ -37,15 +37,12 @@ class PlanosActivity : AppCompatActivity() {
     }
 
     private fun setupButtons() {
-        binding.btnContratarPlano.setOnClickListener {
+        val goToCheckout = {
             val intent = Intent(this, ContratarPlanosActivity::class.java)
             startActivity(intent)
         }
-        
-        binding.btnContratarNovoPlano.setOnClickListener {
-            val intent = Intent(this, ContratarPlanosActivity::class.java)
-            startActivity(intent)
-        }
+        binding.btnContratarPlano.setOnClickListener { goToCheckout() }
+        binding.btnUpgradePremium.setOnClickListener { goToCheckout() }
     }
 
     override fun onResume() {
@@ -85,7 +82,12 @@ class PlanosActivity : AppCompatActivity() {
                         val planos = response.body()!!
                         adapter.updatePlanos(planos)
 
-                        if (planos.isEmpty()) {
+                        val temPremium = planos.any { it.nivel == 2 && it.status.equals("ativa", true) }
+
+                        binding.cardFreeBenefits.visibility = if (temPremium) View.GONE else View.VISIBLE
+                        binding.btnContratarPlano.visibility = if (temPremium) View.GONE else View.VISIBLE
+
+                        if (adapter.itemCount == 0) {
                             binding.emptyState.visibility = View.VISIBLE
                             binding.planosRecyclerView.visibility = View.GONE
                         } else {

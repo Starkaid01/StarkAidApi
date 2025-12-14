@@ -13,9 +13,12 @@ import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 //import com.starkaid.starkaidapp.services.FullDuplexAssistantAdvancedService.Companion.pediuMusica
+import com.google.gson.Gson
+import com.starkaid.starkaidapp.models.EconomicPayload
 import kotlinx.coroutines.*
 import okhttp3.*
 import okio.ByteString
+import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -28,10 +31,12 @@ class TranscribeWebSocketService(
     private val apiKey: String,
     private val languageCode: String,
     private val onTranscriptReceived: (String) -> Unit,
-    private val onError: (String) -> Unit
+    private val onError: (String) -> Unit,
+    private val onEconomyUpdate: (EconomicPayload?) -> Unit = {}
 ) {
     private val TAG = "TranscribeWS"
     private val client = OkHttpClient.Builder().build()
+    private val gson = Gson()
     private var webSocket: WebSocket? = null
     private val isRecording = AtomicBoolean(false)
     private var audioJob: Job? = null
@@ -161,14 +166,17 @@ class TranscribeWebSocketService(
 
                 override fun onMessage(ws: WebSocket, text: String) {
                     Log.d(TAG, "Received: $text")
-                    when {
-                        text.startsWith("[PARCIAL]") -> {
-                            val parcial = text.removePrefix("[PARCIAL]").trim()
-                            onTranscriptReceived("[PARCIAL] $parcial")
-                        }
-                        text.startsWith("[FINAL]") -> {
-                            val finalText = text.removePrefix("[FINAL]").trim()
-                            onTranscriptReceived("[FINAL] $finalText")
+                    val handled = tryHandleJsonMessage(text)
+                    if (!handled) {
+                        when {
+                            text.startsWith("[PARCIAL]") -> {
+                                val parcial = text.removePrefix("[PARCIAL]").trim()
+                                onTranscriptReceived("[PARCIAL] $parcial")
+                            }
+                            text.startsWith("[FINAL]") -> {
+                                val finalText = text.removePrefix("[FINAL]").trim()
+                                onTranscriptReceived("[FINAL] $finalText")
+                            }
                         }
                     }
                 }
@@ -306,5 +314,41 @@ class TranscribeWebSocketService(
             sum += sample * sample
         }
         return sqrt(sum / read)
+    }
+
+    private fun tryHandleJsonMessage(text: String): Boolean {
+        return try {
+            val obj = JSONObject(text)
+            val message = obj.optString("message", "")
+            val transcript = obj.optString("transcript", null)
+            val isPartial = obj.optBoolean("isPartial", false)
+            val economyObj = obj.optJSONObject("economy")
+            val economy = economyObj?.let {
+                EconomicPayload(
+                    planType = it.optString("planType", null),
+                    starkCoinBalance = it.optInt("StarkCoinBalance", it.optInt("starkCoinBalance", 0)),
+                    tokensConsumidosSemana = it.optInt("tokensConsumidosSemana", 0),
+                    tokensSemanaMax = it.optInt("tokensSemanaMax", 0),
+                    tokensRestantes = it.optInt("tokensRestantes", 0),
+                    adsEnabled = it.optBoolean("adsEnabled", true),
+                    agendamentosMax = it.optInt("agendamentosMax", 0),
+                    agendamentosRestantes = it.optInt("agendamentosRestantes", 0),
+                    rate = it.optInt("rate", 100)
+                )
+            }
+
+            onEconomyUpdate(economy)
+
+            if (message.isNotEmpty()) {
+                onTranscriptReceived(message)
+            }
+            if (!transcript.isNullOrEmpty()) {
+                val prefix = if (isPartial) "[PARCIAL]" else "[FINAL]"
+                onTranscriptReceived("$prefix $transcript")
+            }
+            true
+        } catch (_: Exception) {
+            false
+        }
     }
 }

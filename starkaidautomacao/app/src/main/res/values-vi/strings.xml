@@ -513,7 +513,8 @@
   <string name="google_flip_refuse_auth">Hủy bỏ</string>
   <string name="google_flip_unbind_info">Bạn có thể hủy ủy quyền bất cứ lúc nào</string>
   <string name="google_flip_unbind_info_goto_app">Vui lòng truy cập Ứng dụng Google Home để ngắt kết nối hành động.</string>
-  <string name="google_flip_voice_demos">Bật đèn phòng tắm\"\n\"Tắt đèn\"\n\"Đặt độ sáng của phòng khách thành 50%%\"\n\"Đèn có sáng trong văn phòng của John không?</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="google_flip_voice_demos" formatted="false">Bật đèn phòng tắm\"\n\"Tắt đèn\"\n\"Đặt độ sáng của phòng khách thành 50%%\"\n\"Đèn có sáng trong văn phòng của John không?</string>
   <string name="got_it">Tôi đã hiểu</string>
   <string name="goto_family_make">Thêm thành viên trong nhà</string>
   <string name="group_add_default_name">%sNhóm</string>
@@ -935,7 +936,8 @@
   <string name="ipc_notifi_center_all">Tất cả các loại</string>
   <string name="ipc_notifi_center_select_all">Chọn tất cả</string>
   <string name="ipc_ota_update_remind">1. Đảm bảo nguồn điện được kết nối trong quá trình nâng cấp. \ n2. Thiết bị sẽ không được sử dụng trong quá trình nâng cấp. Toàn bộ quá trình mất khoảng 3-5 phút, xin vui lòng đợi</string>
-  <string name="ipc_panel_baterrylevel">Pin còn lại:%s %%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Pin còn lại:%s %%</string>
   <string name="ipc_panel_button_alarm">Cảnh báo</string>
   <string name="ipc_panel_button_calendar">Ngày</string>
   <string name="ipc_panel_button_cruise">Tuần tra</string>
@@ -1666,7 +1668,8 @@
   <string name="scene_family_member_go_home">Thành viên gia đình đang ở nhà</string>
   <string name="scene_find_new_actionexecutor">Phiên bản ứng dụng hiện tại không thể hiển thị hoặc thực thi một số hành động. Vui lòng cập nhật nó lên phiên bản mới nhất.</string>
   <string name="scene_group_none">Nhóm trống</string>
-  <string name="scene_humidity_tip">Khô (0% -40%), Thoải mái (40% -70%), Ẩm ướt (70% -100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">Khô (0% -40%), Thoải mái (40% -70%), Ẩm ướt (70% -100%)</string>
   <string name="scene_icon">Biểu tượng</string>
   <string name="scene_if">Nếu</string>
   <string name="scene_image">Hình ảnh</string>

@@ -351,7 +351,8 @@
   <string name="cannot_load_image">\"無法加載該圖片！\"</string>
   <string name="cant_share_reason">藍牙Mesh設備、Zigbee設備、紅外設備暫時不支持單個設備的分享，需要將相關設備同時分享才能夠正常操作。</string>
   <string name="car_alert_limit_tip">超過添加限制 %s 個</string>
-  <string name="car_alert_tip_description">普通家庭只可添加 %d 個場景到 %s 中，開通 Pro 權益後最大場景添加數可達到您車機的最大承載數</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="car_alert_tip_description" formatted="false">普通家庭只可添加 %d 個場景到 %s 中，開通 Pro 權益後最大場景添加數可達到您車機的最大承載數</string>
   <string name="car_buy">去購買</string>
   <string name="car_buy_home_service">開通智慧生活 Pro 版</string>
   <string name="car_data_config_tips">請前往 %1$sApp - 我 - %2$s 車載進行配置</string>
@@ -954,7 +955,8 @@
   <string name="google_flip_success_tip_content">Google，打開燈\n\nOK Google，將我的燈調亮\n\n Google，將廚房燈改為藍色\n\n Google，將我的燈設定為 50%</string>
   <string name="google_flip_unbind_info">您可以隨時取消授權</string>
   <string name="google_flip_unbind_info_goto_app">如需解綁，請前往 Google Home APP 中解除 action 的連接</string>
-  <string name="google_flip_voice_demos">“打開浴室燈”\n“關燈”\n“將客廳亮度設定為 50%%”\n“約翰辦公室的燈開著嗎？”</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="google_flip_voice_demos" formatted="false">“打開浴室燈”\n“關燈”\n“將客廳亮度設定為 50%%”\n“約翰辦公室的燈開著嗎？”</string>
   <string name="got_it">知道了</string>
   <string name="goto_family_make">去添加家庭成員</string>
   <string name="group_add_default_name">%s 群組</string>
@@ -1087,7 +1089,8 @@
   <string name="home_adv_remove_from_room">從房間中移除</string>
   <string name="home_adv_remove_widget">移除小工具</string>
   <string name="home_adv_room_device_num">%1$d 個喜愛的設備</string>
-  <string name="home_adv_room_hint_num">%d 場景 | %d 設備</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="home_adv_room_hint_num" formatted="false">%d 場景 | %d 設備</string>
   <string name="home_adv_room_list_entry">房間列表</string>
   <string name="home_adv_room_no_device">沒有設備</string>
   <string name="home_adv_room_tab">房間</string>
@@ -1214,8 +1217,10 @@
   <string name="hometab_auto_start_tip">你當前禁止了%s開機啟動，將可能導致以下功能無法正常使用：\n 接收實時消息提醒（可能錯過安防告警提示）\n 是否允許應用在開機時自動啟動？</string>
   <string name="hometab_auto_start_title">開機啟動提示</string>
   <string name="hometab_ignore_tip">不再顯示此提示</string>
-  <string name="hosting_camera_used">相機%d/%d</string>
-  <string name="hosting_sensor_used">感應器%d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_camera_used" formatted="false">相機%d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_sensor_used" formatted="false">感應器%d/%d</string>
   <string name="hs_China_mainland">中國大陸</string>
   <string name="hs_abnormal_device_number">個設備異常</string>
   <string name="hs_abnormal_device_title">異常設備</string>
@@ -1329,8 +1334,10 @@
   <string name="hs_favorite_device_center_tips">以上設備將展示在設備頁，最多展示4個</string>
   <string name="hs_favorite_device_footer_tips">不展示在設備頁的設備</string>
   <string name="hs_favorite_device_tips">你可以將常用的設備添加到設備頁，最多展示4個</string>
-  <string name="hs_gateway_armde_failed_ios">%d個安防網關%s失敗，查看</string>
-  <string name="hs_gateway_armed_failed_android">%s個安防網關%s失敗，查看</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armde_failed_ios" formatted="false">%d個安防網關%s失敗，查看</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armed_failed_android" formatted="false">%s個安防網關%s失敗，查看</string>
   <string name="hs_gateway_device">安防網關</string>
   <string name="hs_geo_current_location">當前位置</string>
   <string name="hs_go_setting">去開啟</string>
@@ -1353,13 +1360,15 @@
   <string name="hs_host_ipc_devices_android">視頻設備(%1$s/%2$s)</string>
   <string name="hs_host_sensor_devices_android">非視頻設備(%1$s/%2$s)</string>
   <string name="hs_hosting">託管值守服務</string>
-  <string name="hs_hosting_camera_valid">可用攝錄鏡頭：%d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_camera_valid" formatted="false">可用攝錄鏡頭：%d/%d</string>
   <string name="hs_hosting_device_select">選擇設備</string>
   <string name="hs_hosting_other_setting">其他設定</string>
   <string name="hs_hosting_relative_tips">感應器已連接到攝錄鏡頭。觸發警報事件後，警報資料將發送至有關服務平台。</string>
   <string name="hs_hosting_remark">備註</string>
   <string name="hs_hosting_sensor">感應器</string>
-  <string name="hs_hosting_sensor_valid">可用感應器：%d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_sensor_valid" formatted="false">可用感應器：%d/%d</string>
   <string name="hs_image_des">圖片描述</string>
   <string name="hs_ipc_device">攝像機設備</string>
   <string name="hs_location_area">位置面積</string>
@@ -1408,12 +1417,14 @@
   <string name="hs_message_area">店舖大小</string>
   <string name="hs_message_area_unit">%d m²</string>
   <string name="hs_message_contacts">聯繫人</string>
-  <string name="hs_message_dispatcher_info">%s 創建任務 %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" formatted="false">%s 創建任務 %s</string>
   <string name="hs_message_dispatcher_info_ios">%1$s 創建任務 %2$s</string>
   <string name="hs_message_floor">所在樓層</string>
   <string name="hs_message_floor_unit">%d F</string>
   <string name="hs_message_industry">所屬行業</string>
-  <string name="hs_message_receiver_info">%s 執行任務 %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" formatted="false">%s 執行任務 %s</string>
   <string name="hs_message_receiver_info_ios">%1$s 執行任務 %2$s</string>
   <string name="hs_mode_desc_allhours">24小時</string>
   <string name="hs_mode_desc_leaving">離家</string>
@@ -1501,8 +1512,10 @@
   <string name="hs_servicemessage">服務消息</string>
   <string name="hs_settings">設置</string>
   <string name="hs_show_on_device_page">展示在設備頁</string>
-  <string name="hs_smart_gateway_armed_failed_android">%s個安防網關%s失敗。</string>
-  <string name="hs_smart_gateway_armed_failed_ios">%d個安防網關%s失敗。</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_android" formatted="false">%s個安防網關%s失敗。</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_ios" formatted="false">%d個安防網關%s失敗。</string>
   <string name="hs_sos_alarm_tips">你確定嗎？</string>
   <string name="hs_sos_alarmimg">安防報警</string>
   <string name="hs_sos_dispatch_tips">無報警響應服務</string>
@@ -1779,7 +1792,8 @@
   <string name="ipc_cloud_download_encoding">轉碼中</string>
   <string name="ipc_cloud_download_failed">下載失敗</string>
   <string name="ipc_cloud_download_loading">下載中</string>
-  <string name="ipc_cloud_download_precent">已下載 %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" formatted="false">已下載 %s%%</string>
   <string name="ipc_cloud_download_start">下載即將開始</string>
   <string name="ipc_cloud_download_start_body">下載的內容如含有多個事件片段，將會合併成一個視頻。下載過程中，請將APP保持在前台。</string>
   <string name="ipc_cloud_empty_event_des">沒有相關的活動視頻</string>
@@ -2115,7 +2129,8 @@
   <string name="ipc_nvr_channel">頻道</string>
   <string name="ipc_nvr_channel_unit">通道</string>
   <string name="ipc_ota_update_remind">1.升級過程中請保持設備電源始終處於連接狀態。 \n2.升級過程中設備將不能使用，整個過程大概需要3-5分鐘，請耐心等待。</string>
-  <string name="ipc_panel_baterrylevel">剩餘電量：%s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">剩餘電量：%s%%</string>
   <string name="ipc_panel_button_alarm">報警</string>
   <string name="ipc_panel_button_calendar">日期</string>
   <string name="ipc_panel_button_cruise">巡航</string>
@@ -3220,7 +3235,8 @@
   <string name="scene_find_new_actionexecutor">當前App版本過低，部分動作無法顯示和執行，請更新至最新版本</string>
   <string name="scene_find_new_entitytype">當前 App 版本過低，部分條件無法顯示，觸發或保存，請更新至最新版</string>
   <string name="scene_group_none">群組爲空</string>
-  <string name="scene_humidity_tip">乾燥(0%-40%)，舒適(40%-70%)，潮濕(70%-100%)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">乾燥(0%-40%)，舒適(40%-70%)，潮濕(70%-100%)</string>
   <string name="scene_icon">圖標</string>
   <string name="scene_if">如果</string>
   <string name="scene_if_condition">如果</string>
@@ -3551,7 +3567,8 @@
   <string name="thing_light_rhythm_scene_default_name">新節奏</string>
   <string name="thing_light_scene_batch_delete_tips">確定刪除 %d 個光線情境？</string>
   <string name="thing_light_scene_batch_delete_tips_detail">連接的日程表也將被刪除。</string>
-  <string name="thing_light_scene_batch_delete_toast">已刪除：%d 個燈光場景。失敗：%d 個燈光場景。</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_light_scene_batch_delete_toast" formatted="false">已刪除：%d 個燈光場景。失敗：%d 個燈光場景。</string>
   <string name="thing_light_scene_create_all_on_all_off">全開/全關所有燈</string>
   <string name="thing_light_scene_create_all_on_all_off_tip">由於不同的裝置功能不同，某些裝置在群組控制中可能無法按預期運行。某些設備不支援全部開啟/關閉。當它們支援此功能時，您會及時收到通知。</string>
   <string name="thing_light_scene_delete">刪除照明場景</string>
@@ -3734,7 +3751,8 @@
   <string name="thing_activator_accessory_not_connect">如果連接不上設備，</string>
   <string name="thing_activator_accessory_reset_ensure">確認%s重置成功</string>
   <string name="thing_activator_accessory_timeout">配件添加超時</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">關聯設備：%s 等 %d 個設備</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">關聯設備：%s 等 %d 個設備</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">關聯設備：%s</string>
   <string name="thing_activator_activate_stop_dialog_title">停止“%s”將會導致其他關聯設備一起停止</string>
   <string name="thing_activator_add_after_reset_device">按步驟重置設備並確認密碼正確後，再次添加</string>

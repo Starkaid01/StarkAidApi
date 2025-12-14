@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using StarkAid.Api.Data;
+using StarkAid.Api.Entities;
 using System;
 
 namespace StarkAid.Api.Services.Assinatura;
@@ -59,6 +60,7 @@ public class AssinaturaStatusChecker : BackgroundService
                         _logger.LogWarning("⬇ Rebaixando usuário {UserId} para UserNivel1 (plano Remove Ads vencido há mais de 5 dias)", user.Id);
                         user.Role = "UserNivel1";
                         user.RemovalAds = "Desativado";
+                        user.PlanType = UserPlanType.Free; // Rebaixar PlanType também
                     }
                     else if (a.Valor != 10)
                     {
@@ -82,10 +84,11 @@ public class AssinaturaStatusChecker : BackgroundService
                     // Verificar se realmente está ativa (não expirada)
                     bool notExpired = !a.ExpiraEm.HasValue || a.ExpiraEm.Value > now;
 
-                    // Apenas para plano Remove Ads (valor 10): atualiza RemovalAds e Role se necessário
+                    // Apenas para plano Remove Ads (valor 10): atualiza RemovalAds, Role e PlanType se necessário
                     if (a.Valor == 10 && notExpired)
                     {
                         user.RemovalAds = "Ativo";
+                        user.PlanType = UserPlanType.Premium; // Garantir que PlanType está como Premium
                         // Se Role for UserNivel1, atualiza para UserNivel2
                         if (user.Role == "UserNivel1")
                         {

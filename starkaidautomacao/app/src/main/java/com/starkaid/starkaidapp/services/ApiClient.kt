@@ -22,9 +22,19 @@ object ApiClient {
     fun getClient(context: Context): Retrofit {
         if (retrofit == null) {
             val sessionManager = SessionManager.getInstance(context)
-            
-            // Buscar base URL salva ou usar padrão
-            val baseUrl = sessionManager.fetchApiBaseUrl() ?: defaultBaseUrl
+
+            // Normalizar base: remover /api duplicado ou final
+            fun normalize(url: String?): String? {
+                if (url.isNullOrBlank()) return null
+                var u = url.trimEnd('/')
+                u = u.removeSuffix("/api")
+                return if (u.endsWith("/")) u else "$u/"
+            }
+
+            val isDevBase = defaultBaseUrl.contains("192.168") || defaultBaseUrl.contains("10.") || defaultBaseUrl.contains("localhost")
+            val storedBase = normalize(sessionManager.fetchApiBaseUrl())
+            val normalizedDefault = normalize(defaultBaseUrl) ?: defaultBaseUrl
+            val baseUrl = if (isDevBase) normalizedDefault!! else storedBase ?: normalizedDefault!!
 
             val client = OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
@@ -66,16 +76,22 @@ object ApiClient {
 
             // Carregar configuração em background se ainda não foi carregada
             if (!configLoaded) {
-                loadConfigAsync(context, sessionManager)
+                loadConfigAsync(context, sessionManager, isDevBase)
             }
         }
         return retrofit!!
     }
 
-    private fun loadConfigAsync(context: Context, sessionManager: SessionManager) {
+    private fun loadConfigAsync(context: Context, sessionManager: SessionManager, isDevBase: Boolean) {
         configLoaded = true
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // Em ambiente dev (IP local), não sobrepor com URL do servidor
+                if (isDevBase) {
+                    Log.d("API_CONFIG", "Ambiente dev detectado, mantendo base local: $defaultBaseUrl")
+                    return@launch
+                }
+
                 // Criar cliente temporário com URL padrão para buscar config
                 val tempClient = OkHttpClient.Builder()
                     .connectTimeout(5, TimeUnit.SECONDS)

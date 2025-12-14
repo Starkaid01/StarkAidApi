@@ -400,7 +400,8 @@
   <string name="ipc_motion_time_unit">min</string>
   <string name="ipc_motion_time_unit_mins">minute</string>
   <string name="ipc_motion_tracking_settings">Detectie miscare</string>
-  <string name="ipc_panel_baterrylevel">Baterie:%s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Baterie:%s%%</string>
   <string name="ipc_panel_button_alarm">Alarma</string>
   <string name="ipc_panel_button_calendar">Calendar</string>
   <string name="ipc_panel_button_cstorage">Cloud</string>

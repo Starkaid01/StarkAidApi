@@ -7,9 +7,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.services)
-    alias(libs.plugins.compose.compiler)
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20"
-    id("org.jetbrains.kotlin.kapt")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.25"
+    id("com.google.devtools.ksp") version "1.9.25-1.0.20"
 }
 
 
@@ -63,9 +62,10 @@ android {
         }
     }
 
+    // Alinha Compose compiler com Kotlin 1.9.25
     @Suppress("UnstableApiUsage")
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
+        kotlinCompilerExtensionVersion = "1.5.15"
     }
 
     compileOptions {
@@ -100,6 +100,73 @@ android {
     }
 }
 
+// Task de pós-processamento para corrigir apenas strings com múltiplos '%' não posicionais
+// Escopo autorizado: intermediários e src/main/res/values-*/strings.xml do app
+// Regra: adiciona formatted="false" quando percentCount >= 2 e sem placeholders posicionais
+// Comentário inserido junto à string alterada.
+fun fixNonPositionalStrings(targetFile: File, intermediatesRoot: String, srcResRoot: String): Boolean {
+    if (!targetFile.exists() || !targetFile.isFile) return false
+    val path = targetFile.path
+    val inIntermediates = path.contains(intermediatesRoot)
+    val inSrcValues = path.startsWith(srcResRoot) && path.contains("${File.separator}values")
+    if (!inIntermediates && !inSrcValues) return false
+
+    val original = targetFile.readText()
+    val pattern = Regex("<string\\s+name=\\\"([^\"]+)\\\"([^>]*)>(.*?)</string>", RegexOption.DOT_MATCHES_ALL)
+    var changed = false
+    val updated = pattern.replace(original) { match ->
+        val name = match.groupValues[1]
+        val attrs = match.groupValues[2]
+        val body = match.groupValues[3]
+        val hasFormatted = attrs.contains("formatted=")
+        val hasPositional = body.contains("%1$") || body.contains("%2$") || body.contains("%3$")
+        val percentCount = body.count { it == '%' }
+        if (!hasFormatted && !hasPositional && percentCount >= 2) {
+            changed = true
+            """<!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="$name"${attrs} formatted="false">$body</string>"""
+        } else {
+            match.value
+        }
+    }
+    if (changed) {
+        targetFile.writeText(updated)
+    }
+    return changed
+}
+
+// Hook antes do mergeResources: corrige intermediários e src/main/res/values-*/strings.xml
+tasks.withType<com.android.build.gradle.tasks.MergeResources>().configureEach {
+    doFirst {
+        val intermediatesRoot = File(project.buildDir, "intermediates").absolutePath
+        val srcResRoot = File(project.projectDir, "src${File.separator}main${File.separator}res").absolutePath
+        var fixedCount = 0
+        inputs.files.forEach { f ->
+            if (f.isFile && f.extension == "xml") {
+                if (fixNonPositionalStrings(f, intermediatesRoot, srcResRoot)) fixedCount++
+            } else if (f.isDirectory) {
+                f.walkTopDown().filter { it.isFile && it.extension == "xml" }.forEach { xml ->
+                    if (fixNonPositionalStrings(xml, intermediatesRoot, srcResRoot)) fixedCount++
+                }
+            }
+        }
+        if (fixedCount > 0) {
+            println("fixThirdPartyStrings: corrigidos $fixedCount arquivos (src/intermediários).")
+        } else {
+            println("fixThirdPartyStrings: nenhum ajuste necessário.")
+        }
+    }
+}
+
+configurations.all {
+    resolutionStrategy.force(
+        "org.jetbrains.kotlin:kotlin-stdlib:1.9.25",
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.25",
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.25",
+        "org.jetbrains.kotlin:kotlin-stdlib-common:1.9.25"
+    )
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -125,13 +192,14 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.9.25"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("com.auth0.android:jwtdecode:2.0.1")
     implementation("com.google.android.material:material:1.9.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
 
-    // ✅ Compose oficial (corrigido)
-    implementation(platform("androidx.compose:compose-bom:2025.08.00"))
+    // ✅ Compose (alinhado ao Kotlin 1.9.25)
+    implementation(platform("androidx.compose:compose-bom:2024.08.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -149,7 +217,7 @@ dependencies {
     // ✅ Room Database
     val room_version = "2.7.2"
     implementation("androidx.room:room-runtime:$room_version")
-    kapt("androidx.room:room-compiler:$room_version")
+    ksp("androidx.room:room-compiler:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
 
     // ✅ AdMob e Google Play Services

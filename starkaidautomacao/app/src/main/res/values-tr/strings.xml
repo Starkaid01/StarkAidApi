@@ -760,8 +760,10 @@ Uygulamasına Gidebilirsiniz.</string>
   <string name="hometab_auto_start_tip">%s Uygulamasının Otomatik Başlama Özelliğini Devre Dışı Bıraktınız. Bu Durum Aşağıdaki İşlevleri Etkileyebilir:\n Gerçek Zamanlı Mesaj Alma (Güvenlik Uyarılarını Kaçırabilirsiniz.)\n Telefonunuz Açıkken Uygulamanın Otomatik Olarak Başlatılmasına İzin veriyor Musunuz?</string>
   <string name="hometab_auto_start_title">Otomatik Başlatma Hatırlatıcısı</string>
   <string name="hometab_ignore_tip">Bir Daha Gösterme</string>
-  <string name="hosting_camera_used">%d/%d Kamera</string>
-  <string name="hosting_sensor_used">%d/%d Sensör</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_camera_used" formatted="false">%d/%d Kamera</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hosting_sensor_used" formatted="false">%d/%d Sensör</string>
   <string name="hs_China_mainland">Çin</string>
   <string name="hs_abnormal_device_number">Anormal Cihaz</string>
   <string name="hs_abnormal_device_title">Arıza</string>
@@ -875,8 +877,10 @@ Alarm polis alarm platformuna gönderilmedi</string>
   <string name="hs_favorite_device_center_tips">Yukarıdaki cihazlar cihazlar sayfasında görüntülenecektir (maks. 4)</string>
   <string name="hs_favorite_device_footer_tips">Cihazlar sayfasında görüntülenmeyen cihazlar.</string>
   <string name="hs_favorite_device_tips">Sık kullanılan cihazları, Cihazlar sayfasına ekleyebilir ve en fazla 4 tane görüntüleyebilirsiniz.</string>
-  <string name="hs_gateway_armde_failed_ios">%d güvenlik ağ geçidi%s başarısız. Lütfen kontrol edin.</string>
-  <string name="hs_gateway_armed_failed_android">%s güvenlik ağ geçidi %s başarısız. Lütfen kontrol edin.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armde_failed_ios" formatted="false">%d güvenlik ağ geçidi%s başarısız. Lütfen kontrol edin.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_gateway_armed_failed_android" formatted="false">%s güvenlik ağ geçidi %s başarısız. Lütfen kontrol edin.</string>
   <string name="hs_gateway_device">Güvenlik Ağ Geçidi</string>
   <string name="hs_geo_current_location">Geçerli konum</string>
   <string name="hs_go_setting">Aç</string>
@@ -899,13 +903,15 @@ Alarm polis alarm platformuna gönderilmedi</string>
   <string name="hs_host_ipc_devices_android">Kamera cihazı (%1$s/%2$s)</string>
   <string name="hs_host_sensor_devices_android">Kamera olmayan cihaz (%1$s/%2$s)</string>
   <string name="hs_hosting">Alarm İzleme Ayarları</string>
-  <string name="hs_hosting_camera_valid">Mevcut kameralar: %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_camera_valid" formatted="false">Mevcut kameralar: %d/%d</string>
   <string name="hs_hosting_device_select">Cihaz Seç</string>
   <string name="hs_hosting_other_setting">Diğer Ayarlar</string>
   <string name="hs_hosting_relative_tips">Sensörler kameralara bağlanır. Alarm tetiklendikten sonra, uyarı ilgili servis platformuna gönderilir.</string>
   <string name="hs_hosting_remark">Açıklamalar</string>
   <string name="hs_hosting_sensor">Sensör</string>
-  <string name="hs_hosting_sensor_valid">Mevcut sensörler: %d/%d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_hosting_sensor_valid" formatted="false">Mevcut sensörler: %d/%d</string>
   <string name="hs_image_des">Resim açıklaması</string>
   <string name="hs_ipc_device">Kamera Cihazları</string>
   <string name="hs_location_area">Alan boyutu</string>
@@ -954,12 +960,14 @@ Alarm polis alarm platformuna gönderilmedi</string>
   <string name="hs_message_area">Alan boyutu</string>
   <string name="hs_message_area_unit">%d m²</string>
   <string name="hs_message_contacts">Kişiler</string>
-  <string name="hs_message_dispatcher_info">%s görev oluşturur %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_dispatcher_info" formatted="false">%s görev oluşturur %s</string>
   <string name="hs_message_dispatcher_info_ios">%1$s görev oluşturur %2$s</string>
   <string name="hs_message_floor">Kat</string>
   <string name="hs_message_floor_unit">%d F</string>
   <string name="hs_message_industry">Sektör</string>
-  <string name="hs_message_receiver_info">%s görevi gerçekleştirir %s</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_message_receiver_info" formatted="false">%s görevi gerçekleştirir %s</string>
   <string name="hs_message_receiver_info_ios">%1$s görevi gerçekleştirir %2$s</string>
   <string name="hs_mode_desc_allhours">Tüm Gün</string>
   <string name="hs_mode_desc_leaving">Uzakta</string>
@@ -1046,8 +1054,10 @@ Alarm polis alarm platformuna gönderilmedi</string>
   <string name="hs_servicemessage">Hizmet Bildirimi</string>
   <string name="hs_settings">Ayarlar</string>
   <string name="hs_show_on_device_page">Cihazlar sayfasında görüntülenir</string>
-  <string name="hs_smart_gateway_armed_failed_android">%s güvenlik ağ geçidi %s başarısız oldu.</string>
-  <string name="hs_smart_gateway_armed_failed_ios">%d güvenlik ağ geçitleri %s başarısız oldu.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_android" formatted="false">%s güvenlik ağ geçidi %s başarısız oldu.</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="hs_smart_gateway_armed_failed_ios" formatted="false">%d güvenlik ağ geçitleri %s başarısız oldu.</string>
   <string name="hs_sos_alarm_tips">Alarmı devre dışı bırakmayı ve iptal etmeyi onaylıyor musunuz?</string>
   <string name="hs_sos_alarmimg">alarm</string>
   <string name="hs_sos_dispatch_tips">Alarm sistemi tetiklendi, lütfen hemen müdahale edin.</string>
@@ -1297,7 +1307,8 @@ Alarm polis alarm platformuna gönderilmedi</string>
   <string name="ipc_cloud_download_encoding">Şifreleniyor</string>
   <string name="ipc_cloud_download_failed">İndirme Başarısız</string>
   <string name="ipc_cloud_download_loading">İndiriliyor</string>
-  <string name="ipc_cloud_download_precent">%s%% İndir</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_cloud_download_precent" formatted="false">%s%% İndir</string>
   <string name="ipc_cloud_download_start">İndirme işlemi başlat</string>
   <string name="ipc_cloud_download_start_body">Seçtiğiniz video birden fazla etkinlik içeriyorsa tek bir videoda birleştirilir. İndirme işlemi sırasında lütfen uygulamayı kapatmayın.</string>
   <string name="ipc_cloud_storage_delete_all">Tüm Videoları Sil</string>
@@ -1609,7 +1620,8 @@ Alarm polis alarm platformuna gönderilmedi</string>
   <string name="ipc_nvr_channel">Kanal</string>
   <string name="ipc_nvr_channel_unit">Kanal</string>
   <string name="ipc_ota_update_remind">Ürün yazılımı güncellemesi devam ediyor. Durum hemen senkronize edilemeyebilir. Ürün yazılımı güncelleme işlemi 1 – 2 dakika sürer. Ürün yazılımı güncelleme işleminin başarılı olup olmadığını görmek için Ürün Yazılımı Güncelleme sayfasına geçebilirsiniz.</string>
-  <string name="ipc_panel_baterrylevel">Kalan pil: %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">Kalan pil: %s%%</string>
   <string name="ipc_panel_button_alarm">Alarm</string>
   <string name="ipc_panel_button_calendar">Takvim</string>
   <string name="ipc_panel_button_cruise">Devriye</string>
@@ -2541,7 +2553,8 @@ Alarm polis alarm platformuna gönderilmedi</string>
   <string name="scene_family_member_go_home">Aile Üyesi</string>
   <string name="scene_find_new_actionexecutor">Görüntülemek ve bazı işlemleri gerçekleştirmek için güncel uygulama sürümü çok eski. Lütfen en yeni sürüme güncelleyin.</string>
   <string name="scene_group_none">Grup boş</string>
-  <string name="scene_humidity_tip">Kuru (%0-%40), Orta (%40-%70), Nemli (%70-%100)</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="scene_humidity_tip" formatted="false">Kuru (%0-%40), Orta (%40-%70), Nemli (%70-%100)</string>
   <string name="scene_icon">İkon</string>
   <string name="scene_if">Bu Durumda:</string>
   <string name="scene_if_condition">Bu durumda:</string>
@@ -2897,7 +2910,8 @@ Devam Edilsin Mi?</string>
   <string name="thing_activator_accessory_not_connect">Cihaza bağlanamıyor musunuz?</string>
   <string name="thing_activator_accessory_reset_ensure">%s öğesinin sıfırlandığını onaylayın.</string>
   <string name="thing_activator_accessory_timeout">İşlem zaman aşımına uğradı</string>
-  <string name="thing_activator_activate_stop_dialog_content_muti_device">İlgili %s Cihaz: %d</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="thing_activator_activate_stop_dialog_content_muti_device" formatted="false">İlgili %s Cihaz: %d</string>
   <string name="thing_activator_activate_stop_dialog_content_one_device">İlgili Cihaz: %s</string>
   <string name="thing_activator_activate_stop_dialog_title">Diğer İlgili Cihazlar \"%s\" Durduğunda Etkilenecektir.</string>
   <string name="thing_activator_add_after_reset_device">Cihazı sıfırlayın, doğru parolayı girin ve yeniden deneyin.</string>

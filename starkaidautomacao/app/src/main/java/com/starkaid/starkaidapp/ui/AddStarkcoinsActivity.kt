@@ -44,51 +44,19 @@ class AddStarkcoinsActivity : AppCompatActivity() {
         // Configurar título
         binding.titleTextView.text = "Adicionar Fundos - StarkCoins"
 
-        // Configurar botões de valores sugeridos
-        binding.btnValue10.setOnClickListener { setAmount(10.0) }
-        binding.btnValue25.setOnClickListener { setAmount(25.0) }
-        binding.btnValue50.setOnClickListener { setAmount(50.0) }
-        binding.btnValue100.setOnClickListener { setAmount(100.0) }
-
-        // Configurar clique do botão de pagamento
-        binding.payButton.setOnClickListener {
-            onPayButtonClicked()
-        }
+        // Configurar botões - cada um vai direto para pagamento
+        binding.btnValue10.setOnClickListener { addFunds(5) }    // 5 SC — R$ 4,90
+        binding.btnValue25.setOnClickListener { addFunds(15) }   // 15 SC — R$ 9,90
+        binding.btnValue50.setOnClickListener { addFunds(50) }   // 50 SC — R$ 19,90
+        binding.btnValue100.setOnClickListener { addFunds(120) } // 120 SC — R$ 39,90
     }
 
-    private fun setAmount(amount: Double) {
-        binding.fundsAmount.setText(amount.toString())
-    }
-
-    private fun onPayButtonClicked() {
-        val amountText = binding.fundsAmount.text.toString()
-        
-        if (amountText.isEmpty()) {
-            Toast.makeText(this, "Por favor, informe um valor", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val amount = try {
-            amountText.toDouble()
-        } catch (e: NumberFormatException) {
-            Toast.makeText(this, "Valor inválido", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        if (amount <= 0) {
-            Toast.makeText(this, "Valor deve ser maior que zero", Toast.LENGTH_SHORT).show()
-            return
-        }
-
+    private fun addFunds(amount: Int) {
         if (!isOnline()) {
             Toast.makeText(this, "Sem conexão com a internet", Toast.LENGTH_LONG).show()
             return
         }
 
-        addFunds(amount)
-    }
-
-    private fun addFunds(amount: Double) {
         val token = sessionManager.fetchAuthToken()
         val apiKey = sessionManager.fetchApiKey()
 
@@ -101,7 +69,7 @@ class AddStarkcoinsActivity : AppCompatActivity() {
             try {
                 val retrofit = ApiClient.getClient(this@AddStarkcoinsActivity)
                 val usersApi = retrofit.create(UsersApi::class.java)
-                val addFundsRequest = AddFundsRequest(amount = amount)
+                val addFundsRequest = AddFundsRequest(coins = amount)
                 val response = usersApi.addFunds(addFundsRequest)
 
                 withContext(Dispatchers.Main) {

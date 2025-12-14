@@ -649,7 +649,8 @@
   <string name="ipc_motion_time_unit_mins">นาที</string>
   <string name="ipc_motion_tracking_settings">การติดตามความเคลื่อนไหว</string>
   <string name="ipc_ota_update_remind">1. ตรวจสอบว่าอุปกรณ์ของคุณเชื่อมต่อกับแหล่งจ่ายไฟตลอดกระบวนการอัปเกรด \n2. การอัปเกรดจะใช้เวลา 3 - 5 นาที อุปกรณ์ของคุณจะใช้งานไม่ได้ในระหว่างนี้</string>
-  <string name="ipc_panel_baterrylevel">แบตเตอรี่คงเหลือ: %s%%</string>
+  <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->
+<string name="ipc_panel_baterrylevel" formatted="false">แบตเตอรี่คงเหลือ: %s%%</string>
   <string name="ipc_panel_button_alarm">การเตือน</string>
   <string name="ipc_panel_button_calendar">วันที่</string>
   <string name="ipc_panel_button_cruise">การลาดตระเวน</string>

@@ -120,6 +120,21 @@
     margin-bottom: 3rem;
 }
 
+/* Força 2 colunas em mobile - aplica para telas menores que 900px */
+@media screen and (max-width: 900px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 0.75rem !important;
+    }
+    
+    .stats-grid .stat-card {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+    
+}
+
 .stat-card {
     background: var(--dark-surface);
     padding: 2rem;
@@ -694,6 +709,7 @@ div.welcome-header {
     color: var(--light-text);
 }
 
+
 .api-key-container {
     display: flex;
     align-items: center;
@@ -810,23 +826,38 @@ div.welcome-header {
     }
 
     .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        grid-auto-flow: row !important;
+        gap: 0.75rem !important;
     }
-
+    
+    .stats-grid > * {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    
     .stat-card {
-        padding: 1.5rem;
-        gap: 1rem;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0.75rem !important;
+        gap: 0.5rem !important;
     }
 
     .stat-icon {
-        width: 60px;
-        height: 60px;
-        font-size: 2rem;
+        width: 45px !important;
+        height: 45px !important;
+        font-size: 1.25rem !important;
     }
 
     .stat-value {
-        font-size: 1.5rem;
+        font-size: 1.1rem !important;
+        line-height: 1.2 !important;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem !important;
     }
 
     .users-table {
@@ -1158,21 +1189,38 @@ div.welcome-header {
     }
 
     .stats-grid {
-        gap: 0.75rem;
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        grid-auto-flow: row !important;
+        gap: 0.5rem !important;
     }
-
+    
+    .stats-grid > * {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    
     .stat-card {
-        padding: 1rem;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0.5rem !important;
+        gap: 0.4rem !important;
     }
 
     .stat-icon {
-        width: 50px;
-        height: 50px;
-        font-size: 1.5rem;
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 1.1rem !important;
     }
 
     .stat-value {
-        font-size: 1.25rem;
+        font-size: 1rem !important;
+        line-height: 1.2 !important;
+    }
+    
+    .stat-label {
+        font-size: 0.7rem !important;
     }
 
     .welcome-card {

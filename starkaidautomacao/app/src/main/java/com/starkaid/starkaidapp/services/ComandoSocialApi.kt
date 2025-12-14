@@ -2,15 +2,21 @@ package com.starkaid.starkaidapp.services
 
 import com.starkaid.starkaidapp.models.ComandoSocial
 import com.starkaid.starkaidapp.models.CriarComandoSocialRequest
+import com.starkaid.starkaidapp.models.EconomicPayload
 import retrofit2.Response
 import retrofit2.http.*
 
+data class ComandoSocialWrapper<T>(
+    val data: T?,
+    val economy: EconomicPayload?
+)
+
 interface ComandoSocialApi {
     @GET("api/v1/ComandosSociais")
-    suspend fun listarComandos(): Response<List<ComandoSocial>>
+    suspend fun listarComandos(): Response<ComandoSocialWrapper<List<ComandoSocial>>>
 
     @POST("api/v1/ComandosSociais")
-    suspend fun criarComando(@Body request: CriarComandoSocialRequest): Response<ComandoSocial>
+    suspend fun criarComando(@Body request: CriarComandoSocialRequest): Response<ComandoSocialWrapper<ComandoSocial>>
 
     @PUT("api/v1/ComandosSociais/{id}")
     suspend fun atualizarComando(
