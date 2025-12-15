@@ -81,6 +81,9 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
     private var audioMonitorJob: Job? = null
     private val currentAudioLevel = AtomicLong(0)
     private var audioRecord: AudioRecord? = null
+    private var estimatedSpeechEndTime = AtomicLong(0)
+    private var silenceStartTime = AtomicLong(0)
+    private var speechEndValidationJob: Job? = null
 
 
     override fun onCreate() {
@@ -149,6 +152,7 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
 
     override fun onDestroy() {
         super.onDestroy()
+        speechEndValidationJob?.cancel()
         stopAudioMonitoring()
         teardownSpeechRecognizer()
         tts?.stop()
@@ -217,20 +221,71 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         }
     }
 
+    /**
+     * Calcula o tempo estimado de fala baseado no número de palavras.
+     * Foca especialmente na última palavra para determinar quando realmente termina.
+     * Velocidade média do TTS em português: ~150 palavras/minuto = ~400ms por palavra
+     */
+    private fun calculateEstimatedSpeechDuration(text: String): Long {
+        // Contar palavras (palavras são separadas por espaços)
+        val words = text.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        val wordCount = words.size
+        
+        if (wordCount == 0) return 1000L
+        
+        // Tempo base: ~400ms por palavra
+        val baseTimeMs = wordCount * 400L
+        
+        // Para textos muito curtos (< 5 palavras), usar tempo mínimo de 1 segundo
+        val minTime = if (wordCount < 5) 1000L else baseTimeMs
+        
+        // Adicionar pequena margem de segurança (20% ao invés de 40%)
+        // O callback onDone do TTS é confiável, então não precisamos de margem muito grande
+        val withMargin = (minTime * 1.2).toLong()
+        
+        // Limite máximo de 30 segundos para evitar travamento
+        return withMargin.coerceAtMost(30000L)
+    }
+    
+    /**
+     * Extrai a última palavra de uma frase para uso em validação
+     */
+    private fun getLastWord(text: String): String {
+        val words = text.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        return if (words.isNotEmpty()) {
+            words.last().lowercase().replace(Regex("[^a-z0-9]"), "")
+        } else {
+            ""
+        }
+    }
+
     fun speak(text: String) {
         val t = tts ?: return
         val uttId = "utt-${System.currentTimeMillis()}"
         isSpeaking.set(true)
         ultimaFalaAssistente = text
+        
+        // Calcular tempo estimado de fala e última palavra
+        val estimatedDuration = calculateEstimatedSpeechDuration(text)
+        val speechStartTime = System.currentTimeMillis()
+        estimatedSpeechEndTime.set(speechStartTime + estimatedDuration)
+        silenceStartTime.set(0)
+        val lastWord = getLastWord(text)
+        
+        Log.d(TAG, "🎙️ Iniciando fala - Texto: ${text.take(50)}..., Duração estimada: ${estimatedDuration}ms, Última palavra: '$lastWord'")
 
-        commandScope.launch {
-            delay(200) // tempo para SR se estabilizar
-            tryStartListeningSafe("TTS.onDone") // só reinicia se não estiver ouvindo
-        }
+        // NÃO reiniciar reconhecimento aqui - será reiniciado após TTS terminar completamente
 
         t.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) {
                 isSpeaking.set(true)
+                estimatedSpeechEndTime.set(System.currentTimeMillis() + estimatedDuration)
+                silenceStartTime.set(0)
+                
+                // NÃO PAUSAR reconhecimento - manter sempre ativo para capturar comandos de parar
+                // A lógica de não processar comandos será feita no handleCommand
+                Log.d(TAG, "🎙️ TTS iniciado - reconhecimento continua ativo")
+                
                 // Broadcast para MainActivity iniciar animações
                 val intent = Intent(BROADCAST_TTS_STARTED)
                 LocalBroadcastManager.getInstance(this@FullDuplexAssistantAdvancedService).sendBroadcast(intent)
@@ -239,34 +294,44 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
             }
 
             override fun onDone(utteranceId: String?) {
-                // Parar monitoramento de áudio
-                stopAudioMonitoring()
-                commandScope.launch {
-                    delay(100) // tempo para SR se estabilizar//
-                    tryStartListeningSafe("TTS.onDone") // só reinicia se não estiver ouvindo
-
-                    delay(400)
-                    isSpeaking.set(false)
-                    // Broadcast para MainActivity parar animações
-                    val intent = Intent(BROADCAST_TTS_STOPPED)
-                    LocalBroadcastManager.getInstance(this@FullDuplexAssistantAdvancedService).sendBroadcast(intent)
+                Log.d(TAG, "✅ TTS onDone chamado - callback confiável, parando imediatamente")
+                
+                // CANCELAR validação anterior se houver
+                speechEndValidationJob?.cancel()
+                
+                // O callback onDone do TTS é confiável e indica que terminou de falar
+                // Usar apenas um delay mínimo para garantir que o áudio realmente saiu do alto-falante
+                speechEndValidationJob = commandScope.launch(Dispatchers.Default) {
+                    // Delay muito pequeno (150ms) para garantir que o último som saiu
+                    delay(150)
+                    forceStopSpeakingImmediate()
                 }
-
             }
 
-            override fun onError(utteranceId: String?) {
-                Log.w(TAG, "❌ Google SR erro: $utteranceId")
-                isListeningGoogle.set(false) // marca como parado
-                isSpeaking.set(false)
+                override fun onError(utteranceId: String?) {
+                Log.w(TAG, "❌ TTS erro: $utteranceId")
+                
+                // Cancelar validação em andamento
+                speechEndValidationJob?.cancel()
+                
                 // Parar monitoramento de áudio
                 stopAudioMonitoring()
+                
+                // Forçar parada imediata em caso de erro
+                isSpeaking.set(false)
+                estimatedSpeechEndTime.set(0)
+                silenceStartTime.set(0)
+                
                 // Broadcast para MainActivity parar animações em caso de erro
                 val intent = Intent(BROADCAST_TTS_STOPPED)
                 LocalBroadcastManager.getInstance(this@FullDuplexAssistantAdvancedService).sendBroadcast(intent)
 
+                // Reiniciar reconhecimento rapidamente
                 commandScope.launch {
-                    delay(200)
-                    if (!forceStopped.get()) safeDelayedRestart()
+                    delay(100)
+                    if (!forceStopped.get() && !isListeningGoogle.get()) {
+                        tryStartListeningSafe("TTS.onError")
+                    }
                 }
             }
         })
@@ -288,6 +353,8 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
             return
         }
 
+        // Não verificar isSpeaking aqui - reconhecimento deve estar sempre ativo
+        // A lógica de não processar comandos durante TTS está no handleCommand
         startGoogleListening()
     }
 
@@ -304,17 +371,30 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
 
     fun stopSpeak() {
         tts?.stop()
-        isSpeaking.set(false)
-        Log.d(TAG, "🛑 TTS interrompido manualmente")
+        
+        // Cancelar validação em andamento
+        speechEndValidationJob?.cancel()
+        
         // Parar monitoramento de áudio
         stopAudioMonitoring()
+        
+        // Forçar parada imediata
+        isSpeaking.set(false)
+        estimatedSpeechEndTime.set(0)
+        silenceStartTime.set(0)
+        
+        Log.d(TAG, "🛑 TTS interrompido manualmente")
+        
         // Broadcast para MainActivity parar animações
         val intent = Intent(BROADCAST_TTS_STOPPED)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
 
+        // Reiniciar reconhecimento rapidamente
         commandScope.launch {
-            delay(300)
-            if (!forceStopped.get()) safeDelayedRestart()
+            delay(100)
+            if (!forceStopped.get() && !isListeningGoogle.get()) {
+                tryStartListeningSafe("stopSpeak")
+            }
         }
     }
 
@@ -460,6 +540,37 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         }
     }
 
+    /**
+     * Para o TTS imediatamente após callback onDone (mais confiável e rápido)
+     */
+    private suspend fun forceStopSpeakingImmediate() {
+        withContext(Dispatchers.Main) {
+            // Parar monitoramento de áudio
+            stopAudioMonitoring()
+            
+            // Marcar como não falando IMEDIATAMENTE
+            isSpeaking.set(false)
+            
+            // Resetar contadores
+            estimatedSpeechEndTime.set(0)
+            silenceStartTime.set(0)
+            
+            // Broadcast para MainActivity parar animações
+            val intent = Intent(BROADCAST_TTS_STOPPED)
+            LocalBroadcastManager.getInstance(this@FullDuplexAssistantAdvancedService).sendBroadcast(intent)
+            Log.d(TAG, "🛑 TTS marcado como parado IMEDIATAMENTE após onDone")
+            
+            // Reiniciar reconhecimento IMEDIATAMENTE (sem delay grande)
+            commandScope.launch {
+                delay(100) // Delay mínimo apenas para estabilizar
+                if (!isListeningGoogle.get() && !forceStopped.get()) {
+                    tryStartListeningSafe("TTS.onDoneImmediate")
+                }
+            }
+        }
+    }
+    
+
     private fun stopAudioMonitoring() {
         audioMonitorJob?.cancel()
         audioMonitorJob = null
@@ -501,44 +612,39 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
 
                     Log.w(TAG, "❌ Google SR erro: $error")
                     isListeningGoogle.set(false)
+                    
+                    // Reiniciar reconhecimento rapidamente (reconhecimento contínuo)
+                    // Não verificar isSpeaking aqui - deixar sempre ativo
                     commandScope.launch {
                         delay(300)
-                        if (!isSpeaking.get()) tryStartListeningSafe("SR.onError")
+                        if (!forceStopped.get()) tryStartListeningSafe("SR.onError")
                     }
                 }
 
                 override fun onResults(results: Bundle) {
-                    isListeningGoogle.set(false) // já terminou de ouvir
+                    // Processar resultado
                     results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull()?.let { handleCommand(it, false) }
+                    
+                    // Reiniciar reconhecimento imediatamente para reconhecimento contínuo
+                    isListeningGoogle.set(false)
                     tryStartListeningSafe("SR.onResults")
                 }
 
                 override fun onPartialResults(partialResults: Bundle) {
                     partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull()?.let { text ->
-                            val cleanText = text.lowercase()
+                            val cleanText = text.lowercase().trim()
 
-                            // Comandos para parar TTS - expanda a lista
-                            val stopCommands = listOf(
-                                "para de falar", "parar de falar", "pare de falar",
-                                "cala a boca", "cale a boca", "cala boca", "cale boca",
-                                "calar a boca", "calar boca", "cale-se", "cala-se",
-                                "silencio", "silêncio", "fique quieto", "fica quieto",
-                                "ficar quieto", "para com isso", "para com essa",
-                                "chega de falar", "basta de falar", "pare com isso"
-                            )
-
-                            // SEMPRE processa comandos de parar, mesmo durante TTS
-                            if (stopCommands.any { cleanText.contains(it) }) {
-                                Log.d(TAG, "🛑 Comando de parar detectado: $cleanText")
+                            // SEMPRE verificar comandos de parar primeiro (mesmo durante TTS)
+                            if (isStopSpeakingCommand(cleanText)) {
+                                Log.d(TAG, "🛑 Comando de parar detectado (parcial): '$cleanText'")
                                 stopSpeak()
-                                // Opcional: confirmar que parou
-                                // speak("Ok, parei de falar")
-                            } else if (!isSpeaking.get()) {
-                                // Outros comandos só quando não está falando
-                                handleCommand(text, true)
+                                return@let
                             }
+                            
+                            // Outros comandos parciais: processar normalmente (handleCommand filtra se TTS está falando)
+                            handleCommand(text, true)
                         }
                 }
 
@@ -554,21 +660,39 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-BR")
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
 
-            // ⬇️ Delays de silêncio reduzidos para acelerar a resposta
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 900L) // antes 2000
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 800L) // antes 1500
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 500L) // antes 800
+            // ⬇️ Delays de silêncio otimizados para reconhecimento contínuo e responsivo
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 700L) // Silêncio mínimo para considerar fim
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 600L) // Possível fim mais cedo
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 300L) // Duração mínima da fala (mais rápido)
         }
     }
 
     private fun startGoogleListening() {
-        if (forceStopped.get() || isListeningGoogle.get()) return
+        if (forceStopped.get()) {
+            Log.d(TAG, "🚫 Ignorado startGoogleListening (forceStopped=true)")
+            return
+        }
+        
+        // Se já está ouvindo, não precisa reiniciar
+        if (isListeningGoogle.get()) {
+            Log.d(TAG, "✅ Google SR já está ouvindo")
+            return
+        }
+        
         try {
             sr?.startListening(srIntent)
             isListeningGoogle.set(true)
-            Log.d(TAG, "✅ Google SR iniciado")
+            Log.d(TAG, "✅ Google SR iniciado - reconhecimento contínuo ativo")
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao iniciar SR: ${e.message}")
+            isListeningGoogle.set(false)
+            // Tentar reiniciar após um delay em caso de erro
+            commandScope.launch {
+                delay(1000)
+                if (!forceStopped.get() && !isListeningGoogle.get()) {
+                    tryStartListeningSafe("SR.errorRecovery")
+                }
+            }
         }
     }
 
@@ -611,56 +735,146 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         return START_STICKY
     }
 
+    /**
+     * Verifica se é um comando de parar de falar
+     * Versão melhorada e mais permissiva para detectar comandos de parar
+     */
+    private fun isStopSpeakingCommand(text: String): Boolean {
+        val normalized = text.lowercase()
+            .replace(Regex("[^a-z0-9\\s]"), "") // Remove pontuação
+            .trim()
+        
+        // Lista expandida de comandos de parar
+        val stopCommands = listOf(
+            "para de falar", "parar de falar", "pare de falar",
+            "cala a boca", "cale a boca", "calar a boca",
+            "cala boca", "cale boca", "calar boca",
+            "cale-se", "cala-se", "calar-se",
+            "fica quieto", "fique quieto", "ficar quieto",
+            "fica calado", "fique calado", "ficar calado",
+            "silencio", "silêncio",
+            "para com isso", "pare com isso", "parar com isso",
+            "chega de falar", "basta de falar",
+            "calece", "cala se", "cale se"
+        )
+        
+        // Verificar correspondência exata ou parcial
+        val hasExactMatch = stopCommands.any { normalized.contains(it) }
+        
+        // Verificar combinações de palavras (mais permissivo)
+        val hasParaFalar = (normalized.contains("para") || normalized.contains("pare") || normalized.contains("parar")) &&
+                          (normalized.contains("falar") || normalized.contains("falando"))
+        
+        val hasCalaBoca = (normalized.contains("cala") || normalized.contains("cale") || normalized.contains("calar")) &&
+                         normalized.contains("boca")
+        
+        val hasQuieto = normalized.contains("quieto") || normalized.contains("calado") || normalized.contains("silencio")
+        
+        return hasExactMatch || hasParaFalar || hasCalaBoca || hasQuieto
+    }
+
+    /**
+     * Calcula similaridade entre dois textos usando algoritmo de Levenshtein simplificado
+     * Retorna um valor entre 0.0 (totalmente diferente) e 1.0 (idênticos)
+     */
+    private fun calculateSimilarity(text1: String, text2: String): Double {
+        if (text1 == text2) return 1.0
+        if (text1.isEmpty() || text2.isEmpty()) return 0.0
+        
+        // Normalizar textos: remover pontuação e converter para minúsculas
+        val normalized1 = text1.lowercase().replace(Regex("[^a-z0-9\\s]"), "").trim()
+        val normalized2 = text2.lowercase().replace(Regex("[^a-z0-9\\s]"), "").trim()
+        
+        // Verificar se um texto contém o outro (substring)
+        if (normalized1.contains(normalized2) || normalized2.contains(normalized1)) {
+            val longer = maxOf(normalized1.length, normalized2.length)
+            val shorter = minOf(normalized1.length, normalized2.length)
+            return (shorter.toDouble() / longer) * 0.9 // 90% se for substring
+        }
+        
+        // Calcular palavras em comum
+        val words1 = normalized1.split(Regex("\\s+")).filter { it.isNotBlank() }.toSet()
+        val words2 = normalized2.split(Regex("\\s+")).filter { it.isNotBlank() }.toSet()
+        
+        if (words1.isEmpty() || words2.isEmpty()) return 0.0
+        
+        val commonWords = words1.intersect(words2)
+        val totalWords = words1.union(words2).size
+        
+        // Similaridade baseada em palavras comuns
+        val wordSimilarity = (commonWords.size * 2.0) / totalWords
+        
+        // Verificar sequências de palavras consecutivas (mais importante)
+        val words1List = normalized1.split(Regex("\\s+")).filter { it.isNotBlank() }
+        val words2List = normalized2.split(Regex("\\s+")).filter { it.isNotBlank() }
+        
+        var longestSequence = 0
+        for (i in words1List.indices) {
+            for (j in words2List.indices) {
+                var seq = 0
+                var k = 0
+                while (i + k < words1List.size && j + k < words2List.size && 
+                       words1List[i + k] == words2List[j + k]) {
+                    seq++
+                    k++
+                }
+                if (seq > longestSequence) longestSequence = seq
+            }
+        }
+        
+        // Similaridade baseada em sequências (peso maior)
+        val sequenceSimilarity = if (longestSequence > 0) {
+            (longestSequence * 2.0) / (words1List.size + words2List.size)
+        } else {
+            0.0
+        }
+        
+        // Combinar similaridades (sequências têm peso maior)
+        return (sequenceSimilarity * 0.6 + wordSimilarity * 0.4).coerceIn(0.0, 1.0)
+    }
+
     private fun handleCommand(text: String?, partial: Boolean = false) {
         if (text.isNullOrBlank()) return
         val cleanText = text.lowercase().trim()
-        val lastSpeak = ultimaFalaAssistente.lowercase().trim()
-
-        var naoPodeContinuar = false
-
-        val lislastSpeak = lastSpeak.lowercase().split(" ")
-        val listWordcleanText = cleanText.split(" ")
-        var worCount = 0
-        for (word in lislastSpeak) {
-            if (word != " " && !word.isEmpty() && listWordcleanText.contains(word)) {
-                worCount++
-                if (worCount >= 7) {
-                    naoPodeContinuar = true
-                    break
-                }
-            }
-        }
-        if (naoPodeContinuar)
-            return
-
-
-        if (lastSpeak.lowercase() == cleanText){
-            Log.d("TestandoIA", "reconheceu propria fala")
-            return
-        }
-
-
-        val stopCmds = listOf(
-            "ficar quieto", "fique quieto", "calece", "ficar calado", "fique calado",
-            "parar de falar", "para de falar", "pare de falar", "fica quieto", "silencio",
-            "cale-se", "fica calado", "fique quieto", "calar a boca", "cala a boca",
-            "cala boca", "cale a boca", "cale boca"
-        )
-
-        if (isSpeaking.get() && stopCmds.any { cleanText.contains(it) }) {
-            Log.d(TAG, "🛑 Parar fala detectado")
+        
+        // PRIMEIRO: Verificar se é comando de parar (sempre processar, mesmo durante TTS)
+        if (isStopSpeakingCommand(cleanText)) {
+            Log.d(TAG, "🛑 Comando de parar detectado: '$cleanText'")
             stopSpeak()
             return
         }
+        
+        // SEGUNDO: Se TTS está falando, IGNORAR todos os outros comandos
+        if (isSpeaking.get()) {
+            Log.d(TAG, "🚫 Ignorando comando durante TTS (não é parar): '$cleanText'")
+            return
+        }
+        
+        // TERCEIRO: Verificar se não é a própria fala do assistente sendo reconhecida
+        val lastSpeak = ultimaFalaAssistente.lowercase().trim()
+        
+        if (lastSpeak.isNotEmpty()) {
+            // Se for exatamente igual, ignorar
+            if (cleanText == lastSpeak) {
+                Log.d(TAG, "🚫 Ignorando comando idêntico à última fala do assistente")
+                return
+            }
+            
+            // Calcular similaridade (threshold mais baixo para ser mais permissivo)
+            val similarity = calculateSimilarity(cleanText, lastSpeak)
+            
+            // Se similaridade for muito alta (>80%), provavelmente é o próprio TTS
+            if (similarity > 0.8) {
+                Log.d(TAG, "🚫 Ignorando comando muito similar à última fala - Similaridade: ${(similarity * 100).toInt()}%")
+                Log.d(TAG, "   Última fala: '$lastSpeak'")
+                Log.d(TAG, "   Comando: '$cleanText'")
+                return
+            }
+        }
 
-        val resultText =
-            if (partial) "parcial:$cleanText" else cleanText
-
-
-        val resultTextFinal = if (isSpeaking.get()) "speaking:$resultText" else resultText
-
-        Log.d("TestandoIA", "antes de enviar a Mainactivity: $resultTextFinal")
-
-        broadcastSpeechResult(resultTextFinal)
+        // Processar comando normalmente
+        val resultText = if (partial) "parcial:$cleanText" else cleanText
+        Log.d(TAG, "✅ Processando comando: '$cleanText'")
+        broadcastSpeechResult(resultText)
     }
 }

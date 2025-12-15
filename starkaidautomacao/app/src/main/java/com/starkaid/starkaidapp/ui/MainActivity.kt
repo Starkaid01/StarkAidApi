@@ -2795,16 +2795,13 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     }
                 }
                 FullDuplexAssistantAdvancedService.BROADCAST_TTS_STOPPED -> {
-                    // Adicionar delay para garantir que o TTS realmente terminou
-                    // Isso evita que isTtsSpeaking seja marcado como false antes do tempo
-                    CoroutineScope(Dispatchers.Default).launch {
-                        delay(500) // Delay de 500ms para garantir que TTS terminou
+                    // O serviço já faz validação inteligente usando tempo estimado + monitoramento de áudio
+                    // Podemos marcar como false imediatamente quando o broadcast chega
                     isTtsSpeaking = false
                     runOnUiThread {
                         hideSoundWaves()
-                        }
-                        Log.d("MainActivity", "TTS marcado como parado após delay de segurança")
                     }
+                    Log.d("MainActivity", "TTS marcado como parado (validação inteligente já feita no serviço)")
                 }
                 FullDuplexAssistantAdvancedService.BROADCAST_TTS_AUDIO_LEVEL -> {
                     val audioLevel = intent.getIntExtra(FullDuplexAssistantAdvancedService.EXTRA_AUDIO_LEVEL, 0)
@@ -2815,10 +2812,13 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                             Log.d("SoundWave", "Nível de áudio recebido: $audioLevel")
                         }
                     }
-                    // Se há áudio, o TTS ainda está falando
-                    if (audioLevel > 0) {
+                    // Se há áudio significativo (threshold de 5), o TTS ainda está falando
+                    // Isso funciona como validação adicional no MainActivity
+                    if (audioLevel > 5) {
                         isTtsSpeaking = true
                     }
+                    // Nota: Não marcamos como false aqui mesmo que audioLevel seja 0,
+                    // porque o serviço já faz validação inteligente antes de enviar BROADCAST_TTS_STOPPED
                 }
             }
         }
@@ -2829,17 +2829,38 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             if (intent?.action == FullDuplexAssistantAdvancedService.BROADCAST_SPEECH_RESULT) {
                 val text = intent.getStringExtra(FullDuplexAssistantAdvancedService.EXTRA_RECOGNIZED_TEXT)
                 text?.let {
+                    // IMPORTANTE: Se o comando tem prefixo "speaking:", verificar APENAS comandos de parar
+                    // Todos os outros comandos com "speaking:" devem ser ignorados
+                    val textToCheck = it.lowercase().trim()
+                    val hasSpeakingPrefix = it.lowercase().contains("speaking:")
+                    
+                    if (hasSpeakingPrefix) {
+                        // Se tem "speaking:", só processar se for comando de parar
+                        if (isStopTalkingCommand(textToCheck)) {
+                            Log.d("MainActivity", "🛑 Comando de parar detectado durante TTS: '$it' - enviando para serviço")
+                            val stopIntent = Intent(this@MainActivity, FullDuplexAssistantAdvancedService::class.java).apply {
+                                action = FullDuplexAssistantAdvancedService.ACTION_STOP_SPEAKING
+                            }
+                            startService(stopIntent)
+                            isTtsSpeaking = false
+                            runOnUiThread {
+                                hideSoundWaves()
+                            }
+                            return
+                        } else {
+                            // Ignorar qualquer outro comando que veio durante TTS
+                            Log.d("MainActivity", "🚫 Ignorando comando capturado durante TTS: '$it'")
+                            return
+                        }
+                    }
+                    
                     Log.d("MainActivity", "Texto reconhecido: $it")
 
                     var resp = it
                     if(it.contains("parcial:"))
                         resp = it.replace("parcial:","")
-                    if(it.contains("speaking:"))
-                        resp = it.replace("speaking:","")
 
-                    // Processar comandos de parar de falar PRIMEIRO, mesmo quando TTS está falando
-                    // Verificar no texto original antes de remover "parcial:" e "speaking:"
-                    val textToCheck = it.lowercase().trim()
+                    // Processar comandos de parar de falar (quando não tem "speaking:")
                     if (isStopTalkingCommand(textToCheck)) {
                         Log.d("MainActivity", "🛑 Comando de parar de falar detectado: '$it' - enviando para serviço")
                         // Enviar intent para o serviço parar o TTS imediatamente
@@ -2854,12 +2875,6 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                         }
                         // Não processar mais nada, apenas parar o TTS
                         return
-                    } else {
-                        // Log para debug - verificar por que não está detectando
-                        if (isTtsSpeaking && (textToCheck.contains("parar") || textToCheck.contains("pare") || textToCheck.contains("para")) && textToCheck.contains("falar")) {
-                            Log.d("MainActivity", "⚠️ Texto contém 'parar/pare/para' e 'falar' mas não foi detectado: '$it'")
-                            Log.d("MainActivity", "⚠️ Texto limpo: '${cleanText(textToCheck)}'")
-                        }
                     }
 
                     if(cleanText(it).contains("parar de ouvir")
@@ -2947,12 +2962,16 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                             Log.d("TestandoIA", "[speechReceiver] Texto recebido: '$it', aguardandoLiberarConsumoStarkcoins: $aguardandoLiberarConsumoStarkcoins")
 
                             if (aguardandoLiberarConsumoStarkcoins) {
-                                // Remover prefixos "parcial:" e "speaking:" antes de processar
+                                // IMPORTANTE: Se tem prefixo "speaking:", IGNORAR completamente
+                                if (it.lowercase().contains("speaking:")) {
+                                    Log.d("MainActivity", "🚫 Ignorando comando parcial capturado durante TTS: '$it'")
+                                    return@let
+                                }
+                                
+                                // Remover prefixo "parcial:" antes de processar
                                 var textToProcess = it
                                 if (it.lowercase().contains("parcial:"))
                                     textToProcess = it.replace("parcial:", "", ignoreCase = true)
-                                if (it.lowercase().contains("speaking:"))
-                                    textToProcess = textToProcess.replace("speaking:", "", ignoreCase = true)
                                 
                                 val normalized = cleanText(textToProcess)
                                 Log.d("TestandoIA", "[speechReceiver] Verificando resposta. Texto original: '$it', processado: '$textToProcess', normalizado: '$normalized'")
@@ -4194,13 +4213,17 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         val userId = sessionManager.fetchUserId()
         val currentTime = System.currentTimeMillis()
 
+        // IMPORTANTE: Se o comando tem prefixo "speaking:", IGNORAR completamente
+        // Isso significa que foi capturado durante TTS e não deve ser processado
+        if (result.lowercase().contains("speaking:")) {
+            Log.d("TestandoIA", "🚫 Ignorando comando capturado durante TTS (speaking:): '$result'")
+            return false
+        }
 
-        // Remover prefixos "parcial:" e "speaking:" ANTES de processar o texto
+        // Remover prefixos "parcial:" ANTES de processar o texto
         var textToProcess = result
         if (result.lowercase().contains("parcial:"))
             textToProcess = result.replace("parcial:", "", ignoreCase = true)
-        if (result.lowercase().contains("speaking:"))
-            textToProcess = textToProcess.replace("speaking:", "", ignoreCase = true)
         
         // Agora processar o texto limpo
         var cleanText = cleanText(textToProcess).trim()
@@ -4279,7 +4302,8 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         else{
             Log.d("TestandoIA","NAO Executou processandoComandos ${cleanText}")
             // Só chama a Super IA se nenhum comando foi executado
-            if (!result.lowercase().contains("speaking:") && !result.lowercase().contains("parcial:")){
+            // Nota: "speaking:" já foi filtrado no início da função
+            if (!result.lowercase().contains("parcial:")){
                 if(getIaResponse(cleanText)) {
                     Log.d("TestandoIA", "Executou Comandos IA")
                     return true

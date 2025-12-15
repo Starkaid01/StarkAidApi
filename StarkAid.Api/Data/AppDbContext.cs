@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using StarkAid.Api.Entities;
+using StarkAid.Api.Entities.DetranStudyPro;
 using StarkAid.Api.Options;
+using System;
 
 namespace StarkAid.Api.Data;
 
@@ -42,6 +44,8 @@ public class AppDbContext : DbContext
     public DbSet<ResolvendoSuporte> ResolvendoSuportes => Set<ResolvendoSuporte>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<StarkCoinPurchase> StarkCoinPurchases => Set<StarkCoinPurchase>();
+
+  
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -462,5 +466,6 @@ public class AppDbContext : DbContext
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
+       
     }
 }

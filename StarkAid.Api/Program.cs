@@ -174,7 +174,7 @@ try
                     PermitLimit = 200,
                     Window = TimeSpan.FromMinutes(1)
                 }));
-
+        
         // Rate limiting primário por usuário - 100 req/min gerais
         // Aplicado quando o usuário está autenticado
         options.AddPolicy<string>("UserRateLimit", context =>
@@ -261,6 +261,9 @@ try
 
     builder.Services.AddSignalR();
 
+    // Bind Jwt settings from configuration so services can inject IOptions<JwtSettings>
+    builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+
     // 7. Policies
     builder.Services.AddAuthorization(options =>
     {
@@ -319,6 +322,8 @@ try
     builder.Services.AddScoped<DisparoService>();
     builder.Services.AddScoped<FcmNotificationService>();
     builder.Services.AddScoped<FirebaseTokenService>();
+
+    // 
     builder.Services.AddScoped<StripeWebhookService>();
     builder.Services.AddScoped<DispositivoDisparoService>();
     builder.Services.AddScoped<StripeService>();
@@ -539,7 +544,6 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        SeedErrorCodes.SeedErrorCodeDescriptions(context);
     }
 
     app.Run();
