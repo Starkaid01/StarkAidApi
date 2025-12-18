@@ -13,7 +13,7 @@ public class LicenseService
 {
     private readonly AppDbContext _context;
     private readonly ILogger<LicenseService> _logger;
-    private readonly StarkAid.Api.Services.Notifications.NotificationService? _notificationService;
+    private readonly StarkAid.Api.Services.V1.Notifications.NotificationService? _notificationService;
 
     public LicenseService(
         AppDbContext context, 
@@ -26,7 +26,7 @@ public class LicenseService
         // Obter NotificationService via service provider (pode ser null se não estiver registrado)
         try
         {
-            _notificationService = serviceProvider.GetService<StarkAid.Api.Services.Notifications.NotificationService>();
+            _notificationService = serviceProvider.GetService<StarkAid.Api.Services.V1.Notifications.NotificationService>();
         }
         catch (Exception ex)
         {

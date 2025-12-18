@@ -1,11 +1,14 @@
+using NAudio.Wave;
+using StarkAid.WindowsForms.Database;
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Speech.Recognition;
 using System.Speech.Synthesis;
 using System.Text;
 using System.Text.RegularExpressions;
-using NAudio.Wave;
-using StarkAid.WindowsForms.Database;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 
 namespace StarkAid.WindowsForms.Services;
 
@@ -19,14 +22,32 @@ public class SpeechService
     private string? _currentCulture;
     private string? _selectedVoiceName;
 
+    private double? _predictSpeakingTime;
+    private string? _lastSpeech;
+    private DateTime? _lastSpeakStartUtc;
+
     public event EventHandler<string>? SpeechRecognized;
     public event EventHandler? SpeakStarted;
     
+    public double PredictSpeakingTime => _predictSpeakingTime ?? 0.0;
+    public string? LastSpeech => _lastSpeech;
     public bool IsInitialized => _recognizer != null;
     public bool IsListening => _isListening;
     public bool IsSpeaking => _isSpeaking;
     public string? CurrentCulture => _currentCulture;
     public bool IsPortugueseRecognizer => _currentCulture?.StartsWith("pt", StringComparison.OrdinalIgnoreCase) == true;
+
+    public bool IsSpeakingPredicted
+    {
+        get
+        {
+            if (!_lastSpeakStartUtc.HasValue || !_predictSpeakingTime.HasValue)
+                return false;
+
+            var elapsed = (DateTime.UtcNow - _lastSpeakStartUtc.Value).TotalSeconds;
+            return elapsed < _predictSpeakingTime.Value;
+        }
+    }
 
     public void Initialize(int? microphoneId = null, LocalDatabase? database = null)
     {
@@ -51,6 +72,7 @@ public class SpeechService
             _synthesizer.SpeakCompleted += (s, e) => 
             { 
                 _isSpeaking = false;
+
                 System.Diagnostics.Debug.WriteLine("[SpeechService] TTS terminou de falar, reiniciando reconhecimento...");
                 // Reiniciar reconhecimento de voz após TTS terminar
                 // Usar um pequeno delay para garantir que o áudio foi completamente liberado
@@ -302,12 +324,46 @@ public class SpeechService
     /// Fala o texto usando TTS. O texto deve ter acentuação e pontuação corretas para uma fala natural.
     /// IMPORTANTE: NUNCA normalize o texto antes de passar para este método.
     /// </summary>
+    private double EstimateSpeakingTime(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return 0;
+
+        // Contagem base
+        int charCount = text.Length;
+        int wordCount = Regex.Matches(text, @"\b\w+\b").Count;
+
+        // Pontuação gera pausas
+        int commas = text.Count(c => c == ',' || c == ';');
+        int sentencePauses = text.Count(c => c == '.' || c == '!' || c == '?');
+
+        // Base: palavras por segundo (PT-BR médio)
+        double wordsPerSecond = 2.5;
+
+        double timeByWords = wordCount / wordsPerSecond;
+
+        // Pausas artificiais
+        double pauseTime =
+            (commas * 0.25) +
+            (sentencePauses * 0.6);
+
+        // Margem de segurança (buffer de áudio + driver)
+        double safetyMargin = 0.4;
+
+        return timeByWords + pauseTime + safetyMargin;
+    }
+
     public void Speak(string text)
     {
+
         if (_synthesizer == null) return;
 
         try
         {
+            _predictSpeakingTime = EstimateSpeakingTime(text);
+            _lastSpeech = text;
+            _lastSpeakStartUtc = DateTime.UtcNow;
+
             // IMPORTANTE: O texto deve manter acentuação e pontuação originais para uma fala natural.
             // NÃO usar NormalizeText aqui - isso é apenas para processar comandos de entrada.
             _synthesizer.SpeakAsync(text);
@@ -322,6 +378,8 @@ public class SpeechService
     {
         _synthesizer?.SpeakAsyncCancelAll();
         _isSpeaking = false;
+        _predictSpeakingTime = 0;
+        _lastSpeakStartUtc = null;
     }
 
     /// <summary>

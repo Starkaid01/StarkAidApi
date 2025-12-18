@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using StarkAid.Api.Entities;
-using StarkAid.Api.Entities.DetranStudyPro;
 using StarkAid.Api.Options;
 using System;
 
@@ -94,8 +93,14 @@ public class AppDbContext : DbContext
             entity.Property(u => u.PasswordHash).IsRequired();
             entity.Property(u => u.ApiKey).IsRequired().HasMaxLength(100);
             entity.Property(u => u.PlanType).HasConversion<int>().HasDefaultValue(UserPlanType.Free).IsRequired();
-            entity.Property(u => u.StarkCoinBalance).HasDefaultValue(0).IsRequired();
-            entity.Property(u => u.TokensConsumidosSemana).HasDefaultValue(0).IsRequired();
+            entity.Property(u => u.StarkCoins)
+              .IsRequired()
+              .ValueGeneratedNever();
+
+            entity.Property(u => u.TokensConsumidosSemana)
+              .IsRequired()
+              .ValueGeneratedNever();
+
             entity.Property(u => u.CreatedAt).HasColumnType("datetimeoffset").IsRequired();
             entity.Property(u => u.IsActive).IsRequired();
             entity.Property(u => u.Role).HasMaxLength(50).IsRequired();

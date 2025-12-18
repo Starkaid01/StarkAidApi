@@ -2779,46 +2779,55 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     // Receiver para detectar quando TTS está falando
     private var isTtsSpeaking = false
     private var soundWaveView: SoundWaveView? = null
-    
+
+    private var lastTtsEndTime = 0L
+    private val TTS_COOLDOWN_MS = 1200L // ajuste fino
+
+
     private val ttsReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+
+            val agora = System.currentTimeMillis()
+
             when (intent?.action) {
+
                 FullDuplexAssistantAdvancedService.BROADCAST_TTS_STARTED -> {
                     isTtsSpeaking = true
                     runOnUiThread {
                         showSoundWaves()
                     }
-                    // Resetar o timer quando TTS começar a falar
+
                     if (escutando.get() && isListening) {
                         iniciarTimerDesativacaoEscutando()
                         Log.d("MainActivity", "Timer resetado porque TTS começou a falar")
                     }
                 }
+
                 FullDuplexAssistantAdvancedService.BROADCAST_TTS_STOPPED -> {
-                    // O serviço já faz validação inteligente usando tempo estimado + monitoramento de áudio
-                    // Podemos marcar como false imediatamente quando o broadcast chega
                     isTtsSpeaking = false
+                    lastTtsEndTime = agora
+
                     runOnUiThread {
                         hideSoundWaves()
                     }
+
                     Log.d("MainActivity", "TTS marcado como parado (validação inteligente já feita no serviço)")
                 }
+
                 FullDuplexAssistantAdvancedService.BROADCAST_TTS_AUDIO_LEVEL -> {
-                    val audioLevel = intent.getIntExtra(FullDuplexAssistantAdvancedService.EXTRA_AUDIO_LEVEL, 0)
+                    val audioLevel = intent.getIntExtra(
+                        FullDuplexAssistantAdvancedService.EXTRA_AUDIO_LEVEL,
+                        0
+                    )
+
                     runOnUiThread {
                         soundWaveView?.updateAudioLevel(audioLevel)
-                        // Log periódico para debug
-                        if (audioLevel > 0 && System.currentTimeMillis() % 1000 < 50) {
-                            Log.d("SoundWave", "Nível de áudio recebido: $audioLevel")
-                        }
                     }
-                    // Se há áudio significativo (threshold de 5), o TTS ainda está falando
-                    // Isso funciona como validação adicional no MainActivity
-                    if (audioLevel > 5) {
+
+                    // 🔒 Reforço de "falando", mas NÃO reabre após STOP
+                    if (audioLevel > 5 && agora - lastTtsEndTime > 50) {
                         isTtsSpeaking = true
                     }
-                    // Nota: Não marcamos como false aqui mesmo que audioLevel seja 0,
-                    // porque o serviço já faz validação inteligente antes de enviar BROADCAST_TTS_STOPPED
                 }
             }
         }
@@ -4330,6 +4339,17 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         // Se assistente está dormindo (escutando = false), não processar nenhum comando
         if (!escutando.get()) {
             Log.d("MainActivityLog", "Assistente está dormindo - ignorando comando em processandoComandos: $text")
+            return false
+        }
+
+        val agora = System.currentTimeMillis()
+
+        // 🔒 BLOQUEIO pós-TTS (anti-eco)
+        if (agora - lastTtsEndTime < TTS_COOLDOWN_MS) {
+            Log.d(
+                "MainActivityLog",
+                "Ignorando STT durante cooldown pós-TTS: $text"
+            )
             return false
         }
 

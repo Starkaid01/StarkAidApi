@@ -4,6 +4,7 @@ using StarkAid.Api.Data;
 using StarkAid.Api.DTOs.SuperIA;
 using StarkAid.Api.Entities;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -237,44 +238,125 @@ Output: 'Não poderei comparecer à reunião.'"
             };
         }
 
+        private static readonly string[] ModelosFree = new[]
+        {
+            "google/gemini-2.0-flash-exp:free",
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "google/gemma-3-27b-it:free",
+            "nousresearch/hermes-3-405b:free",
+            "meta-llama/llama-3.2-3b-instruct:free"
+        };
+
         public async Task<IaResultado?> ChamarOpenRouter(object[] mensagens)
+        {
+            foreach (var modelo in ModelosFree)
+            {
+                var resultado = await TentarModelo(modelo, mensagens);
+                if (resultado != null)
+                    return resultado;
+            }
+
+            // Nenhum modelo respondeu
+            return null;
+        }
+        private async Task<IaResultado?> TentarModelo(string modelo, object[] mensagens)
         {
             var requestBody = new
             {
-                model = "gpt-4o-mini",
+                model = modelo,
                 messages = mensagens,
                 max_tokens = 150,
                 temperature = 0.6
             };
 
             var requestJson = JsonSerializer.Serialize(requestBody);
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://openrouter.ai/api/v1/chat/completions")
+
+            var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                "https://openrouter.ai/api/v1/chat/completions")
             {
                 Content = new StringContent(requestJson, Encoding.UTF8, "application/json")
             };
-            request.Headers.Add("Authorization", $"Bearer {_openRouterKey}");
 
-            var response = await _httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode) return null;
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue("Bearer", _openRouterKey);
+
+            HttpResponseMessage response;
+
+            try
+            {
+                response = await _httpClient.SendAsync(request);
+            }
+            catch
+            {
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                // Log útil para debug
+                var erro = await response.Content.ReadAsStringAsync();
+                return null;
+            }
 
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            var texto = doc.RootElement.GetProperty("choices")[0]
+
+            var texto = doc.RootElement
+                .GetProperty("choices")[0]
                 .GetProperty("message")
                 .GetProperty("content")
-                .GetString()?.Trim();
+                .GetString();
 
             var usage = doc.RootElement.GetProperty("usage");
-            var promptTokens = usage.GetProperty("prompt_tokens").GetInt32();
-            var completionTokens = usage.GetProperty("completion_tokens").GetInt32();
 
             return new IaResultado
             {
                 Texto = texto ?? "",
-                PromptTokens = promptTokens,
-                CompletionTokens = completionTokens,
-                Modelo = "openrouter-gpt-4o-mini"
+                PromptTokens = usage.GetProperty("prompt_tokens").GetInt32(),
+                CompletionTokens = usage.GetProperty("completion_tokens").GetInt32(),
+                Modelo = modelo
             };
         }
+        //public async Task<IaResultado?> ChamarOpenRouter(object[] mensagens)
+        //{
+        //    var requestBody = new
+        //    {
+        //        model = "gpt-4o-mini",
+        //        messages = mensagens,
+        //        max_tokens = 150,
+        //        temperature = 0.6
+        //    };
+
+        //    var requestJson = JsonSerializer.Serialize(requestBody);
+        //    var request = new HttpRequestMessage(HttpMethod.Post, "https://openrouter.ai/api/v1/chat/completions")
+        //    {
+        //        Content = new StringContent(requestJson, Encoding.UTF8, "application/json")
+        //    };
+        //    request.Headers.Add("Authorization", $"Bearer {_openRouterKey}");
+
+        //    var response = await _httpClient.SendAsync(request);
+        //    if (!response.IsSuccessStatusCode) return null;
+
+        //    using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        //    var texto = doc.RootElement.GetProperty("choices")[0]
+        //        .GetProperty("message")
+        //        .GetProperty("content")
+        //        .GetString()?.Trim();
+
+        //    var usage = doc.RootElement.GetProperty("usage");
+        //    var promptTokens = usage.GetProperty("prompt_tokens").GetInt32();
+        //    var completionTokens = usage.GetProperty("completion_tokens").GetInt32();
+
+        //    return new IaResultado
+        //    {
+        //        Texto = texto ?? "",
+        //        PromptTokens = promptTokens,
+        //        CompletionTokens = completionTokens,
+        //        Modelo = "openrouter-gpt-4o-mini"
+        //    };
+        //}
+
+
 
         public async Task<string> ResumirTexto(string texto, string estilo)
         {

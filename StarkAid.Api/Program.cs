@@ -38,7 +38,7 @@ using System.Diagnostics;
 using System.Threading.RateLimiting;
 using System.Text;
 using PlanoLimitesService = StarkAid.Api.Services.PlanoLimitesService;
-using IStarkCoinConversionService = StarkAid.Api.Services.IStarkCoinConversionService;
+using IStarkCoinConversionService = StarkAid.Api.Services.V1.IStarkCoinConversionService;
 using StarkCoinConversionService = StarkAid.Api.Services.StarkCoinConversionService;
 using ITokenUsageService = StarkAid.Api.Services.ITokenUsageService;
 using TokenUsageService = StarkAid.Api.Services.TokenUsageService;
@@ -486,7 +486,7 @@ try
     var app = builder.Build();
 
     // 10. Pipeline
-    app.UseHttpsRedirection();
+    //app.UseHttpsRedirection();
     app.UseStaticFiles();
     app.UseRouting();
     app.UseRateLimiter(); // Rate limiting deve vir antes de CORS

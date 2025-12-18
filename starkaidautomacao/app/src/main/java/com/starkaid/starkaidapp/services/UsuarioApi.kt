@@ -38,6 +38,11 @@ interface UsuarioApi {
         @Header("Authorization") token: String
     ): Response<UpdateStarkCoinsResponse>
 
+    @GET("api/v1/Users/me")
+    suspend fun obterUsuarioAtual(
+        @Header("Authorization") token: String
+    ): Response<UsuarioResponse>
+
     @GET("api/v1/Users/{id}")
     suspend fun obterUsuario(
         @Path("id") userId: String

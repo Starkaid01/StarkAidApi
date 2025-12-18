@@ -64,7 +64,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Agendamentos");
+                    b.ToTable("Agendamentos", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Assinatura", b =>
@@ -118,7 +118,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Assinaturas");
+                    b.ToTable("Assinaturas", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ComandoSocial", b =>
@@ -145,7 +145,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ComandosSociais");
+                    b.ToTable("ComandosSociais", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ConfiguracaoSistema", b =>
@@ -169,7 +169,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ConfiguracoesSistema");
+                    b.ToTable("ConfiguracoesSistema", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ConfiguracaoStarkNlp", b =>
@@ -188,7 +188,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ConfiguracoesStarkNlp");
+                    b.ToTable("ConfiguracoesStarkNlp", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Device", b =>
@@ -223,7 +223,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Devices");
+                    b.ToTable("Devices", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Disparo", b =>
@@ -257,7 +257,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Disparos");
+                    b.ToTable("Disparos", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.DispositivoDisparo", b =>
@@ -291,7 +291,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("DispositivosDisparo");
+                    b.ToTable("DispositivosDisparo", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.DispositivoEsp", b =>
@@ -345,7 +345,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("DispositivosEsp");
+                    b.ToTable("DispositivosEsp", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ErrorCodeDescription", b =>
@@ -376,7 +376,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("CodigoDeErro");
 
-                    b.ToTable("ErrorCodeDescriptions");
+                    b.ToTable("ErrorCodeDescriptions", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ErrorLogApp", b =>
@@ -426,7 +426,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ErrorLogsApp");
+                    b.ToTable("ErrorLogsApp", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ErrorLogSoft", b =>
@@ -476,7 +476,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ErrorLogsSoft");
+                    b.ToTable("ErrorLogsSoft", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.EwelinkAccount", b =>
@@ -523,7 +523,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("EwelinkAccounts");
+                    b.ToTable("EwelinkAccounts", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.EwelinkDevice", b =>
@@ -577,7 +577,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("EwelinkDevices");
+                    b.ToTable("EwelinkDevices", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.FirebaseToken", b =>
@@ -600,7 +600,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("FirebaseTokens");
+                    b.ToTable("FirebaseTokens", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.IaHistorico", b =>
@@ -627,7 +627,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("IaHistoricos");
+                    b.ToTable("IaHistoricos", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.License", b =>
@@ -674,7 +674,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Licenses");
+                    b.ToTable("Licenses", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.LicenseActivation", b =>
@@ -712,7 +712,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("LicenseId");
 
-                    b.ToTable("LicenseActivations");
+                    b.ToTable("LicenseActivations", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.LogFalhaSoft", b =>
@@ -843,7 +843,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PagamentosAvulsos");
+                    b.ToTable("PagamentosAvulsos", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.PasswordResetToken", b =>
@@ -866,7 +866,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PasswordResetTokens");
+                    b.ToTable("PasswordResetTokens", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.RefreshToken", b =>
@@ -896,7 +896,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ResolvendoSuporte", b =>
@@ -956,7 +956,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("StarkCoinPurchases");
+                    b.ToTable("StarkCoinPurchases", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.SuporteAcao", b =>
@@ -1220,7 +1220,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.UserActivity", b =>
@@ -1267,7 +1267,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserActivities");
+                    b.ToTable("UserActivities", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.UserSession", b =>
@@ -1308,7 +1308,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserSessions");
+                    b.ToTable("UserSessions", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.WebhookLog", b =>
@@ -1340,7 +1340,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("WebhookLogs");
+                    b.ToTable("WebhookLogs", (string)null);
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Agendamento", b =>

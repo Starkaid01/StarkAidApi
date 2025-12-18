@@ -152,7 +152,7 @@ namespace StarkAid.Api.Controllers.V1
                 tokensConsumidosSemana = user.TokensConsumidosSemana,
                 tokensSemanaMax = limite,
                 tokensRestantes = Math.Max(0, limite - user.TokensConsumidosSemana),
-                StarkCoinBalance = user.StarkCoinBalance,
+                StarkCoinBalance = user.StarkCoins,
                 adsEnabled = _planoLimites.ExibeAnuncios(user),
                 agendamentosMax = _planoLimites.ObterLimiteAgendamentos(user),
                 rate = 100
@@ -292,11 +292,11 @@ namespace StarkAid.Api.Controllers.V1
             await _context.Agendamentos.CountAsync(a => a.UserId == userId));
 
         _logger.LogInformation("🔍 [GetMe] UserId: {UserId}, PlanType: {PlanType}, StarkCoinBalance: {Balance}, TokensConsumidosSemana: {Consumed}, Limite calculado: {Limit}", 
-            userId, user.PlanType, user.StarkCoinBalance, user.TokensConsumidosSemana, limite);
+            userId, user.PlanType, user.StarkCoins, user.TokensConsumidosSemana, limite);
 
         var economy = new StarkAid.Api.DTOs.EconomicPayload(
             user.PlanType.ToString(),
-            user.StarkCoinBalance,
+            user.StarkCoins,
             user.TokensConsumidosSemana,
             limite,
             Math.Max(0, limite - user.TokensConsumidosSemana),
@@ -399,7 +399,7 @@ namespace StarkAid.Api.Controllers.V1
 
             try
             {
-                var mqttService = HttpContext.RequestServices.GetService<Services.Devices.IMqttClientService>();
+                var mqttService = HttpContext.RequestServices.GetService<Services.V1.Devices.IMqttClientService>();
                 if (mqttService != null)
                 {
                     mqttConnected = mqttService.IsConnected;
@@ -817,7 +817,7 @@ namespace StarkAid.Api.Controllers.V1
                     name = s.User.Name,
                     email = s.User.Email,
                     role = s.User.Role,
-                    starkCoins = s.User.StarkCoinBalance,
+                    starkCoins = s.User.StarkCoins,
                     origem = string.Join(", ", s.Origens.Distinct())
                 }).ToList();
 

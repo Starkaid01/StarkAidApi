@@ -64,7 +64,7 @@ namespace StarkAid.Api.Controllers.V1
                     u.IsActive,
                     u.CreatedAt,
                     u.LastUpdatedAt,
-                    u.StarkCoinBalance,
+                    u.StarkCoins,
                     u.RemovalAds
                 })
                 .OrderByDescending(u => u.CreatedAt)
@@ -86,7 +86,7 @@ namespace StarkAid.Api.Controllers.V1
                     u.IsActive,
                     u.CreatedAt,
                     u.LastUpdatedAt,
-                    u.StarkCoinBalance,
+                    u.StarkCoins,
                     u.RemovalAds,
                     u.ApiKey
                 })
@@ -118,7 +118,7 @@ namespace StarkAid.Api.Controllers.V1
                 user.IsActive = request.IsActive.Value;
 
             if (request.StarkCoinBalance.HasValue)
-                user.StarkCoinBalance = request.StarkCoinBalance.Value;
+                user.StarkCoins = request.StarkCoinBalance.Value;
 
             if (!string.IsNullOrWhiteSpace(request.RemovalAds))
                 user.RemovalAds = request.RemovalAds;
@@ -162,7 +162,7 @@ namespace StarkAid.Api.Controllers.V1
                     u.Role,
                     u.IsActive,
                     u.CreatedAt,
-                    u.StarkCoinBalance,
+                    u.StarkCoins,
                     u.ApiKey,
                     u.Cidade,
                     u.Bairro
@@ -251,7 +251,7 @@ namespace StarkAid.Api.Controllers.V1
                     Role = u.Role,
                     IsActive = u.IsActive,
                     CreatedAt = u.CreatedAt,
-                    StarkCoinBalance = u.StarkCoinBalance,
+                    StarkCoinBalance = u.StarkCoins,
                     ApiKey = u.ApiKey,
                     Cidade = u.Cidade,
                     Bairro = u.Bairro,
@@ -482,7 +482,7 @@ namespace StarkAid.Api.Controllers.V1
                     name = user.Name,
                     email = user.Email,
                     role = user.Role,
-                    starkCoinBalance = user.StarkCoinBalance,
+                    starkCoinBalance = user.StarkCoins,
                     plano = tipoPlano,
                     valor = assinatura.Valor,
                     status = assinatura.Status,

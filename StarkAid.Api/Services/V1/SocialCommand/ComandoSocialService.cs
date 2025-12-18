@@ -59,7 +59,7 @@ public class ComandoSocialService
         if (user == null) return null;
 
         // 🔹 Se o usuário não tiver saldo de coins, salva sem variações
-        if (user.StarkCoinBalance <= 0)
+        if (user.StarkCoins <= 0)
         {
             var novo = new ComandoSocial
             {
@@ -120,7 +120,7 @@ public class ComandoSocialService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return null;
 
-        if (user.StarkCoinBalance <= 0)
+        if (user.StarkCoins <= 0)
             return new List<string> { resposta };
 
         var mensagens = new[]
@@ -221,7 +221,7 @@ public class ComandoSocialService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return false;
 
-        if (user.StarkCoinBalance > 0)
+        if (user.StarkCoins > 0)
         {
             var resultado = await _iaService.ChamarStarkNlp(resposta);
             if (string.IsNullOrWhiteSpace(resultado.Texto))
@@ -248,7 +248,7 @@ public class ComandoSocialService
             comandoSocial.RespostasAleatorias = jsonValido;
         }
 
-        if (user.StarkCoinBalance <= 0)
+        if (user.StarkCoins <= 0)
         {
             comandoSocial.Comando = comando;
             comandoSocial.Resposta = resposta;
@@ -282,7 +282,7 @@ public class ComandoSocialService
 
         return new EconomicPayload(
             user.PlanType.ToString(),
-            user.StarkCoinBalance,
+            user.StarkCoins,
             user.TokensConsumidosSemana,
             limite,
             Math.Max(0, limite - user.TokensConsumidosSemana),

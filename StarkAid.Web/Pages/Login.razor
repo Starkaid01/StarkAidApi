@@ -1,0 +1,39 @@
+﻿@page "/login"
+@using StarkAid.Web.Services
+@inject ApiService ApiService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<h3>Login</h3>
+
+<input @bind="email" placeholder="Email" />
+<input type="password" @bind="password" placeholder="Senha" />
+<button @onclick="HandleLogin">Entrar</button>
+
+@code {
+    private string email = "";
+    private string password = "";
+
+    private async Task HandleLogin()
+    {
+        var dto = new LoginDto
+        {
+            Email = email,
+            Password = password,
+            Origem = "web"  // Adicionado o campo obrigatório 'origem'
+        };
+
+        var auth = await ApiService.LoginAsync(dto);
+
+        if (auth == null)
+        {
+            // mensagem de erro (login inválido)
+            return;
+        }
+
+        await JS.InvokeVoidAsync("localStorage.setItem", "token", auth.Token);
+        await JS.InvokeVoidAsync("localStorage.setItem", "apiKey", auth.User.ApiKey);
+
+        NavigationManager.NavigateTo("/dashboard");
+    }
+}

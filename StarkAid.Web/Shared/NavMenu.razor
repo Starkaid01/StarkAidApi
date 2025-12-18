@@ -1,0 +1,49 @@
+﻿@using StarkAid.Web.Services
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+
+<nav class="nav-menu">
+    <ul>
+        <li><a href="/dashboard">Dashboard</a></li>
+        <li><a href="/profile">Perfil</a></li>
+        <li><a href="#" @onclick="Logout">Sair</a></li>
+    </ul>
+</nav>
+
+@code {
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        NavigationManager.NavigateTo("/login", true);
+    }
+}
+
+<style>
+    .nav-menu {
+        width: 220px;
+        background: #1F2937;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+        .nav-menu ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .nav-menu li {
+            margin: 1rem 0;
+        }
+
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+            .nav-menu a:hover {
+                text-decoration: underline;
+            }
+</style>

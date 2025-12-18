@@ -38,6 +38,8 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         private const val NOTIF_CHANNEL_ID = "starkaid_voice_channel"
         private const val NOTIF_ID = 8245
 
+
+
         @SuppressLint("ObsoleteSdkInt")
         fun start(ctx: Context) {
             val i = Intent(ctx, FullDuplexAssistantAdvancedService::class.java)
@@ -60,6 +62,7 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
 
         var isAdShowing  = AtomicBoolean(false)
 
+        var lastSpeak = ""
     }
 
     private lateinit var audioManager: AudioManager
@@ -264,6 +267,7 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         val uttId = "utt-${System.currentTimeMillis()}"
         isSpeaking.set(true)
         ultimaFalaAssistente = text
+        lastSpeak = text
         
         // Calcular tempo estimado de fala e última palavra
         val estimatedDuration = calculateEstimatedSpeechDuration(text)
@@ -851,7 +855,7 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         }
         
         // TERCEIRO: Verificar se não é a própria fala do assistente sendo reconhecida
-        val lastSpeak = ultimaFalaAssistente.lowercase().trim()
+        lastSpeak = ultimaFalaAssistente.lowercase().trim()
         
         if (lastSpeak.isNotEmpty()) {
             // Se for exatamente igual, ignorar

@@ -1,0 +1,57 @@
+﻿@page "/dashboard"  // Corrigido para /dashboard para combinar com NavMenu e redirecionamentos
+@using StarkAid.Web.DTOs
+@using StarkAid.Web.Services
+@using StarkAid.Web.Shared
+@inject ApiService ApiService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<h3>Dashboard</h3>
+
+@if (user == null || stats == null)
+{
+    <p>Carregando...</p>
+}
+else
+{
+    <div class="dashboard-cards">
+        <DashboardCard Title="Email" Value="@user?.Email" />
+        <DashboardCard Title="Plano Atual" Value="@user?.Economy.PlanType" />
+        <DashboardCard Title="StarkCoins" Value="@user?.Economy.StarkCoinBalance" />
+        <DashboardCard Title="Tokens Usados/Limite"
+                       Value="@($"{user?.Economy.TokensConsumidosSemana}/{user?.Economy.TokensSemanaMax}")" />
+        <DashboardCard Title="Tokens Restantes" Value="@user?.Economy.TokensRestantes" />
+        <DashboardCard Title="Agendamentos"
+                       Value="@(user?.Economy.PlanType?.ToLower() == "premium"
+                                          ? "Ilimitados"
+                                          : $"{user?.Economy.AgendamentosRestantes}/{user?.Economy.AgendamentosMax}")" />
+        <DashboardCard Title="Anúncios"
+                       Value="@(user?.Economy.AdsEnabled == true ? "Ativados" : "Desativados")" />
+        <DashboardCard Title="Dispositivos" Value="@stats?.TotalDevices" />
+        <DashboardCard Title="Comandos Sociais" Value="@stats?.TotalComandosSociais" />
+        <DashboardCard Title="Status API" Value="@stats?.ApiStatus" />
+        <DashboardCard Title="Status MQTT" Value="@stats?.MqttStatus" />
+    </div>
+}
+
+@code {
+    private UserMeDto? user;
+    private UserStatsDto? stats;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+        if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(apiKey))
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        user = await ApiService.GetMeAsync(token, apiKey);
+        stats = await ApiService.GetStatsAsync(token, apiKey);
+
+        if (user == null) NavigationManager.NavigateTo("/login");
+    }
+}

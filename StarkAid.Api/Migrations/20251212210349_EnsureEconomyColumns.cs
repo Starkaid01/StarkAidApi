@@ -15,8 +15,8 @@ namespace StarkAid.Api.Migrations
             migrationBuilder.Sql(@"
 IF COL_LENGTH('Users','PlanType') IS NULL
     ALTER TABLE Users ADD PlanType INT NOT NULL CONSTRAINT DF_Users_PlanType DEFAULT(0);
-IF COL_LENGTH('Users','StarkCoinBalance') IS NULL
-    ALTER TABLE Users ADD StarkCoinBalance INT NOT NULL CONSTRAINT DF_Users_StarkCoinBalance DEFAULT(0);
+IF COL_LENGTH('Users','StarkCoins') IS NULL
+    ALTER TABLE Users ADD StarkCoins INT NOT NULL CONSTRAINT DF_Users_StarkCoins DEFAULT(0);
 IF COL_LENGTH('Users','TokensConsumidosSemana') IS NULL
     ALTER TABLE Users ADD TokensConsumidosSemana INT NOT NULL CONSTRAINT DF_Users_TokensConsumidosSemana DEFAULT(0);
 

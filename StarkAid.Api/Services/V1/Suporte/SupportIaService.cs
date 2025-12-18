@@ -154,7 +154,7 @@ Atender o usuário de forma direta, técnica e funcional, sem rodeios, usando o 
 
         return new EconomicPayload(
             user.PlanType.ToString(),
-            user.StarkCoinBalance,
+            user.StarkCoins,
             user.TokensConsumidosSemana,
             limite,
             Math.Max(0, limite - user.TokensConsumidosSemana),

@@ -29,7 +29,7 @@ public class User
 
     [Required, MaxLength(100)] public string ApiKey { get; set; } = string.Empty;
 
-[Required] public int StarkCoinBalance { get; set; }
+    [Required] public int StarkCoins { get; set; } = 0;
 
 
     [Required] public UserPlanType PlanType { get; set; } = UserPlanType.Free;

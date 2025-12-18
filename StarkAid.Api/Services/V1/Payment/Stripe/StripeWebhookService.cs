@@ -21,7 +21,7 @@ namespace StarkAid.Api.Services.V1.Payment.Stripe
         private readonly ILogger<StripeWebhookService> _logger;
         private readonly string _stripeWebhookSecret;
         private readonly StripeSettings _stripeSettings;
-        private readonly StarkAid.Api.Services.Notifications.NotificationService? _notificationService;
+        private readonly StarkAid.Api.Services.V1.Notifications.NotificationService? _notificationService;
 
         public StripeWebhookService(
             AppDbContext db, 
@@ -39,7 +39,7 @@ namespace StarkAid.Api.Services.V1.Payment.Stripe
             // Obter NotificationService via service provider (pode ser null se não estiver registrado)
             try
             {
-                _notificationService = serviceProvider.GetService<StarkAid.Api.Services.Notifications.NotificationService>();
+                _notificationService = serviceProvider.GetService<StarkAid.Api.Services.V1.Notifications.NotificationService>();
             }
             catch (Exception ex)
             {
@@ -252,14 +252,14 @@ namespace StarkAid.Api.Services.V1.Payment.Stripe
 
                     if (assinatura.Valor != 10)
                     {
-                        user.StarkCoinBalance += (int)assinatura.Valor;
+                        user.StarkCoins += (int)assinatura.Valor;
                         _logger.LogInformation("💰 Plano {TipoPlano}: adicionados {Valor} StarkCoins para usuário {UserId}",
                             assinatura.TipoPlano, assinatura.Valor, user.Id);
                     }
                     else
                     {
                         user.PlanType = UserPlanType.Premium;
-                        user.StarkCoinBalance += 50;
+                        user.StarkCoins += 50;
                         user.RemovalAds = "Ativo";
                     }
 
@@ -295,7 +295,7 @@ namespace StarkAid.Api.Services.V1.Payment.Stripe
                     pagamentoAvulso.Status = "Pago";
                     pagamentoAvulso.PagamentoConfirmadoEm = DateTimeOffset.UtcNow;
 
-                    user.StarkCoinBalance += (int)Math.Round(pagamentoAvulso.Valor);
+                    user.StarkCoins += (int)Math.Round(pagamentoAvulso.Valor);
 
                     _db.Users.Update(user);
                     _logger.LogInformation("💰 Pagamento avulso confirmado. +{Valor} StarkCoins para usuário {UserId}",
@@ -392,7 +392,7 @@ namespace StarkAid.Api.Services.V1.Payment.Stripe
             {
                 AjustarBeneficiosPlano(user, assinatura.Valor);
                 _logger.LogInformation("🔁 Renovação: saldo ajustado para {StarkCoins} após cobrança do plano {ValorPlano}",
-                    user.StarkCoinBalance, assinatura.Valor);
+                    user.StarkCoins, assinatura.Valor);
             }
 
             // ⚠️ Role do usuário NÃO é atualizado para planos de StarkCoins (níveis 3-7)
@@ -415,12 +415,12 @@ namespace StarkAid.Api.Services.V1.Payment.Stripe
                 // StarkAid Premium (antigo Nível 2 / Remove Ads)
                 user.PlanType = UserPlanType.Premium;
                 user.RemovalAds = "Ativo";
-                user.StarkCoinBalance += 50; // crédito mensal fixo
+                user.StarkCoins += 50; // crédito mensal fixo
             }
             else
             {
                 // Demais planos apenas creditam coins (inteiro)
-                user.StarkCoinBalance += (int)valorPlano;
+                user.StarkCoins += (int)valorPlano;
             }
         }
 

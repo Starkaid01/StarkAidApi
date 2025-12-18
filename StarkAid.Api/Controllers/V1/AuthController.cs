@@ -51,7 +51,7 @@ public class AuthController : ControllerBase
                 user.Name,
                 user.Email,
                 user.ApiKey,
-                StarkCoinBalance = user.StarkCoinBalance,
+                StarkCoinBalance = user.StarkCoins,
                 PlanType = user.PlanType
             }
         });
@@ -99,7 +99,7 @@ public class AuthController : ControllerBase
             Email = request.Email,
             PasswordHash = _authService.HashPassword(request.Password),
             ApiKey = apiKey,
-            StarkCoinBalance = 0,
+            StarkCoins = 0,
             CreatedAt = DateTimeOffset.UtcNow,
             IsActive = true,
             Role = "UserNivel1",
@@ -127,8 +127,8 @@ public class AuthController : ControllerBase
                 user.Name,
                 user.Email,
                 user.ApiKey,
-                StarkCoinBalance = user.StarkCoinBalance,
-                PlanType = user.PlanType
+                StarkCoins = 0,
+                PlanType = UserPlanType.Free
             }
         });
     }

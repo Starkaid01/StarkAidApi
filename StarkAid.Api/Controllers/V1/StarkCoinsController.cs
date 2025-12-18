@@ -52,7 +52,7 @@ public class StarkCoinsController : ControllerBase
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        user.StarkCoinBalance += amount;
+        user.StarkCoins += amount;
 
         _db.StarkCoinPurchases.Add(purchase);
         await _db.SaveChangesAsync();
@@ -65,7 +65,7 @@ public class StarkCoinsController : ControllerBase
             purchase.PackageType,
             purchase.StarkCoinsAmount,
             purchase.Price,
-            user.StarkCoinBalance
+            user.StarkCoins
         });
     }
 }
