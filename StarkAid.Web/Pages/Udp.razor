@@ -1,0 +1,105 @@
+﻿@page "/udp"
+@using StarkAid.Web.DTOs
+@using StarkAid.Web.Services
+@inject ApiService ApiService
+@inject IJSRuntime JS
+
+<h3>Dispositivos UDP</h3>
+
+<div class="form">
+    <input @bind="newDto.Nome" placeholder="Nome" class="form-control" />
+    <input @bind="newDto.Ip" placeholder="IP" class="form-control" />
+    <input type="number" @bind="newDto.Porta" placeholder="Porta" class="form-control" />
+    <input @bind="newDto.Comando" placeholder="Comando" class="form-control" />
+    <input @bind="newDto.ComandToEsp" placeholder="Comando para ESP" class="form-control" />
+    <button @onclick="Create" class="btn btn-primary">Criar</button>
+</div>
+
+@if (dispositivos != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>IP</th>
+                <th>Porta</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var disp in dispositivos)
+            {
+                <tr>
+                    <td>@disp.Nome</td>
+                    <td>@disp.Ip</td>
+                    <td>@disp.Porta</td>
+                    <td>@disp.Status</td>
+                    <td>
+                        <button @onclick="() => Edit(disp.Id)" class="btn btn-secondary">Editar</button>
+                        <button @onclick="() => Delete(disp.Id)" class="btn btn-danger">Excluir</button>
+                        <button @onclick="() => Acionar(disp.Comando)" class="btn btn-primary">Acionar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Carregando dispositivos...</p>
+}
+
+
+
+@code {
+    private DispositivoEspCreateDto newDto = new();
+    private List<DispositivoEspDto>? dispositivos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        dispositivos = await ApiService.GetUdpDispositivosAsync(token, apiKey);
+    }
+
+    private async Task Create()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var newDisp = await ApiService.CreateUdpAsync(newDto, token, apiKey);
+        if (newDisp != null) await OnInitializedAsync();
+    }
+
+    private async Task Edit(string id)
+    {
+        // Implementar form de edição
+        await JS.InvokeVoidAsync("alert", "Editar não implementado aqui; usar form separado se necessário.");
+    }
+
+    private async Task Delete(string id)
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var success = await ApiService.DeleteUdpAsync(id, token, apiKey);
+        if (success) await OnInitializedAsync();
+    }
+
+    private async Task Acionar(string comando)
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var success = await ApiService.AcionarUdpAsync(comando, token, apiKey);
+        if (success) await JS.InvokeVoidAsync("alert", "Comando enviado.");
+    }
+}
+
+<style>
+    .form {
+        display: flex;
+        flex-direction: column;
+        max-width: 400px;
+        gap: 1rem;
+    }
+    /* Tabela estilo */
+</style>

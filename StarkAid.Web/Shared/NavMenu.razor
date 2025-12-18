@@ -5,8 +5,27 @@
 <nav class="nav-menu">
     <ul>
         <li><a href="/dashboard">Dashboard</a></li>
-        <li><a href="/profile">Perfil</a></li>
-        <li><a href="#" @onclick="Logout">Sair</a></li>
+        <li><a href="/usuario">Usuário</a></li>
+        <li><a href="/assinatura">Assinatura</a></li>
+        <li><a href="/starkcoins">Starkcoins</a></li>
+        <li><a href="/licencas">Licenças Software</a></li>
+        <li><a href="/ewelink">eWeLink</a></li>
+        <li><a href="/starkswitch">StarkSwitch</a></li>
+        <li><a href="/udp">Dispositivos UDP</a></li>
+        <li><a href="/agendamento-ewelink">Agendamento eWeLink</a></li>
+        <li><a href="/agendamento-starkswitch">Agendamento StarkSwitch</a></li>
+        <li><a href="/agendamento-udp">Agendamento UDP</a></li>
+        <li><a href="/comandos-sociais">Comandos Sociais</a></li>
+        <li><a href="/aprendizado-ia">Aprendizado IA</a></li>
+        <li>
+            <a href="#">Documentação</a>
+            <ul class="submenu">
+                <li><a href="/docs/desenvolvedores">Para Desenvolvedores</a></li>
+                <li><a href="/docs/windows">Starkaid-Windows-Software</a></li>
+                <li><a href="/docs/android">Starkaid-Android-App</a></li>
+            </ul>
+        </li>
+        <li><a href="#" @onclick="Logout">Logout</a></li>
     </ul>
 </nav>
 
@@ -26,24 +45,44 @@
         display: flex;
         flex-direction: column;
         padding: 1rem;
+        height: 100vh;
+        overflow-y: auto;
     }
 
-        .nav-menu ul {
-            list-style: none;
-            padding: 0;
-        }
+    .nav-menu ul {
+        list-style: none;
+        padding: 0;
+    }
 
-        .nav-menu li {
-            margin: 1rem 0;
-        }
+    .nav-menu li {
+        margin: 1rem 0;
+    }
 
-        .nav-menu a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }
+    .nav-menu a {
+        color: white;
+        text-decoration: none;
+        font-weight: bold;
+    }
 
-            .nav-menu a:hover {
-                text-decoration: underline;
-            }
+    .nav-menu a:hover {
+        text-decoration: underline;
+    }
+
+    .submenu {
+        list-style: none;
+        padding-left: 1rem;
+    }
+
+    .submenu li {
+        margin: 0.5rem 0;
+    }
+
+    @@media (max-width: 768px) {
+    .nav-menu
+    {
+        width: 100%;
+        height: auto;
+    }
+
+    }
 </style>

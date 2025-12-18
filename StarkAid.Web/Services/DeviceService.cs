@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using StarkAid.Web.DTOs;
 
 public interface IDeviceService
 {
@@ -28,5 +29,3 @@ public class DeviceService : IDeviceService
         return await _http.GetFromJsonAsync<DeviceDto>($"devices/{id}");
     }
 }
-
-public record DeviceDto(Guid Id, string Name, string Status, string Type);

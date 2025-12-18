@@ -3,7 +3,6 @@
 <div class="app-container">
     <NavMenu />
     <div class="main-content">
-        @* <Header /> - Comentado pois Header.razor não foi fornecido; adicione se existir *@
         <div class="content px-4 py-3">
             @Body
         </div>
@@ -13,18 +12,33 @@
 <style>
     .app-container {
         display: flex;
-        height: 100vh;
+        min-height: 100vh;
     }
 
     .main-content {
         flex: 1;
         display: flex;
         flex-direction: column;
+        background: #f9fafb; /* fundo claro para conteúdo */
     }
 
     .content {
         flex: 1;
         overflow-y: auto;
-        padding: 1rem;
+        padding: 2rem;
+    }
+
+    @@media (max-width: 768px) {
+        .app-container
+
+    {
+        flex-direction: column;
+    }
+
+    .nav-menu {
+        width: 100% !important;
+        height: auto;
+    }
+
     }
 </style>

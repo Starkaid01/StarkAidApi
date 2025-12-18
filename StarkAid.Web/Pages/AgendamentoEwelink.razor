@@ -1,0 +1,98 @@
+﻿@page "/agendamento-ewelink"
+@using StarkAid.Web.DTOs
+@using StarkAid.Web.Services
+@inject ApiService ApiService
+@inject IJSRuntime JS
+
+<h3>Agendamento eWeLink</h3>
+
+<div class="form">
+    <input @bind="newDto.EwelinkDeviceId" placeholder="Device ID" class="form-control" />
+    <input @bind="newDto.Acao" placeholder="Ação (ligar/desligar)" class="form-control" />
+    <InputDate @bind-Value="newDto.Data" class="form-control" />
+    <input type="number" @bind="newDto.Hora" placeholder="Hora" class="form-control" />
+    <input type="number" @bind="newDto.Minuto" placeholder="Minuto" class="form-control" />
+    <select @bind="newDto.Recorrencia" class="form-control">
+        <option value="NaoRepetir">Não Repetir</option>
+        <option value="TodosOsDias">Todos os Dias</option>
+        <option value="TodaSemana">Toda Semana</option>
+        <option value="TodoMes">Todo Mês</option>
+        <option value="TodoAno">Todo Ano</option>
+    </select>
+    <button @onclick="Create" class="btn btn-primary">Criar</button>
+</div>
+
+@if (agendamentos != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Device ID</th>
+                <th>Data</th>
+                <th>Comando</th>
+                <th>Recorrência</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ag in agendamentos.Where(a => a.TipoAgendamento == "ewelink"))
+            {
+                <tr>
+                    <td>@ag.EwelinkDeviceId</td>
+                    <td>@ag.AgendadoPara</td>
+                    <td>@ag.Comando</td>
+                    <td>@ag.Recorrencia</td>
+                    <td>
+                        <button @onclick="() => Edit(ag.Id)" class="btn btn-secondary">Editar</button>
+                        <button @onclick="() => Delete(ag.Id)" class="btn btn-danger">Remover</button>
+                    </td>
+                </tr>
+            }
+
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Carregando agendamentos...</p>
+}
+
+
+
+@code {
+    private AgendamentoEwelinkCreateDto newDto = new();
+    private List<AgendamentoDto>? agendamentos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        agendamentos = await ApiService.GetAgendamentosAsync(token, apiKey);
+    }
+
+    private async Task Create()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var newAg = await ApiService.CreateAgendamentoEwelinkAsync(newDto, token, apiKey);
+        if (newAg != null) await OnInitializedAsync();
+    }
+
+    private async Task Edit(string id)
+    {
+        // Implementar form de edição
+        await JS.InvokeVoidAsync("alert", "Editar agendamento.");
+    }
+
+    private async Task Delete(string id)
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var success = await ApiService.DeleteAgendamentoAsync(id, token, apiKey);
+        if (success) await OnInitializedAsync();
+    }
+}
+
+<style>
+    /* Estilo similar */
+</style>

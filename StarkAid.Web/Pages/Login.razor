@@ -6,34 +6,51 @@
 
 <h3>Login</h3>
 
-<input @bind="email" placeholder="Email" />
-<input type="password" @bind="password" placeholder="Senha" />
-<button @onclick="HandleLogin">Entrar</button>
+<input @bind="email" placeholder="Email" class="form-control" />
+<input type="password" @bind="password" placeholder="Senha" class="form-control" />
+<button @onclick="HandleLogin" class="btn btn-primary">Entrar</button>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p class="text-danger">@errorMessage</p>
+}
 
 @code {
     private string email = "";
     private string password = "";
+    private string errorMessage = "";
 
     private async Task HandleLogin()
     {
-        var dto = new LoginDto
-        {
-            Email = email,
-            Password = password,
-            Origem = "web"  // Adicionado o campo obrigatório 'origem'
-        };
-
+        var dto = new LoginDto { Email = email, Password = password, Origem = "web" };
         var auth = await ApiService.LoginAsync(dto);
 
         if (auth == null)
         {
-            // mensagem de erro (login inválido)
+            errorMessage = "Login inválido.";
             return;
         }
 
         await JS.InvokeVoidAsync("localStorage.setItem", "token", auth.Token);
         await JS.InvokeVoidAsync("localStorage.setItem", "apiKey", auth.User.ApiKey);
-
         NavigationManager.NavigateTo("/dashboard");
     }
 }
+
+<style>
+    .form-control {
+        width: 100%;
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+    }
+
+    .btn-primary {
+        background: #007bff;
+        color: white;
+        padding: 0.5rem 1rem;
+    }
+
+    .text-danger {
+        color: red;
+    }
+</style>

@@ -1,0 +1,97 @@
+﻿@page "/starkswitch"
+@using StarkAid.Web.DTOs
+@using StarkAid.Web.Services
+@inject ApiService ApiService
+@inject IJSRuntime JS
+
+<h3>StarkSwitch</h3>
+
+<div class="form-group">
+    <input @bind="newName" placeholder="Nome do Dispositivo" class="form-control" />
+    <button @onclick="Create" class="btn btn-primary">Criar</button>
+</div>
+
+@if (dispositivos != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (dispositivos != null)
+            {
+                @foreach (var disp in dispositivos)
+                {
+                    <tr>
+                        <td>@disp.Name</td>
+                        <td>
+                            <button @onclick="() => Edit(disp.Id.ToString())" class="btn btn-secondary">Editar</button>
+                            <button @onclick="() => Delete(disp.Id.ToString())" class="btn btn-danger">Remover</button>
+                            <button @onclick="() => LigarDesligar(disp.Id.ToString())" class="btn btn-primary">Ligar/Desligar</button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <p>Carregando dispositivos...</p>
+            }
+
+        </tbody>
+    </table>
+
+}
+else
+{
+    <p>Carregando dispositivos...</p>
+}
+
+
+@code {
+    private string newName = "";
+    private List<DeviceDto>? dispositivos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        dispositivos = await ApiService.GetStarkSwitchAsync(token, apiKey);
+    }
+
+    private async Task Create()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var newDisp = await ApiService.CreateStarkSwitchAsync(newName, token, apiKey);
+        if (newDisp != null) await OnInitializedAsync();
+    }
+
+    private async Task Edit(string id)
+    {
+        var newName = await JS.InvokeAsync<string>("prompt", "Novo nome:");
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var success = await ApiService.EditStarkSwitchAsync(id, newName, token, apiKey);
+        if (success) await OnInitializedAsync();
+    }
+
+    private async Task Delete(string id)
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var success = await ApiService.DeleteStarkSwitchAsync(id, token, apiKey);
+        if (success) await OnInitializedAsync();
+    }
+
+    private async Task LigarDesligar(string id)
+    {
+        await JS.InvokeVoidAsync("alert", "Ligar/Desligar não implementado na API. Adicionar se necessário.");
+    }
+}
+
+<style>
+    /* Estilo form e tabela */
+</style>

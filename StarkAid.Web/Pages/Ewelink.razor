@@ -1,0 +1,95 @@
+﻿@page "/ewelink"
+@using StarkAid.Web.DTOs
+@using StarkAid.Web.Services
+@inject ApiService ApiService
+@inject IJSRuntime JS
+
+<h3>eWeLink</h3>
+
+@if (status == null)
+{
+    <p>Carregando...</p>
+}
+else
+{
+    <p>Logado: @(status.IsLoggedIn ? "Sim" : "Não")</p>
+}
+
+<h4>Dispositivos</h4>
+@if (dispositivos == null)
+{
+    <p>Carregando...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Online</th>
+                <th>Ligado</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var disp in dispositivos)
+            {
+                <tr>
+                    <td>@disp.Name</td>
+                    <td>@(disp.Online ? "Sim" : "Não")</td>
+                    <td>@(disp.IsOn ? "Sim" : "Não")</td>
+                    <td>
+                        <button @onclick="() => Toggle(disp.Id, !disp.IsOn)" class="btn btn-primary">@(disp.IsOn ? "Desligar" : "Ligar")</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private EwelinkStatusResponse? status;
+    private List<DeviceDto>? dispositivos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        status = await ApiService.GetEwelinkStatusAsync(token, apiKey);
+        dispositivos = await ApiService.GetEwelinkDispositivosAsync(token, apiKey);
+    }
+
+    private async Task Toggle(string deviceId, bool isOn)
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var success = await ApiService.ToggleEwelinkDeviceAsync(deviceId, isOn, token, apiKey);
+        if (success) await OnInitializedAsync(); // Refresh
+    }
+}
+
+<style>
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .table th, .table td {
+            border: 1px solid #ddd;
+            padding: 0.5rem;
+        }
+
+    .cards {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .card {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        flex: 1;
+        min-width: 200px;
+    }
+</style>

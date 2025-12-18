@@ -1,0 +1,97 @@
+﻿@page "/licencas"
+@using StarkAid.Web.DTOs
+@using StarkAid.Web.Services
+@inject ApiService ApiService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<h3>Licenças Software</h3>
+
+<h4>Licenças Adquiridas</h4>
+@if (licencas == null)
+{
+    <p>Carregando...</p>
+}
+else if (licencas.Count == 0)
+{
+    <p>Nenhuma licença adquirida.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Chave</th>
+                <th>Máx. Máquinas</th>
+                <th>Ativa</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var lic in licencas)
+            {
+                <tr>
+                    <td>@lic.LicenseKey</td>
+                    <td>@lic.MaxMachines</td>
+                    <td>@(lic.IsActive ? "Sim" : "Não")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<h4>Adquirir Nova Licença</h4>
+<div class="cards">
+    <div class="card">
+        <h4>Licença para 2 Instalações (R$ preço)</h4>
+        <button @onclick="() => Comprar(2)" class="btn btn-primary">Comprar</button>
+    </div>
+    <div class="card">
+        <h4>Licença para 4 Instalações (R$ preço)</h4>
+        <button @onclick="() => Comprar(4)" class="btn btn-primary">Comprar</button>
+    </div>
+</div>
+
+@code {
+    private List<LicenseDto>? licencas;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        licencas = await ApiService.GetLicencasAsync(token, apiKey);
+    }
+
+    private async Task Comprar(int maxMachines)
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var checkout = await ApiService.CheckoutLicencaAsync(maxMachines, token, apiKey);
+        if (checkout != null) Navigation.NavigateTo(checkout.CheckoutUrl);
+    }
+}
+
+<style>
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .table th, .table td {
+            border: 1px solid #ddd;
+            padding: 0.5rem;
+        }
+
+    .cards {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .card {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        flex: 1;
+        min-width: 200px;
+    }
+</style>

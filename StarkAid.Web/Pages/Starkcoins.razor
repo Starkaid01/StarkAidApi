@@ -1,0 +1,60 @@
+﻿@page "/starkcoins"
+@using StarkAid.Web.Services
+@inject ApiService ApiService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<h3>Starkcoins</h3>
+
+<div class="cards">
+    <div class="card">
+        <h4>5 Starkcoins (R$ 4,90)</h4>
+        <button @onclick="() => Comprar(5)" class="btn btn-primary">Comprar</button>
+    </div>
+    <div class="card">
+        <h4>15 Starkcoins (R$ 9,90)</h4>
+        <button @onclick="() => Comprar(15)" class="btn btn-primary">Comprar</button>
+    </div>
+    <div class="card">
+        <h4>50 Starkcoins (R$ 19,90)</h4>
+        <button @onclick="() => Comprar(50)" class="btn btn-primary">Comprar</button>
+    </div>
+    <div class="card">
+        <h4>120 Starkcoins (R$ 39,90)</h4>
+        <button @onclick="() => Comprar(120)" class="btn btn-primary">Comprar</button>
+    </div>
+</div>
+
+@code {
+    private async Task Comprar(int coins)
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var checkout = await ApiService.AddFundsAsync(coins, token, apiKey);
+        if (checkout != null) Navigation.NavigateTo(checkout.CheckoutUrl);
+    }
+}
+
+<style>
+    .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .card {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-primary {
+        background: #007bff;
+        color: white;
+        padding: 0.5rem 1rem;
+        border: none;
+        cursor: pointer;
+    }
+</style>

@@ -1,0 +1,85 @@
+﻿@page "/comandos-sociais"
+@using StarkAid.Web.DTOs
+@using StarkAid.Web.Services
+@inject ApiService ApiService
+@inject IJSRuntime JS
+
+<h3>Comandos Sociais</h3>
+
+<div class="form">
+    <input @bind="newDto.Comando" placeholder="Comando" class="form-control" />
+    <input @bind="newDto.Resposta" placeholder="Resposta" class="form-control" />
+    <input @bind="newDto.Estilo" placeholder="Estilo" class="form-control" />
+    <button @onclick="Create" class="btn btn-primary">Criar</button>
+</div>
+
+@if (comandos != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Comando</th>
+                <th>Resposta</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var cmd in comandos)
+            {
+                <tr>
+                    <td>@cmd.Comando</td>
+                    <td>@cmd.Resposta</td>
+                    <td>
+                        <button @onclick="() => Edit(cmd.Id)" class="btn btn-secondary">Editar</button>
+                        <button @onclick="() => Delete(cmd.Id)" class="btn btn-danger">Excluir</button>
+                    </td>
+                </tr>
+            }
+
+
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Carregando Comandos Sociais...</p>
+}
+
+
+
+
+@code {
+    private ComandoSocialCreateDto newDto = new();
+    private List<ComandoSocialDto>? comandos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        comandos = await ApiService.GetComandosSociaisAsync(token, apiKey);
+    }
+
+    private async Task Create()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var newCmd = await ApiService.CreateComandoSocialAsync(newDto, token, apiKey);
+        if (newCmd != null) await OnInitializedAsync();
+    }
+
+    private async Task Edit(string id)
+    {
+        // Implementar
+        await JS.InvokeVoidAsync("alert", "Editar comando.");
+    }
+
+    private async Task Delete(string id)
+    {
+        // API não tem DELETE para comandos, adicionar se necessário
+        await JS.InvokeVoidAsync("alert", "Excluir não implementado na API.");
+    }
+}
+
+<style>
+    /* Estilo */
+</style>

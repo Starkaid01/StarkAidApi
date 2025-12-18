@@ -1,0 +1,68 @@
+﻿@page "/aprendizado-ia"
+@using StarkAid.Web.DTOs
+@using StarkAid.Web.Services
+@inject ApiService ApiService
+@inject IJSRuntime JS
+
+<h3>Aprendizado IA</h3>
+
+@if (aprendizado != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Comando Usuário</th>
+                <th>Resposta IA</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in aprendizado)
+            {
+                <tr>
+                    <td>@item.ComandoUsuario</td>
+                    <td>@item.RespostaIa</td>
+                    <td>
+                        <button @onclick="() => Edit(item)" class="btn btn-secondary">Editar</button>
+                        <button @onclick="() => Delete(item)" class="btn btn-danger">Excluir</button>
+                    </td>
+                </tr>
+            }
+
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Carregando aprendizado...</p>
+}
+
+
+
+
+@code {
+    private List<AprendizadoIaDto>? aprendizado;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        aprendizado = await ApiService.GetAprendizadoIaAsync(token, apiKey);
+    }
+
+    private async Task Edit(AprendizadoIaDto item)
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        // Implementar
+    }
+
+    private async Task Delete(AprendizadoIaDto item)
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        // Implementar
+    }
+}
+
+<style>
+    /* Estilo */
+</style>

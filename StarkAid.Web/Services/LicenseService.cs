@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using StarkAid.Web.DTOs;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 
@@ -21,5 +22,3 @@ public class LicenseService : ILicenseService
         return await _http.GetFromJsonAsync<LicenseDto>("license");
     }
 }
-
-public record LicenseDto(string LicenseKey, bool IsActive);

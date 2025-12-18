@@ -1,0 +1,52 @@
+﻿@page "/assinatura"
+@using StarkAid.Web.DTOs
+@using StarkAid.Web.Services
+@inject ApiService ApiService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<h3>Assinatura</h3>
+
+@if (status == null)
+{
+    <p>Carregando...</p>
+}
+else
+{
+    <p>Status: @status.Status</p>
+    <p>Iniciada em: @status.IniciadaEm</p>
+    <p>Expira em: @status.ExpiraEm</p>
+    <p>Valor: @status.Valor</p>
+
+    @if (status.Status != "Ativa")
+    {
+        <button @onclick="AssinarPremium" class="btn btn-primary">Assinar Premium</button>
+    }
+}
+
+@code {
+    private AssinaturaStatusDto? status;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        status = await ApiService.GetAssinaturaStatusAsync(token, apiKey);
+    }
+
+    private async Task AssinarPremium()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var checkout = await ApiService.CheckoutAssinaturaAsync(2, token, apiKey);
+        if (checkout != null) Navigation.NavigateTo(checkout.CheckoutUrl, forceLoad: true);
+    }
+}
+
+<style>
+    .btn-primary {
+        background: #007bff;
+        color: white;
+        padding: 0.5rem 1rem;
+    }
+</style>

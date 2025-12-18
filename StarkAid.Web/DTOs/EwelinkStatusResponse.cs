@@ -2,8 +2,7 @@
 {
     public class EwelinkStatusResponse
     {
-        public bool IsConnected { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public List<DeviceDto> Devices { get; set; } = new();
+        public bool IsLoggedIn { get; set; }
+        public EwelinkAccountDto Account { get; set; } = new();
     }
 }

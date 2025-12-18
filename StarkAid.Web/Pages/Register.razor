@@ -7,10 +7,10 @@
 
 <h3>Registrar</h3>
 
-<input @bind="name" placeholder="Nome" />
-<input @bind="email" placeholder="Email" />
-<input type="password" @bind="password" placeholder="Senha" />
-<button @onclick="HandleRegister">Registrar</button>
+<input @bind="name" placeholder="Nome" class="form-control" />
+<input @bind="email" placeholder="Email" class="form-control" />
+<input type="password" @bind="password" placeholder="Senha" class="form-control" />
+<button @onclick="HandleRegister" class="btn btn-primary">Registrar</button>
 
 @code {
     private string name = "";
@@ -32,8 +32,7 @@
 
         var auth = await ApiService.RegisterAsync(registerDto);
 
-        if (auth == null)
-            return;
+        if (auth == null) return;
 
         await JS.InvokeVoidAsync("localStorage.setItem", "token", auth.Token);
         await JS.InvokeVoidAsync("localStorage.setItem", "apiKey", auth.User?.ApiKey);
@@ -41,3 +40,17 @@
         NavigationManager.NavigateTo("/dashboard");
     }
 }
+
+<style>
+    .form-control {
+        width: 100%;
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+    }
+
+    .btn-primary {
+        background: #007bff;
+        color: white;
+        padding: 0.5rem 1rem;
+    }
+</style>
