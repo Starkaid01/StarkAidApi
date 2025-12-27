@@ -459,7 +459,7 @@ public partial class MainForm : Form
         btnConfigAlarmes.Click += (s, e) => { SoundPlayer.PlayClick(); LoadConfigAlarmes(); };
 
         var btnDocumentacao = CreateMenuButton("📖 Documentação", 770);
-        btnDocumentacao.Click += (s, e) => { SoundPlayer.PlayClick(); LoadDocumentacao(); };
+        btnDocumentacao.Click += async (s, e) => { SoundPlayer.PlayClick(); await LoadDocumentacaoAsync(); };
 
         // Botões _btnToggleIA, _btnAtualizar e btnSair agora são criados no CreateDashboardContent
 
@@ -2171,15 +2171,13 @@ public partial class MainForm : Form
         form.ShowDialog();
     }
 
-    private void LoadDocumentacao()
+    private async Task LoadDocumentacaoAsync()
     {
         try
         {
-            // Obter o caminho do arquivo HTML de documentação
             var appDirectory = Path.GetDirectoryName(Application.ExecutablePath) ?? AppDomain.CurrentDomain.BaseDirectory;
             var documentacaoPath = Path.Combine(appDirectory, "documentacao.html");
 
-            // Verificar se o arquivo existe
             if (!File.Exists(documentacaoPath))
             {
                 MessageBox.Show(
@@ -2191,14 +2189,17 @@ public partial class MainForm : Form
                 return;
             }
 
-            // Abrir o arquivo HTML no navegador padrão
-            var processInfo = new ProcessStartInfo
+            var localRuntimePath = Path.Combine(appDirectory, "WebView2Runtime");
+            var localRuntimeExe = Path.Combine(localRuntimePath, "x64", "MicrosoftEdgeWebView2.exe");
+            var hasLocalRuntime = File.Exists(localRuntimeExe);
+            if (!hasLocalRuntime && !IsWebView2RuntimeInstalled())
             {
-                FileName = documentacaoPath,
-                UseShellExecute = true
-            };
+                ShowWebView2DownloadDialog();
+                return;
+            }
 
-            Process.Start(processInfo);
+            using var form = new DocumentacaoForm(documentacaoPath);
+            form.ShowDialog(this);
         }
         catch (Exception ex)
         {
@@ -2207,6 +2208,96 @@ public partial class MainForm : Form
                 "Erro",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
+        }
+    }
+
+    private sealed class DocumentacaoForm : Form
+    {
+        private readonly string _documentacaoPath;
+        private readonly WebView2 _webView;
+        private bool _initialized;
+
+        public DocumentacaoForm(string documentacaoPath)
+        {
+            _documentacaoPath = documentacaoPath;
+
+            Text = "Documentação";
+            StartPosition = FormStartPosition.CenterParent;
+            Size = new Size(1200, 800);
+            MinimumSize = new Size(900, 600);
+            BackColor = Color.FromArgb(20, 20, 30);
+            KeyPreview = true;
+
+            _webView = new WebView2
+            {
+                Dock = DockStyle.Fill
+            };
+
+            Controls.Add(_webView);
+
+            KeyDown += (_, e) =>
+            {
+                if (e.KeyCode == Keys.Escape)
+                {
+                    Close();
+                }
+            };
+        }
+
+        protected override async void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+
+            if (_initialized)
+            {
+                return;
+            }
+
+            _initialized = true;
+
+            try
+            {
+                var userDataFolder = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "StarkAid",
+                    "WebView2DataDocs"
+                );
+
+                Directory.CreateDirectory(userDataFolder);
+
+                var appDirectory = Path.GetDirectoryName(Application.ExecutablePath) ?? AppDomain.CurrentDomain.BaseDirectory;
+                var localRuntimePath = Path.Combine(appDirectory, "WebView2Runtime");
+                var localRuntimeExe = Path.Combine(localRuntimePath, "x64", "MicrosoftEdgeWebView2.exe");
+
+                CoreWebView2Environment? environment = null;
+                if (File.Exists(localRuntimeExe))
+                {
+                    var browserFolder = Path.GetDirectoryName(localRuntimeExe);
+                    if (browserFolder != null)
+                    {
+                        environment = await CoreWebView2Environment.CreateAsync(
+                            browserExecutableFolder: browserFolder,
+                            userDataFolder: userDataFolder
+                        );
+                    }
+                }
+
+                environment ??= await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
+
+                await _webView.EnsureCoreWebView2Async(environment);
+
+                var docUri = new Uri(_documentacaoPath);
+                _webView.CoreWebView2!.Navigate(docUri.AbsoluteUri);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Erro ao carregar documentação:\n\n{ex.Message}",
+                    "Erro",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                Close();
+            }
         }
     }
 
@@ -3933,4 +4024,3 @@ public partial class MainForm : Form
     }
 
 }
-

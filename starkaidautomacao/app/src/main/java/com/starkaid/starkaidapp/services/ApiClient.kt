@@ -63,6 +63,7 @@ object ApiClient {
                     Log.d("API_HEADERS", "Response: ${response.code} for ${request.url}")
                     response
                 }
+                .addInterceptor(ConnectivityInterceptor())
                 .addInterceptor(RefreshTokenInterceptor(context))
                 .addInterceptor(RateLimitInterceptor())
                 .protocols(listOf(Protocol.HTTP_1_1))

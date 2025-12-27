@@ -2,7 +2,7 @@
 ; Criado para Adriano Carmo - 2025
 
 #define MyAppName "StarkAid"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion GetVersionNumbersString("publish\StarkAid.WindowsForms-win-x64\StarkAid.WindowsForms.exe")
 #define MyAppPublisher "Adriano Carmo"
 #define MyAppURL "https://starkaid.runasp.net"
 #define MyAppExeName "StarkAid.WindowsForms.exe"
@@ -55,8 +55,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; Isso garante que WebView2, runtimes e todas as dependências sejam incluídas
 ; Copiando EXATAMENTE como está na pasta release
 
-; INCLUIR TUDO da pasta release (todos os arquivos e pastas)
-Source: "StarkAid.WindowsForms\bin\Release\net8.0-windows\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; INCLUIR TUDO do publish (todos os arquivos e pastas)
+Source: "publish\StarkAid.WindowsForms-win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Arquivos de configuração e documentação (da raiz do projeto)
 Source: "LICENSE"; DestDir: "{app}"; Flags: ignoreversion
@@ -77,60 +77,10 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-; Abrir página de download do .NET 8 Runtime se necessário
-Filename: "https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-desktop-8.0.0-windows-x64-installer"; Description: "Baixar e instalar .NET 8 Desktop Runtime (necessário)"; Flags: postinstall shellexec skipifsilent; Check: DotNetRuntimeNotInstalled
-
 ; Executar aplicativo após instalação
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-var
-  DotNetRuntimeInstalled: Boolean;
-  DotNetVersion: String;
-
-function InitializeSetup(): Boolean;
-var
-  Version: String;
-begin
-  Result := True;
-  DotNetRuntimeInstalled := False;
-  DotNetVersion := '';
-  
-  // Verificar .NET 8 Desktop Runtime no registro
-  // Verificar em HKLM primeiro
-  if RegQueryStringValue(HKLM, 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost', 'Version', Version) then
-  begin
-    DotNetVersion := Version;
-    if (Pos('8.0', Version) > 0) or (Pos('8.', Version) > 0) then
-      DotNetRuntimeInstalled := True;
-  end;
-  
-  // Verificar também em HKCU se não encontrou em HKLM
-  if not DotNetRuntimeInstalled then
-  begin
-    if RegQueryStringValue(HKCU, 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost', 'Version', Version) then
-    begin
-      DotNetVersion := Version;
-      if (Pos('8.0', Version) > 0) or (Pos('8.', Version) > 0) then
-        DotNetRuntimeInstalled := True;
-    end;
-  end;
-  
-  // Verificar também via variável de ambiente
-  if not DotNetRuntimeInstalled then
-  begin
-    if RegQueryStringValue(HKLM, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 'DOTNET_ROOT', Version) then
-    begin
-      // Se DOTNET_ROOT existe, provavelmente está instalado
-      DotNetRuntimeInstalled := True;
-    end;
-  end;
-end;
-
-function DotNetRuntimeNotInstalled(): Boolean;
-begin
-  Result := not DotNetRuntimeInstalled;
-end;
 
 function InitializeUninstall(): Boolean;
 var

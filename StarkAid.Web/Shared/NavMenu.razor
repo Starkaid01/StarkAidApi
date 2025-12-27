@@ -1,88 +1,113 @@
-﻿@using StarkAid.Web.Services
-@inject NavigationManager NavigationManager
-@inject AuthService AuthService
+@using Microsoft.AspNetCore.Components.Routing
 
-<nav class="nav-menu">
+<nav class="nav-menu @(IsMobileMenuOpen ? "open" : "")">
+    <div class="menu-header mobile-only">
+        <button class="close-btn" @onclick="CloseMenu">✖</button>
+    </div>
+
     <ul>
-        <li><a href="/dashboard">Dashboard</a></li>
-        <li><a href="/usuario">Usuário</a></li>
-        <li><a href="/assinatura">Assinatura</a></li>
-        <li><a href="/starkcoins">Starkcoins</a></li>
-        <li><a href="/licencas">Licenças Software</a></li>
-        <li><a href="/ewelink">eWeLink</a></li>
-        <li><a href="/starkswitch">StarkSwitch</a></li>
-        <li><a href="/udp">Dispositivos UDP</a></li>
-        <li><a href="/agendamento-ewelink">Agendamento eWeLink</a></li>
-        <li><a href="/agendamento-starkswitch">Agendamento StarkSwitch</a></li>
-        <li><a href="/agendamento-udp">Agendamento UDP</a></li>
-        <li><a href="/comandos-sociais">Comandos Sociais</a></li>
-        <li><a href="/aprendizado-ia">Aprendizado IA</a></li>
-        <li>
-            <a href="#">Documentação</a>
-            <ul class="submenu">
-                <li><a href="/docs/desenvolvedores">Para Desenvolvedores</a></li>
-                <li><a href="/docs/windows">Starkaid-Windows-Software</a></li>
-                <li><a href="/docs/android">Starkaid-Android-App</a></li>
-            </ul>
+        <li><NavLink href="/dashboard" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Dashboard</NavLink></li>
+        <li><NavLink href="/download" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Download Software</NavLink></li>
+        <li><NavLink href="/usuario" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Usuário</NavLink></li>
+        <li><NavLink href="/assinatura" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Assinatura</NavLink></li>
+        <li><NavLink href="/starkcoins" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Starkcoins</NavLink></li>
+        <li><NavLink href="/licencas" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Licenças Software</NavLink></li>
+        <li><NavLink href="/ewelink" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">eWeLink</NavLink></li>
+        <li><NavLink href="/starkswitch" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">StarkSwitch</NavLink></li>
+        <li><NavLink href="/udp" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Dispositivos UDP</NavLink></li>
+        <li><NavLink href="/agendamento-ewelink" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Agendamento eWeLink</NavLink></li>
+        <li><NavLink href="/agendamento-starkswitch" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Agendamento StarkSwitch</NavLink></li>
+        <li><NavLink href="/agendamento-udp" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Agendamento UDP</NavLink></li>
+        <li><NavLink href="/comandos-sociais" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Comandos Sociais</NavLink></li>
+        <li><NavLink href="/aprendizado-ia" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Aprendizado IA</NavLink></li>
+
+        <li class="has-submenu">
+            <a href="#"
+               @onclick="ToggleDocumentacao"
+               @onclick:preventDefault="true"
+               class="nav-link @(IsDocumentacaoActive ? "active" : "")">
+                Documentação <span class="arrow">@(documentacaoOpen ? "▼" : "▶")</span>
+            </a>
+            @if (documentacaoOpen)
+            {
+                <ul class="submenu">
+                    <li><NavLink href="/docs/desenvolvedores" @onclick="() => CloseOnMobile()">Para Desenvolvedores</NavLink></li>
+                    <li><NavLink href="/docs/windows" @onclick="() => CloseOnMobile()">Starkaid-Windows-Software</NavLink></li>
+                    <li><NavLink href="/docs/android" @onclick="() => CloseOnMobile()">Starkaid-Android-App</NavLink></li>
+                </ul>
+            }
         </li>
-        <li><a href="#" @onclick="Logout">Logout</a></li>
+
+        <li class="logout-item"><a href="#" @onclick="LogoutAndClose" @onclick:preventDefault>Logout</a></li>
+        
+        @* Spacers for better mobile scrolling *@
+        <li class="nav-spacer"></li>
+        <li class="nav-spacer"></li>
+        <li class="nav-spacer"></li>
     </ul>
 </nav>
 
+<style>
+    .logout-item {
+        margin-top: 2rem !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        padding-top: 1rem;
+    }
+
+    .logout-item a {
+        color: var(--member-error) !important;
+    }
+
+    .logout-item a:hover {
+        background: rgba(239, 68, 68, 0.1) !important;
+    }
+
+    .nav-spacer {
+        height: 3rem;
+        pointer-events: none;
+    }
+</style>
+
 @code {
-    private async Task Logout()
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] private AuthService AuthService { get; set; } = default!;
+
+    [Parameter] public bool IsMobileMenuOpen { get; set; }
+    [Parameter] public EventCallback OnCloseMenu { get; set; }
+
+    private bool documentacaoOpen = false;
+
+    private void ToggleDocumentacao()
     {
+        documentacaoOpen = !documentacaoOpen;
+    }
+
+    private bool IsDocumentacaoActive =>
+        NavigationManager?.Uri?.Contains("/docs/", StringComparison.OrdinalIgnoreCase) ?? false;
+
+    // Novo: fecha o menu apenas em mobile após clique em link
+    private async Task CloseOnMobile()
+    {
+        if (IsMobileMenuOpen)
+        {
+            await OnCloseMenu.InvokeAsync();
+        }
+    }
+
+    // Logout com fechamento do menu
+    private async Task LogoutAndClose()
+    {
+        if (IsMobileMenuOpen)
+        {
+            await OnCloseMenu.InvokeAsync();
+        }
+
         await AuthService.LogoutAsync();
         NavigationManager.NavigateTo("/login", true);
     }
-}
 
-<style>
-    .nav-menu {
-        width: 220px;
-        background: #1F2937;
-        color: white;
-        display: flex;
-        flex-direction: column;
-        padding: 1rem;
-        height: 100vh;
-        overflow-y: auto;
-    }
-
-    .nav-menu ul {
-        list-style: none;
-        padding: 0;
-    }
-
-    .nav-menu li {
-        margin: 1rem 0;
-    }
-
-    .nav-menu a {
-        color: white;
-        text-decoration: none;
-        font-weight: bold;
-    }
-
-    .nav-menu a:hover {
-        text-decoration: underline;
-    }
-
-    .submenu {
-        list-style: none;
-        padding-left: 1rem;
-    }
-
-    .submenu li {
-        margin: 0.5rem 0;
-    }
-
-    @@media (max-width: 768px) {
-    .nav-menu
+    private async Task CloseMenu()
     {
-        width: 100%;
-        height: auto;
+        await OnCloseMenu.InvokeAsync();
     }
-
-    }
-</style>
+}

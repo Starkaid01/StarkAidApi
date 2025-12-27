@@ -27,11 +27,54 @@ else
         <DashboardCard Title="Status API" Value="@stats.ApiStatus" />
         <DashboardCard Title="Status MQTT" Value="@stats.MqttStatus" />
     </div>
+
+    <div class="weather-section">
+        <h3>Previsão do Tempo</h3>
+        @if (weather == null)
+        {
+            <div class="weather-loading text-center p-4">
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                <span class="ms-2">Buscando previsão...</span>
+            </div>
+        }
+        else
+        {
+            <div class="weather-container">
+                <div class="weather-card-highlight">
+                    <div class="weather-icon-large">@(GetWeatherIcon(weather.Current.WeatherCode))</div>
+                    <div class="weather-main-info">
+                        <span class="temperature">@weather.Current.Temperature.ToString("F1")°C</span>
+                        <span class="condition">@weather.Current.WeatherDescription</span>
+                        <span class="location">@(user?.Cidade ?? "Sua Localização")</span>
+                    </div>
+                </div>
+                <div class="weather-grid">
+                    <div class="weather-detail-card">
+                        <span class="detail-label">Vento</span>
+                        <span class="detail-value">@weather.Current.WindSpeed km/h (@weather.Current.WindDirectionText)</span>
+                    </div>
+                    <div class="weather-detail-card">
+                        <span class="detail-label">Previsão Hoje</span>
+                        <span class="detail-value">@weather.Daily.FirstOrDefault()?.WeatherDescription</span>
+                    </div>
+                    <div class="weather-detail-card">
+                        <span class="detail-label">Máx / Mín</span>
+                        <span class="detail-value">@weather.Daily.FirstOrDefault()?.TemperatureMax° / @weather.Daily.FirstOrDefault()?.TemperatureMin°</span>
+                    </div>
+                    <div class="weather-detail-card">
+                        <span class="detail-label">Chuva</span>
+                        <span class="detail-value">@weather.Daily.FirstOrDefault()?.Precipitation mm</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 }
 
 @code {
     private UserMeDto? user;
     private UserStatsDto? stats;
+    private WeatherForecastDto? weather;
 
     protected override async Task OnInitializedAsync()
     {
@@ -48,20 +91,29 @@ else
 
             user = await ApiService.GetMeAsync(token, apiKey);
             stats = await ApiService.GetStatsAsync(token, apiKey);
+            weather = await ApiService.GetWeatherForecastAsync(token, apiKey);
 
             if (user == null) NavigationManager.NavigateTo("/login");
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Erro: {ex.Message}");
+            await JS.InvokeVoidAsync("console.error", $"Erro ao carregar dashboard: {ex.Message}");
         }
     }
-}
 
-<style>
-    .dashboard-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
+    private string GetWeatherIcon(int code)
+    {
+        return code switch
+        {
+            0 => "☀️", // Clear sky
+            1 or 2 or 3 => "⛅", // Mainly clear, partly cloudy, and overcast
+            45 or 48 => "🌫️", // Fog
+            51 or 53 or 55 => "🌧️", // Drizzle
+            61 or 63 or 65 => "🌧️", // Rain
+            71 or 73 or 75 => "❄️", // Snow fall
+            80 or 81 or 82 => "🌦️", // Rain showers
+            95 or 96 or 99 => "⛈️", // Thunderstorm
+            _ => "☁️"
+        };
     }
-</style>
+}

@@ -1,4 +1,44 @@
 ﻿@page "/docs/desenvolvedores"
 
-<h3>Para Desenvolvedores</h3>
-<p>Conteúdo de documentação para desenvolvedores...</p>
+<div class="docs-container">
+    <section class="docs-section">
+        <h1>Documentação para Desenvolvedores</h1>
+        <p>
+            Bem-vindo à área do desenvolvedor <strong>StarkAid</strong>. Integre suas próprias ferramentas e dispositivos ao nosso ecossistema usando nossa API robusta.
+        </p>
+        <h2>Protocolos Suportados</h2>
+        <ul>
+            <li>🌐 <strong>REST API:</strong> Endpoints para controle de dispositivos e gestão de conta</li>
+            <li>📡 <strong>MQTT:</strong> Integração de baixa latência para dispositivos IoT (StarkSwitch)</li>
+            <li>🔌 <strong>UDP:</strong> Comunicação direta na rede local para dispositivos ESP</li>
+        </ul>
+    </section>
+
+    <section class="docs-section">
+        <h1>Autenticação</h1>
+        <p>Todas as requisições à nossa API externa devem incluir a <code>ApiKey</code> no cabeçalho ou como parâmetro.</p>
+        <div class="docs-code-pre">
+            <code>
+GET /api/dispositivos
+Authorization: Bearer seu_token_jwt
+X-Api-Key: sua_chave_de_acesso
+            </code>
+        </div>
+    </section>
+
+    <section class="docs-section">
+        <h1>Integração StarkSwitch (MQTT)</h1>
+        <p>Para integrar hardware personalizado via StarkSwitch, utilize o seguinte padrão de tópico:</p>
+        <div class="docs-code-pre">
+            <code>
+Tópico: starkaid/seu_usuario/comando
+Payload: { "dispositivo": "id_esp", "acao": "on" }
+            </code>
+        </div>
+    </section>
+
+    <section class="docs-section">
+        <h1>Webhooks</h1>
+        <p>Configure webhooks para receber notificações automáticas quando um agendamento for disparado ou um alarme for ativado.</p>
+    </section>
+</div>

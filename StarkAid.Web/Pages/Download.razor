@@ -1,0 +1,69 @@
+@page "/download"
+@using StarkAid.Web.Shared
+
+<div class="docs-container mt-4">
+    <section class="docs-section">
+        <h1>Baixar StarkAid Software</h1>
+        <p>
+            O <strong>StarkAid para Windows</strong> é o coração do nosso sistema de automação. Com ele, você pode controlar seu PC por voz, 
+            gerenciar dispositivos IoT em sua rede local e aproveitar o poder total da nossa Inteligência Artificial integrada.
+        </p>
+
+        <div class="row mt-5">
+            <div class="col-md-6">
+                <div class="docs-command-card text-center h-100 py-5">
+                    <div style="font-size: 4rem; margin-bottom: 1.5rem;">🪟</div>
+                    <h4>Versão Windows</h4>
+                    <p class="text-white-50">StarkAid Setup v1.0.0.0</p>
+                    <div class="mt-4">
+                        <a href="https://starkaid.runasp.net/soft-dowload/StarkAid-Setup-1.0.0.0.exe" class="btn btn-primary btn-lg px-5 shadow-glow" target="_blank">
+                            <i class="bi bi-download me-2"></i> Baixar Agora
+                        </a>
+                    </div>
+                    <p class="mt-3 fs-tiny text-white-50">Tamanho: ~40MB | .NET 8.0</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="docs-section h-100 m-0" style="padding: 2rem;">
+                    <h3>Por que usar o software?</h3>
+                    <ul class="text-start mt-3">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> Controle total por voz</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> Execução de comandos Shell</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> Integração com dispositivos UDP</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> Dashboard em tempo real</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="docs-section">
+        <h3>Requisitos Mínimos</h3>
+        <table class="docs-table">
+            <tr>
+                <td><strong>Sistema Operacional</strong></td>
+                <td>Windows 10 ou superior (64-bit)</td>
+            </tr>
+            <tr>
+                <td><strong>Framework</strong></td>
+                <td>.NET Runtime 8.0</td>
+            </tr>
+            <tr>
+                <td><strong>Hardware</strong></td>
+                <td>Microfone funcional e 100MB de espaço livre</td>
+            </tr>
+        </table>
+    </section>
+</div>
+
+<style>
+    .shadow-glow {
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        transition: all 0.3s;
+    }
+    .shadow-glow:hover {
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
+        transform: translateY(-2px);
+    }
+    .fs-tiny { font-size: 0.75rem; }
+</style>

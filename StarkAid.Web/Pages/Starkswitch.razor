@@ -1,97 +1,225 @@
-﻿@page "/starkswitch"
+@page "/starkswitch"
 @using StarkAid.Web.DTOs
 @using StarkAid.Web.Services
+@using StarkAid.Web.Shared
 @inject ApiService ApiService
 @inject IJSRuntime JS
 
-<h3>StarkSwitch</h3>
-
-<div class="form-group">
-    <input @bind="newName" placeholder="Nome do Dispositivo" class="form-control" />
-    <button @onclick="Create" class="btn btn-primary">Criar</button>
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <h3>StarkSwitch Devices</h3>
+    <button class="btn btn-primary" @onclick="() => OpenModal()">
+        <i class="bi bi-plus"></i> Novo Dispositivo
+    </button>
 </div>
 
-@if (dispositivos != null)
+@if (dispositivos == null)
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (dispositivos != null)
-            {
-                @foreach (var disp in dispositivos)
-                {
-                    <tr>
-                        <td>@disp.Name</td>
-                        <td>
-                            <button @onclick="() => Edit(disp.Id.ToString())" class="btn btn-secondary">Editar</button>
-                            <button @onclick="() => Delete(disp.Id.ToString())" class="btn btn-danger">Remover</button>
-                            <button @onclick="() => LigarDesligar(disp.Id.ToString())" class="btn btn-primary">Ligar/Desligar</button>
-                        </td>
-                    </tr>
-                }
-            }
-            else
-            {
-                <p>Carregando dispositivos...</p>
-            }
-
-        </tbody>
-    </table>
-
+    <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Carregando dispositivos...</p>
+    </div>
+}
+else if (!dispositivos.Any())
+{
+    <div class="alert alert-info">
+        <p>Nenhum dispositivo StarkSwitch encontrado. Clique em "Novo Dispositivo" para começar.</p>
+    </div>
 }
 else
 {
-    <p>Carregando dispositivos...</p>
+    <div class="dashboard-cards">
+        @foreach (var disp in dispositivos)
+        {
+            <div class="dashboard-card device-card">
+                <div class="device-header">
+                    <div class="device-icon-container">
+                        <span class="device-icon">🔘</span>
+                    </div>
+                    <div class="device-type-badge">MQTT</div>
+                </div>
+
+                <div class="device-info mt-3">
+                    <h4 class="device-name">@disp.Name</h4>
+                    <p class="device-details">Tópico: <code>@disp.MqttTopic</code></p>
+                    <p class="device-command">Gatilho: <code>@disp.Comando</code></p>
+                </div>
+
+                <div class="device-control mt-4">
+                    <div class="d-grid gap-2">
+                        <div class="btn-group w-100">
+                            <button @onclick='() => EnviarComando(disp.Id.ToString(), "on")' class="btn btn-success btn-sm">LIGAR</button>
+                            <button @onclick='() => EnviarComando(disp.Id.ToString(), "off")' class="btn btn-danger btn-sm">DESLIGAR</button>
+                        </div>
+                        <button @onclick='() => EnviarComando(disp.Id.ToString(), null, disp.Comando)' class="btn btn-primary btn-sm">
+                            Acionar Personalizado
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-footer-actions mt-3 pt-3 border-top">
+                    <button @onclick="() => OpenModal(disp)" class="btn btn-link btn-sm text-secondary p-0 me-3">Editar</button>
+                    <button @onclick="() => Delete(disp.Id.ToString())" class="btn btn-link btn-sm text-danger p-0">Excluir</button>
+                </div>
+            </div>
+        }
+    </div>
 }
 
+<Modal IsOpen="isModalOpen" Title="@(isEditing ? "Editar Dispositivo" : "Novo Dispositivo")" OnClose="CloseModal">
+    <div class="form-container">
+        <div class="mb-3">
+            <label class="form-label">Nome do Dispositivo</label>
+            <input @bind="currentName" placeholder="Ex: Ventilador Quarto" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Comando (Gatilho para IA)</label>
+            <input @bind="currentComando" placeholder="Ex: ligar ventilador" class="form-control" />
+        </div>
+        <div class="modal-footer d-flex gap-2 justify-content-end mt-4">
+            <button class="btn btn-outline-secondary" @onclick="CloseModal">Cancelar</button>
+            <button class="btn btn-primary" @onclick="Save">Salvar</button>
+        </div>
+    </div>
+</Modal>
 
 @code {
-    private string newName = "";
     private List<DeviceDto>? dispositivos;
+    private string currentName = "";
+    private string currentComando = "";
+    private bool isModalOpen = false;
+    private bool isEditing = false;
+    private string editingId = "";
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadDispositivos();
+    }
+
+    private async Task LoadDispositivos()
     {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
         dispositivos = await ApiService.GetStarkSwitchAsync(token, apiKey);
     }
 
-    private async Task Create()
+    private void OpenModal(DeviceDto? disp = null)
     {
-        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
-        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
-        var newDisp = await ApiService.CreateStarkSwitchAsync(newName, token, apiKey);
-        if (newDisp != null) await OnInitializedAsync();
+        if (disp != null)
+        {
+            isEditing = true;
+            editingId = disp.Id.ToString();
+            currentName = disp.Name;
+            currentComando = disp.Comando;
+        }
+        else
+        {
+            isEditing = false;
+            currentName = "";
+            currentComando = "";
+        }
+        isModalOpen = true;
     }
 
-    private async Task Edit(string id)
+    private void CloseModal()
     {
-        var newName = await JS.InvokeAsync<string>("prompt", "Novo nome:");
+        isModalOpen = false;
+    }
+
+    private async Task Save()
+    {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
-        var success = await ApiService.EditStarkSwitchAsync(id, newName, token, apiKey);
-        if (success) await OnInitializedAsync();
+
+        if (isEditing)
+        {
+            var success = await ApiService.EditStarkSwitchAsync(editingId, currentName, currentComando, token, apiKey);
+            if (success) await LoadDispositivos();
+        }
+        else
+        {
+            var newDisp = await ApiService.CreateStarkSwitchAsync(currentName, currentComando, token, apiKey);
+            if (newDisp != null) await LoadDispositivos();
+        }
+        isModalOpen = false;
     }
 
     private async Task Delete(string id)
     {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Tem certeza que deseja excluir?");
+        if (!confirmed) return;
+
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
         var success = await ApiService.DeleteStarkSwitchAsync(id, token, apiKey);
-        if (success) await OnInitializedAsync();
+        if (success) await LoadDispositivos();
     }
 
-    private async Task LigarDesligar(string id)
+    private async Task EnviarComando(string deviceId, string? cmd, string? custom = null)
     {
-        await JS.InvokeVoidAsync("alert", "Ligar/Desligar não implementado na API. Adicionar se necessário.");
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        
+        var success = await ApiService.PublishGenericCommandAsync(deviceId, cmd, custom, token, apiKey);
+        if (success)
+        {
+            // toast ou feedback visual
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Falha ao enviar comando via MQTT.");
+        }
     }
 }
 
 <style>
-    /* Estilo form e tabela */
+    .device-card {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 300px;
+    }
+
+    .device-icon-container {
+        width: 50px;
+        height: 50px;
+        background: rgba(99, 102, 241, 0.1);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .device-type-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        background: rgba(139, 92, 246, 0.1);
+        color: var(--member-secondary);
+        border: 1px solid var(--member-secondary);
+    }
+
+    .device-details code, .device-command code {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 0.1rem 0.3rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        color: var(--member-text-muted);
+    }
+
+    .btn-group .btn {
+        border-radius: 0;
+    }
+
+    .btn-group .btn:first-child {
+        border-top-left-radius: 8px;
+        border-bottom-left-radius: 8px;
+    }
+
+    .btn-group .btn:last-child {
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
 </style>

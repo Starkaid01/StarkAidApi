@@ -33,11 +33,17 @@ interface DeviceApi {
 
 data class DeviceResponse(
     val id: String,
+    val deviceId: String? = null,
     val name: String,
-    val mqttTopic: String,
-    val ip: String?,
-    val comando: String?,
-    val resposta: String?
+    val type: String? = null,
+    val online: Boolean = false,
+    val isOn: Boolean = false,
+    val familyId: String? = null,
+    val roomId: String? = null,
+    val apiKey: String?,
+    val userId: String?,
+    val mqttTopic: String?,
+    val comando: String?
 )
 
 data class AddDeviceRequest(

@@ -1,56 +1,81 @@
 ﻿@page "/login"
+@layout PublicLayout
 @using StarkAid.Web.Services
+@using StarkAid.Web.Dtos
 @inject ApiService ApiService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 
-<h3>Login</h3>
+<div class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>Bem-vindo de volta</h1>
+                <p>Entre na sua conta StarkAid</p>
+            </div>
 
-<input @bind="email" placeholder="Email" class="form-control" />
-<input type="password" @bind="password" placeholder="Senha" class="form-control" />
-<button @onclick="HandleLogin" class="btn btn-primary">Entrar</button>
+            <form class="auth-form" @onsubmit="HandleLogin" @onsubmit:preventDefault>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" @bind="email" placeholder="seu@email.com" required />
+                </div>
 
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <p class="text-danger">@errorMessage</p>
-}
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" @bind="password" placeholder="••••••••" required />
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="error-message">@errorMessage</div>
+                }
+
+                <button type="submit" class="btn-primary-large" disabled="@isLoading">
+                    @(isLoading ? "Entrando..." : "Entrar")
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Não tem uma conta? <a href="/register">Criar conta</a></p>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     private string email = "";
     private string password = "";
     private string errorMessage = "";
+    private bool isLoading = false;
 
     private async Task HandleLogin()
     {
-        var dto = new LoginDto { Email = email, Password = password, Origem = "web" };
-        var auth = await ApiService.LoginAsync(dto);
+        isLoading = true;
+        errorMessage = "";
 
-        if (auth == null)
+        try
         {
-            errorMessage = "Login inválido.";
-            return;
-        }
+            var dto = new LoginDto { Email = email, Password = password, Origem = "web" };
+            var auth = await ApiService.LoginAsync(dto);
 
-        await JS.InvokeVoidAsync("localStorage.setItem", "token", auth.Token);
-        await JS.InvokeVoidAsync("localStorage.setItem", "apiKey", auth.User.ApiKey);
-        NavigationManager.NavigateTo("/dashboard");
+            if (auth == null)
+            {
+                errorMessage = "Email ou senha inválidos.";
+                return;
+            }
+
+            await JS.InvokeVoidAsync("localStorage.setItem", "token", auth.Token);
+            await JS.InvokeVoidAsync("localStorage.setItem", "apiKey", auth.User.ApiKey);
+            NavigationManager.NavigateTo("/dashboard", true);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Erro ao fazer login. Tente novamente.";
+            Console.WriteLine($"Login error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 }
-
-<style>
-    .form-control {
-        width: 100%;
-        margin-bottom: 1rem;
-        padding: 0.5rem;
-    }
-
-    .btn-primary {
-        background: #007bff;
-        color: white;
-        padding: 0.5rem 1rem;
-    }
-
-    .text-danger {
-        color: red;
-    }
-</style>

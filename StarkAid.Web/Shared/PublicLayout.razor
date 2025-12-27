@@ -1,0 +1,70 @@
+@namespace StarkAid.Web.Shared
+@inherits LayoutComponentBase
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<head>
+    <link href="css/public.css" rel="stylesheet" />
+    <link href="css/pages.css" rel="stylesheet" />
+</head>
+
+<div class="public-layout">
+    <nav class="public-nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/" class="brand-link">
+                    <span class="brand-icon">⚡</span>
+                    <span class="brand-text">StarkAid</span>
+                </a>
+            </div>
+            
+            <button class="mobile-toggle" @onclick="ToggleMobileMenu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <div class="nav-links @(mobileMenuOpen ? "active" : "")">
+                <a href="/" class="nav-link" @onclick="CloseMobileMenu">Início</a>
+                <a href="/solutions" class="nav-link" @onclick="CloseMobileMenu">StarkAid Solutions</a>
+                <a href="/loja" class="nav-link" @onclick="CloseMobileMenu">Loja</a>
+                <a href="/contato" class="nav-link" @onclick="CloseMobileMenu">Contato</a>
+                <a href="/login" class="nav-link-cta" @onclick="CloseMobileMenu">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="public-content">
+        @Body
+    </main>
+
+    <footer class="public-footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>StarkAid</h3>
+                <p>Transformando ideias em realidade digital</p>
+            </div>
+            <div class="footer-section">
+                <h4>Links</h4>
+                <a href="/">Início</a>
+                <a href="/solutions">Solutions</a>
+                <a href="/loja">Loja</a>
+                <a href="/contato">Contato</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contato</h4>
+                <p>contato@starkaid.com</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© @DateTime.Now.Year StarkAid. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+</div>
+
+@code {
+    private bool mobileMenuOpen = false;
+
+    private void ToggleMobileMenu() => mobileMenuOpen = !mobileMenuOpen;
+    private void CloseMobileMenu() => mobileMenuOpen = false;
+}

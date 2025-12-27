@@ -1,20 +1,35 @@
-﻿<div class="card">
-    <h4>@Title</h4>
-    <p>@Value</p>
+﻿<div class="dashboard-card ripple">
+    <div class="card-icon-small">
+        <span class="icon">@GetIcon()</span>
+    </div>
+    <div class="card-content">
+        <span class="card-label">@Title</span>
+        <h4 class="card-value">@Value</h4>
+    </div>
 </div>
 
 @code {
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public object Value { get; set; } = "";
+
+    private string GetIcon()
+    {
+        return Title.ToLower() switch
+        {
+            var t when t.Contains("email") => "📧",
+            var t when t.Contains("plano") => "💎",
+            var t when t.Contains("coins") => "🪙",
+            var t when t.Contains("token") => "🔑",
+            var t when t.Contains("restantes") => "⏳",
+            var t when t.Contains("agendamentos") => "📅",
+            var t when t.Contains("anúncios") => "📺",
+            var t when t.Contains("dispositivos") => "🔌",
+            var t when t.Contains("comandos") => "💬",
+            var t when t.Contains("status") => "🌐",
+            var t when t.Contains("mqtt") => "📡",
+            _ => "📊"
+        };
+    }
 }
 
-<style>
-    .card {
-        background: #F3F4F6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        flex: 1;
-        min-width: 150px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-</style>
+@* Styles moved to member.css *@

@@ -1,0 +1,237 @@
+@page "/agendamento-udp"
+@using StarkAid.Web.DTOs
+@using StarkAid.Web.Services
+@using StarkAid.Web.Shared
+@inject ApiService ApiService
+@inject IJSRuntime JS
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <h3>Agendamentos UDP (ESP)</h3>
+    <button class="btn btn-primary" @onclick="() => OpenModal()">
+        <i class="bi bi-plus-lg"></i> Novo Agendamento
+    </button>
+</div>
+
+@if (agendamentos == null)
+{
+    <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Carregando agendamentos...</p>
+    </div>
+}
+else if (!agendamentos.Any(a => a.TipoAgendamento == "esp"))
+{
+    <div class="alert alert-info">
+        <p>Nenhum agendamento UDP encontrado. Clique em "Novo Agendamento" para começar.</p>
+    </div>
+}
+else
+{
+    <div class="dashboard-cards">
+        @foreach (var ag in agendamentos.Where(a => a.TipoAgendamento == "esp"))
+        {
+            <div class="dashboard-card item-card">
+                <div class="card-header-icon">
+                    <span class="icon-circle">📡</span>
+                </div>
+                <div class="card-info">
+                    <h4 class="device-id">@ag.DeviceId</h4>
+                    <p class="schedule-time">
+                        <strong>Data/Hora:</strong> @ag.AgendadoPara.ToString("dd/MM/yyyy HH:mm")
+                    </p>
+                    <p class="command-text">
+                        <strong>Comando:</strong> <span class="badge bg-primary">@ag.Comando</span>
+                    </p>
+                    <p class="recurrence">
+                        <strong>Recorrência:</strong> @ag.Recorrencia
+                    </p>
+                </div>
+                <div class="card-actions">
+                    <button @onclick="() => OpenModal(ag)" class="btn btn-outline-secondary btn-sm">Editar</button>
+                    <button @onclick="() => Delete(ag.Id)" class="btn btn-danger btn-sm">Remover</button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<Modal IsOpen="isModalOpen" Title="@(isEditing ? "Editar Agendamento" : "Novo Agendamento")" OnClose="CloseModal">
+    <div class="form-container">
+        <div class="mb-3">
+            <label class="form-label">Dispositivo (ID/Nome)</label>
+            <input @bind="currentDto.DispositivoEspId" placeholder="ID do dispositivo ESP" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Comando</label>
+            <input @bind="currentDto.Comando" placeholder="Comando a enviar (opcional)" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Data</label>
+            <InputDate @bind-Value="currentDto.Data" class="form-control" />
+        </div>
+        <div class="row">
+            <div class="col-6 mb-3">
+                <label class="form-label">Hora</label>
+                <input type="number" @bind="currentDto.Hora" min="0" max="23" class="form-control" />
+            </div>
+            <div class="col-6 mb-3">
+                <label class="form-label">Minuto</label>
+                <input type="number" @bind="currentDto.Minuto" min="0" max="59" class="form-control" />
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Recorrência</label>
+            <select @bind="currentDto.Recorrencia" class="form-control">
+                <option value="NaoRepetir">Não Repetir</option>
+                <option value="TodosOsDias">Todos os Dias</option>
+                <option value="TodaSemana">Toda Semana</option>
+                <option value="TodoMes">Todo Mês</option>
+                <option value="TodoAno">Todo Ano</option>
+            </select>
+        </div>
+        <div class="modal-footer d-flex gap-2 justify-content-end mt-4">
+            <button class="btn btn-outline-secondary" @onclick="CloseModal">Cancelar</button>
+            <button class="btn btn-primary" @onclick="Save">Salvar</button>
+        </div>
+    </div>
+</Modal>
+
+@code {
+    private List<AgendamentoDto>? agendamentos;
+    private AgendamentoUdpCreateDto currentDto = new() { Data = DateTime.Now };
+    private bool isModalOpen = false;
+    private bool isEditing = false;
+    private string editingId = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAgendamentos();
+    }
+
+    private async Task LoadAgendamentos()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        agendamentos = await ApiService.GetAgendamentosAsync(token, apiKey);
+    }
+
+    private void OpenModal(AgendamentoDto? ag = null)
+    {
+        if (ag != null)
+        {
+            isEditing = true;
+            editingId = ag.Id;
+            currentDto = new AgendamentoUdpCreateDto
+            {
+                DispositivoEspId = ag.DispositivoEspId,
+                Comando = ag.Comando,
+                Data = ag.AgendadoPara.Date,
+                Hora = ag.AgendadoPara.Hour,
+                Minuto = ag.AgendadoPara.Minute,
+                Recorrencia = ag.Recorrencia
+            };
+        }
+        else
+        {
+            isEditing = false;
+            currentDto = new AgendamentoUdpCreateDto { Data = DateTime.Now, Hora = 12, Minuto = 0, Recorrencia="NaoRepetir" };
+        }
+        isModalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+    private async Task Save()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+        if (isEditing)
+        {
+            var editDto = new AgendamentoEditDto
+            {
+                AgendadoPara = currentDto.Data.Date.AddHours(currentDto.Hora).AddMinutes(currentDto.Minuto),
+                Comando = currentDto.Comando,
+                Recorrencia = currentDto.Recorrencia
+            };
+            var success = await ApiService.EditAgendamentoAsync(editingId, editDto, token, apiKey);
+            if (success) await LoadAgendamentos();
+        }
+        else
+        {
+            var newAg = await ApiService.CreateAgendamentoUdpAsync(currentDto, token, apiKey);
+            if (newAg != null) await LoadAgendamentos();
+        }
+        isModalOpen = false;
+    }
+
+    private async Task Delete(string id)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Tem certeza que deseja excluir?");
+        if (!confirmed) return;
+
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var success = await ApiService.DeleteAgendamentoAsync(id, token, apiKey);
+        if (success) await LoadAgendamentos();
+    }
+}
+
+<style>
+    .item-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 250px;
+    }
+
+    .card-header-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        background: rgba(99, 102, 241, 0.1);
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--member-primary);
+    }
+
+    .device-id {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+        color: var(--member-primary);
+    }
+
+    .schedule-time, .command-text, .recurrence {
+        margin-bottom: 0.25rem;
+        font-size: 0.95rem;
+    }
+
+    .badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+
+    .bg-primary { background-color: var(--member-primary); }
+    .bg-secondary { background-color: var(--member-border); }
+
+    .card-actions {
+        margin-top: 1.5rem;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .form-label {
+        color: var(--member-text-secondary);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+</style>

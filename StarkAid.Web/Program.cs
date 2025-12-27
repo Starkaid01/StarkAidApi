@@ -12,7 +12,7 @@ builder.Services.AddScoped(sp =>
 {
     return new HttpClient
     {
-        BaseAddress = new Uri("http://192.168.2.106:5000/")  // Confirme se é 5000 ou 5001; logs mostram 5000
+        BaseAddress = new Uri("https://starkaid.runasp.net/")  // Confirme se é 5000 ou 5001; logs mostram 5000
     };
 });
 

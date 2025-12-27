@@ -1,56 +1,126 @@
 ﻿@page "/register"
-@using StarkAid.Web.DTOs
+@layout PublicLayout
 @using StarkAid.Web.Services
+@using StarkAid.Web.Dtos
+@using StarkAid.Web.Shared
 @inject ApiService ApiService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 
-<h3>Registrar</h3>
+<div class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>Criar Conta</h1>
+                <p>Comece sua jornada com StarkAid</p>
+            </div>
 
-<input @bind="name" placeholder="Nome" class="form-control" />
-<input @bind="email" placeholder="Email" class="form-control" />
-<input type="password" @bind="password" placeholder="Senha" class="form-control" />
-<button @onclick="HandleRegister" class="btn btn-primary">Registrar</button>
+            <form class="auth-form" @onsubmit="HandleRegister" @onsubmit:preventDefault>
+                <div class="form-group">
+                    <label>Nome</label>
+                    <input type="text" @bind="name" placeholder="Seu nome completo" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" @bind="email" placeholder="seu@email.com" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" @bind="password" placeholder="••••••••" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Confirmar Senha</label>
+                    <input type="password" @bind="confirmPassword" placeholder="••••••••" required />
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="error-message">@errorMessage</div>
+                }
+
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <div class="success-message">@successMessage</div>
+                }
+
+                <button type="submit" class="btn-primary-large" disabled="@isLoading">
+                    @(isLoading ? "Criando conta..." : "Criar Conta")
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Já tem uma conta? <a href="/login">Fazer login</a></p>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     private string name = "";
     private string email = "";
     private string password = "";
+    private string confirmPassword = "";
+    private string errorMessage = "";
+    private string successMessage = "";
+    private bool isLoading = false;
 
     private async Task HandleRegister()
     {
-        var registerDto = new UserRegisterDto
+        isLoading = true;
+        errorMessage = "";
+        successMessage = "";
+
+        try
         {
-            Name = name,
-            Email = email,
-            Password = password,
-            Origem = "web",
-            Estado = "Minas Gerais",
-            Cidade = "Sao Joao Del Rei",
-            Bairro = "Bomfin"
-        };
+            if (password != confirmPassword)
+            {
+                errorMessage = "As senhas não coincidem.";
+                return;
+            }
 
-        var auth = await ApiService.RegisterAsync(registerDto);
+            if (password.Length < 6)
+            {
+                errorMessage = "A senha deve ter pelo menos 6 caracteres.";
+                return;
+            }
 
-        if (auth == null) return;
+            var dto = new UserRegisterDto 
+            { 
+                Name = name, 
+                Email = email, 
+                Password = password,
+                Origem = "web",
+                Estado = "",
+                Cidade = "",
+                Bairro = ""
+            };
+            
+            var auth = await ApiService.RegisterAsync(dto);
 
-        await JS.InvokeVoidAsync("localStorage.setItem", "token", auth.Token);
-        await JS.InvokeVoidAsync("localStorage.setItem", "apiKey", auth.User?.ApiKey);
+            if (auth == null)
+            {
+                errorMessage = "Erro ao criar conta. Email já cadastrado?";
+                return;
+            }
 
-        NavigationManager.NavigateTo("/dashboard");
+            await JS.InvokeVoidAsync("localStorage.setItem", "token", auth.Token);
+            await JS.InvokeVoidAsync("localStorage.setItem", "apiKey", auth.User.ApiKey);
+            
+            successMessage = "Conta criada com sucesso! Redirecionando...";
+            await Task.Delay(1500);
+            NavigationManager.NavigateTo("/dashboard", true);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Erro ao criar conta. Tente novamente.";
+            Console.WriteLine($"Register error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 }
-
-<style>
-    .form-control {
-        width: 100%;
-        margin-bottom: 1rem;
-        padding: 0.5rem;
-    }
-
-    .btn-primary {
-        background: #007bff;
-        color: white;
-        padding: 0.5rem 1rem;
-    }
-</style>

@@ -7,46 +7,139 @@
 
 <h3>Assinatura</h3>
 
-@if (status == null)
-{
-    <p>Carregando...</p>
-}
-else
-{
-    <p>Status: @status.Status</p>
-    <p>Iniciada em: @status.IniciadaEm</p>
-    <p>Expira em: @status.ExpiraEm</p>
-    <p>Valor: @status.Valor</p>
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="dashboard-card shadow-lg">
+            @if (loading)
+            {
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <p>Carregando informações da assinatura...</p>
+                </div>
+            }
+            else
+            {
+                <div class="subscription-header text-center mb-4">
+                    <div class="header-icon">@(IsPremium ? "💎" : "🛡️")</div>
+                    <h4 class="mt-3">@(IsPremium ? "Plano Premium" : "Plano Free")</h4>
+                    @if (IsPremium)
+                    {
+                        <span class="badge bg-success mb-2">Premium Ativa</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-info mb-2 text-dark">Free Ativo</span>
+                    }
+                </div>
 
-    @if (status.Status != "Ativa")
-    {
-        <button @onclick="AssinarPremium" class="btn btn-primary">Assinar Premium</button>
-    }
-}
+                <div class="subscription-details">
+                    @if (IsPremium)
+                    {
+                        <div class="detail-item justify-content-between d-flex mb-3">
+                            <span class="text-white-50">Plano:</span>
+                            <strong class="text-white">@status?.NomePlano</strong>
+                        </div>
+                        <div class="detail-item justify-content-between d-flex mb-3">
+                            <span class="text-white-50">Status:</span>
+                            <span class="badge bg-success">Ativa</span>
+                        </div>
+                        <div class="detail-item justify-content-between d-flex mb-3">
+                            <span class="text-white-50">Vencimento:</span>
+                            <strong class="text-white">@status?.ExpiraEm.ToString("dd/MM/yyyy")</strong>
+                        </div>
+                        <div class="detail-item justify-content-between d-flex mb-4 border-0">
+                            <span class="text-white-50">Valor Mensal:</span>
+                            <strong class="text-primary fs-5">R$ @status?.Valor.ToString("F2")</strong>
+                        </div>
+
+                        <div class="alert alert-success d-flex align-items-center mt-3">
+                            <i class="bi bi-check-circle-fill me-2 fs-4"></i>
+                            <div>Você já é um usuário Premium!</div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="upgrade-info text-center p-4 mb-4" style="background: rgba(255,255,255,0.03); border-radius: 15px;">
+                            <p class="text-white mb-3">Você está usando a versão <strong>Gratuita</strong> do StarkAid.</p>
+                            <ul class="text-start mb-4 small text-white-50">
+                                <li><i class="bi bi-check2 text-success me-2"></i> Limite de tokens reduzido</li>
+                                <li><i class="bi bi-check2 text-success me-2"></i> Agendamentos básicos</li>
+                                <li><i class="bi bi-check2 text-success me-2"></i> Suporte comunitário</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button @onclick="AssinarPremium" class="btn btn-primary btn-lg">
+                                <i class="bi bi-rocket-takeoff"></i> Fazer Upgrade para Premium
+                            </button>
+                            <p class="text-center mt-2 small text-white-50">Desbloqueie todo o poder da automação e IA.</p>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
 
 @code {
     private AssinaturaStatusDto? status;
+    private bool loading = true;
+
+    private bool IsPremium => status != null && 
+                             status.NomePlano == "StarkAid Premium" && 
+                             status.Status == "Ativa";
 
     protected override async Task OnInitializedAsync()
     {
-        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
-        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
-        status = await ApiService.GetAssinaturaStatusAsync(token, apiKey);
+        loading = true;
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+            var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+            status = await ApiService.GetAssinaturaStatusAsync(token, apiKey);
+        }
+        finally
+        {
+            loading = false;
+        }
     }
 
     private async Task AssinarPremium()
     {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
-        var checkout = await ApiService.CheckoutAssinaturaAsync(2, token, apiKey);
+        var checkout = await ApiService.CheckoutAssinaturaAsync(2, token, apiKey); // ID 2 for Premium
         if (checkout != null) Navigation.NavigateTo(checkout.CheckoutUrl, forceLoad: true);
     }
 }
 
 <style>
-    .btn-primary {
-        background: #007bff;
-        color: white;
-        padding: 0.5rem 1rem;
+    .header-icon {
+        font-size: 3.5rem;
+        background: rgba(99, 102, 241, 0.1);
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
     }
+
+    .badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 700;
+    }
+
+    .bg-success { background: var(--member-success); color: white; }
+    .bg-warning { background: var(--member-warning); color: black; }
+
+    .detail-item {
+        border-bottom: 1px solid var(--member-border);
+        padding-bottom: 0.75rem;
+    }
+    
+    .fs-5 { font-size: 1.25rem; }
 </style>

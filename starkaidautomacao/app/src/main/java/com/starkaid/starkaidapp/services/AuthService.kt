@@ -59,7 +59,27 @@ interface AuthApi {
 
 class AuthService(context: Context) {
     // --Commented out by Inspection (20/08/2025 13:57):private val sessionManager = SessionManager(context)
-    private val api = ApiClient.getClient(context).create(AuthApi::class.java)
+    // Create a specific client for Login to avoid circular dependency with RefreshTokenInterceptor
+    private val api: AuthApi
+
+    init {
+        // Build a clean client for auth/login endpoints
+        val client = okhttp3.OkHttpClient.Builder()
+            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .addInterceptor(com.starkaid.starkaidapp.services.ConnectivityInterceptor()) // Keep connectivity protection
+             // IMPORTANT: Do NOT add RefreshTokenInterceptor here
+            .build()
+
+        val retrofit = retrofit2.Retrofit.Builder()
+            .baseUrl(com.starkaid.starkaidapp.config.ApiConfig.apiBaseUrlWithSlash)
+            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+            .client(client)
+            .build()
+
+        api = retrofit.create(AuthApi::class.java)
+    }
 
     suspend fun login(email: String, password: String): AuthResponse? = withContext(Dispatchers.IO) {
         try {

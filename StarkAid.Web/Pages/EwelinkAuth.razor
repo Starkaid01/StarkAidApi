@@ -1,0 +1,50 @@
+﻿@page "/ewelink/auth"
+@inject IConfiguration Configuration
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+<h3>Conectando à eWeLink</h3>
+<p>Redirecionando para autenticação...</p>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var clientId = Configuration["Ewelink:ClientId"];
+
+        if (string.IsNullOrEmpty(clientId))
+        {
+            await JS.InvokeVoidAsync("alert", "Erro: ClientId da eWeLink não configurado.");
+            NavigationManager.NavigateTo("/ewelink");
+            return;
+        }
+
+        var baseUri = NavigationManager.BaseUri.TrimEnd('/');
+        var redirectUri = Uri.EscapeDataString($"{baseUri}/auth/ewelink/callback.html");
+
+        var seq = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+        var nonce = Guid.NewGuid().ToString("N").Substring(0, 8).ToLower();
+
+        var clientSecret = Configuration["Ewelink:ClientSecret"];
+        var message = $"{clientId}_{seq}";
+        string authorization = "";
+
+        using (var hmac = new System.Security.Cryptography.HMACSHA256(System.Text.Encoding.UTF8.GetBytes(clientSecret)))
+        {
+            var hash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(message));
+            authorization = Uri.EscapeDataString(Convert.ToBase64String(hash));
+        }
+
+        // Voltando para o domínio correto mas com a ASSINATURA obrigatória e sem o modo app que causa CORS no browser
+        var authUrl = "https://c2ccdn.coolkit.cc/oauth/index.html" +
+                      $"?clientId={clientId}" +
+                      $"&redirectUrl={redirectUri}" +
+                      "&grantType=authorization_code" +
+                      "&state=starkaid" +
+                      $"&nonce={nonce}" +
+                      $"&seq={seq}" +
+                      $"&authorization={authorization}" +
+                      "&showQRCode=false";
+
+        await JS.InvokeVoidAsync("window.location.assign", authUrl);
+    }
+}

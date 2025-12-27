@@ -1,4 +1,4 @@
-﻿@page "/aprendizado-ia"
+@page "/aprendizado-ia"
 @using StarkAid.Web.DTOs
 @using StarkAid.Web.Services
 @inject ApiService ApiService
@@ -8,29 +8,31 @@
 
 @if (aprendizado != null)
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Comando Usuário</th>
-                <th>Resposta IA</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in aprendizado)
-            {
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
                 <tr>
-                    <td>@item.ComandoUsuario</td>
-                    <td>@item.RespostaIa</td>
-                    <td>
-                        <button @onclick="() => Edit(item)" class="btn btn-secondary">Editar</button>
-                        <button @onclick="() => Delete(item)" class="btn btn-danger">Excluir</button>
-                    </td>
+                    <th>Comando Usuário</th>
+                    <th>Resposta IA</th>
+                    <th>Ações</th>
                 </tr>
-            }
+            </thead>
+            <tbody>
+                @foreach (var item in aprendizado)
+                {
+                    <tr>
+                        <td>@item.ComandoUsuario</td>
+                        <td>@item.RespostaIa</td>
+                        <td>
+                            <button @onclick="() => Edit(item)" class="btn btn-secondary">Editar</button>
+                            <button @onclick="() => Delete(item)" class="btn btn-danger">Excluir</button>
+                        </td>
+                    </tr>
+                }
 
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 }
 else
 {

@@ -16,7 +16,9 @@
       "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}",
       "applicationUrl": "http://localhost:5158",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Ewelink__ClientId": "qPNDKwIhKwAh4N1bteq2qD02aiGs3D",
+        "Ewelink__ClientSecret": "kdG0r5OpDdNB90bPKvarWMwMmnniX9s"
       }
     },
     "https": {

@@ -13,15 +13,35 @@ public class ApiService
 
     public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
     {
+        var json = JsonSerializer.Serialize(dto);
+        Console.WriteLine($"[ApiService] Login request: {json}");
+        
         var response = await _http.PostAsJsonAsync("api/v1/Auth/login", dto);
-        if (!response.IsSuccessStatusCode) return null;
+        Console.WriteLine($"[ApiService] Login response status: {response.StatusCode}");
+        
+        if (!response.IsSuccessStatusCode) 
+        {
+            var errorBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"[ApiService] Login error body: {errorBody}");
+            return null;
+        }
         return await response.Content.ReadFromJsonAsync<AuthResponseDto>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
     }
 
     public async Task<AuthResponseDto?> RegisterAsync(UserRegisterDto register)
     {
+        var json = JsonSerializer.Serialize(register);
+        Console.WriteLine($"[ApiService] Register request: {json}");
+
         var response = await _http.PostAsJsonAsync("api/v1/Auth/register", register);
-        if (!response.IsSuccessStatusCode) return null;
+        Console.WriteLine($"[ApiService] Register response status: {response.StatusCode}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"[ApiService] Register error body: {errorBody}");
+            return null;
+        }
         return await response.Content.ReadFromJsonAsync<AuthResponseDto>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
     }
 
@@ -56,15 +76,17 @@ public class ApiService
         return await response.Content.ReadAsStringAsync();
     }
 
-    // Nova: Status Assinatura
+    // Nova: Status Assinatura (Agora buscando de /ativas que retorna a lista de assinaturas do usuário)
     public async Task<AssinaturaStatusDto?> GetAssinaturaStatusAsync(string token, string apiKey)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Assinaturas/status");
+        var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Assinaturas/ativas");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.Add("Api-Key", apiKey);
         var response = await _http.SendAsync(request);
         if (!response.IsSuccessStatusCode) return null;
-        return await response.Content.ReadFromJsonAsync<AssinaturaStatusDto>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        
+        var list = await response.Content.ReadFromJsonAsync<List<AssinaturaStatusDto>>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        return list?.FirstOrDefault();
     }
 
     // Nova: Checkout Assinatura
@@ -159,24 +181,24 @@ public class ApiService
     }
 
     // Nova: Criar StarkSwitch
-    public async Task<DeviceDto?> CreateStarkSwitchAsync(string name, string token, string apiKey)
+    public async Task<DeviceDto?> CreateStarkSwitchAsync(string name, string? comando, string token, string apiKey)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/Devices");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.Add("Api-Key", apiKey);
-        request.Content = JsonContent.Create(new { Name = name });
+        request.Content = JsonContent.Create(new { Name = name, Comando = comando });
         var response = await _http.SendAsync(request);
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<DeviceDto>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
     }
 
     // Nova: Editar StarkSwitch
-    public async Task<bool> EditStarkSwitchAsync(string id, string newName, string token, string apiKey)
+    public async Task<bool> EditStarkSwitchAsync(string id, string newName, string? newComando, string token, string apiKey)
     {
         var request = new HttpRequestMessage(HttpMethod.Put, $"api/v1/Devices/{id}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.Add("Api-Key", apiKey);
-        request.Content = JsonContent.Create(new { NewName = newName });
+        request.Content = JsonContent.Create(new { NewName = newName, NewComando = newComando });
         var response = await _http.SendAsync(request);
         return response.IsSuccessStatusCode;
     }
@@ -275,7 +297,15 @@ public class ApiService
         var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/Agendamentos/starkswitch");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.Add("Api-Key", apiKey);
-        request.Content = JsonContent.Create(dto);
+        // Mapeando Comando (frontend) para Acao (backend)
+        request.Content = JsonContent.Create(new { 
+            DeviceId = dto.DeviceId, 
+            Acao = dto.Comando, 
+            Data = dto.Data, 
+            Hora = dto.Hora, 
+            Minuto = dto.Minuto, 
+            Recorrencia = dto.Recorrencia 
+        });
         var response = await _http.SendAsync(request);
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<AgendamentoDto>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -346,5 +376,56 @@ public class ApiService
         // Placeholder: Implementar se API existir
         var response = await Task.FromResult(false); // Simular chamada API
         return new List<AprendizadoIaDto>();
+    }
+
+    public async Task<bool> SincronizarEwelinkAsync(string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/ewelink/sincronizar");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    // Nova: Editar Comando Social
+    public async Task<bool> EditComandoSocialAsync(string id, ComandoSocialCreateDto dto, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Put, $"api/v1/ComandosSociais/{id}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        request.Content = JsonContent.Create(dto);
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    // Nova: Excluir Comando Social
+    public async Task<bool> DeleteComandoSocialAsync(string id, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"api/v1/ComandosSociais/{id}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    // Nova: Publicar Comando Genérico (StarkSwitch)
+    public async Task<bool> PublishGenericCommandAsync(string deviceId, string? command, string? customCommand, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/Commands/publish");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        request.Content = JsonContent.Create(new { DeviceId = deviceId, Command = command, CustomCommand = customCommand });
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<WeatherForecastDto?> GetWeatherForecastAsync(string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Weather/forecast");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<WeatherForecastDto>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
     }
 }

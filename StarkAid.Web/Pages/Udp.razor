@@ -1,105 +1,290 @@
-﻿@page "/udp"
+@page "/udp"
 @using StarkAid.Web.DTOs
 @using StarkAid.Web.Services
+@using StarkAid.Web.Shared
 @inject ApiService ApiService
 @inject IJSRuntime JS
 
-<h3>Dispositivos UDP</h3>
-
-<div class="form">
-    <input @bind="newDto.Nome" placeholder="Nome" class="form-control" />
-    <input @bind="newDto.Ip" placeholder="IP" class="form-control" />
-    <input type="number" @bind="newDto.Porta" placeholder="Porta" class="form-control" />
-    <input @bind="newDto.Comando" placeholder="Comando" class="form-control" />
-    <input @bind="newDto.ComandToEsp" placeholder="Comando para ESP" class="form-control" />
-    <button @onclick="Create" class="btn btn-primary">Criar</button>
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <h3>Dispositivos ESP (UDP)</h3>
+    <button class="btn btn-primary" @onclick="() => OpenModal()">
+        <i class="bi bi-plus"></i> Novo Dispositivo
+    </button>
 </div>
 
-@if (dispositivos != null)
+@if (dispositivos == null)
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>IP</th>
-                <th>Porta</th>
-                <th>Status</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var disp in dispositivos)
-            {
-                <tr>
-                    <td>@disp.Nome</td>
-                    <td>@disp.Ip</td>
-                    <td>@disp.Porta</td>
-                    <td>@disp.Status</td>
-                    <td>
-                        <button @onclick="() => Edit(disp.Id)" class="btn btn-secondary">Editar</button>
-                        <button @onclick="() => Delete(disp.Id)" class="btn btn-danger">Excluir</button>
-                        <button @onclick="() => Acionar(disp.Comando)" class="btn btn-primary">Acionar</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Carregando dispositivos...</p>
+    </div>
+}
+else if (!dispositivos.Any())
+{
+    <div class="alert alert-info">
+        <p>Nenhum dispositivo ESP encontrado. Clique em "Novo Dispositivo" para começar.</p>
+    </div>
 }
 else
 {
-    <p>Carregando dispositivos...</p>
+    <div class="dashboard-cards">
+        @foreach (var disp in dispositivos)
+        {
+            <div class="dashboard-card device-card @(disp.Status == "Online" ? "" : "offline")">
+                <div class="device-header">
+                    <div class="device-icon-container">
+                        <span class="device-icon">🛰️</span>
+                    </div>
+                    <div class="device-status-badge @(disp.Status == "Online" ? "online" : "offline")">
+                        @(disp.Status ?? "Offline")
+                    </div>
+                </div>
+
+                <div class="device-info mt-3">
+                    <h4 class="device-name">@disp.Nome</h4>
+                    <p class="device-details">@disp.Ip:@disp.Porta</p>
+                    <p class="device-command">Cmd: <code>@disp.Comando</code></p>
+                </div>
+
+                <div class="device-control mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="status-label">Estado:</span>
+                        <strong class="@(disp.LigadoDesligado ? "text-success" : "text-muted")">
+                            @(disp.LigadoDesligado ? "ATIVADO" : "DESATIVADO")
+                        </strong>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button @onclick="() => Toggle(disp)"
+                                class="btn @(disp.LigadoDesligado ? "btn-success" : "btn-outline-secondary") btn-sm">
+                            <i class="bi @(disp.LigadoDesligado ? "bi-power" : "bi-power")"></i>
+                            @(disp.LigadoDesligado ? "Desativar" : "Ativar")
+                        </button>
+                        <button @onclick="() => Acionar(disp.Comando)" class="btn btn-primary btn-sm">
+                            <i class="bi bi-send"></i> Acionar Agora
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-footer-actions mt-3 pt-3 border-top">
+                    <button @onclick="() => OpenModal(disp)" class="btn btn-link btn-sm text-secondary p-0 me-3">Editar</button>
+                    <button @onclick="() => Delete(disp.Id.ToString())" class="btn btn-link btn-sm text-danger p-0">Excluir</button>
+                </div>
+            </div>
+        }
+    </div>
 }
 
-
+<Modal IsOpen="isModalOpen" Title="@(isEditing ? "Editar Dispositivo" : "Novo Dispositivo")" OnClose="CloseModal">
+    <div class="form-container">
+        <div class="mb-3">
+            <label class="form-label">Nome</label>
+            <input @bind="currentDto.Nome" placeholder="Ex: Lâmpada Sala" class="form-control" />
+        </div>
+        <div class="row">
+            <div class="col-8 mb-3">
+                <label class="form-label">IP</label>
+                <input @bind="currentDto.Ip" placeholder="192.168.1.100" class="form-control" />
+            </div>
+            <div class="col-4 mb-3">
+                <label class="form-label">Porta</label>
+                <input type="number" @bind="currentDto.Porta" class="form-control" />
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Comando (Gatilho)</label>
+            <input @bind="currentDto.Comando" placeholder="Ex: ligar luz" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Comando para o ESP</label>
+            <input @bind="currentDto.ComandToEsp" placeholder="Ex: ON" class="form-control" />
+        </div>
+        <div class="modal-footer d-flex gap-2 justify-content-end mt-4">
+            <button class="btn btn-outline-secondary" @onclick="CloseModal">Cancelar</button>
+            <button class="btn btn-primary" @onclick="Save">Salvar</button>
+        </div>
+    </div>
+</Modal>
 
 @code {
-    private DispositivoEspCreateDto newDto = new();
     private List<DispositivoEspDto>? dispositivos;
+    private DispositivoEspCreateDto currentDto = new() { Porta = 8888 };
+    private bool isModalOpen = false;
+    private bool isEditing = false;
+    private string editingId = "";
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadDispositivos();
+    }
+
+    private async Task LoadDispositivos()
     {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
         dispositivos = await ApiService.GetUdpDispositivosAsync(token, apiKey);
     }
 
-    private async Task Create()
+    private void OpenModal(DispositivoEspDto? disp = null)
+    {
+        if (disp != null)
+        {
+            isEditing = true;
+            editingId = disp.Id.ToString();
+            currentDto = new DispositivoEspCreateDto
+            {
+                Nome = disp.Nome,
+                Ip = disp.Ip,
+                Porta = disp.Porta,
+                Comando = disp.Comando,
+                ComandToEsp = disp.ComandToEsp,
+                Status = disp.Status,
+                LigadoDesligado = disp.LigadoDesligado
+            };
+        }
+        else
+        {
+            isEditing = false;
+            currentDto = new DispositivoEspCreateDto { Porta = 8888 };
+        }
+        isModalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+    private async Task Save()
     {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
-        var newDisp = await ApiService.CreateUdpAsync(newDto, token, apiKey);
-        if (newDisp != null) await OnInitializedAsync();
-    }
 
-    private async Task Edit(string id)
-    {
-        // Implementar form de edição
-        await JS.InvokeVoidAsync("alert", "Editar não implementado aqui; usar form separado se necessário.");
+        if (isEditing)
+        {
+            var success = await ApiService.EditUdpAsync(editingId, currentDto, token, apiKey);
+            if (success) await LoadDispositivos();
+        }
+        else
+        {
+            var newDisp = await ApiService.CreateUdpAsync(currentDto, token, apiKey);
+            if (newDisp != null) await LoadDispositivos();
+        }
+        isModalOpen = false;
     }
 
     private async Task Delete(string id)
     {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Tem certeza que deseja excluir este dispositivo?");
+        if (!confirmed) return;
+
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
         var success = await ApiService.DeleteUdpAsync(id, token, apiKey);
-        if (success) await OnInitializedAsync();
+        if (success) await LoadDispositivos();
+    }
+
+    private async Task Toggle(DispositivoEspDto disp)
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+        var updateDto = new DispositivoEspCreateDto
+        {
+            Nome = disp.Nome,
+            Ip = disp.Ip,
+            Porta = disp.Porta,
+            Comando = disp.Comando,
+            ComandToEsp = disp.ComandToEsp,
+            Status = disp.Status,
+            LigadoDesligado = !disp.LigadoDesligado
+        };
+
+        var success = await ApiService.EditUdpAsync(disp.Id.ToString(), updateDto, token, apiKey);
+        if (success)
+        {
+            disp.LigadoDesligado = !disp.LigadoDesligado;
+            StateHasChanged();
+        }
     }
 
     private async Task Acionar(string comando)
     {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        
         var success = await ApiService.AcionarUdpAsync(comando, token, apiKey);
-        if (success) await JS.InvokeVoidAsync("alert", "Comando enviado.");
+        if (success)
+        {
+            await JS.InvokeVoidAsync("alert", "Comando enviado!");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao enviar comando.");
+        }
     }
 }
 
 <style>
-    .form {
+    .device-card {
+        padding: 1.5rem;
         display: flex;
         flex-direction: column;
-        max-width: 400px;
-        gap: 1rem;
+        justify-content: space-between;
+        min-height: 320px;
     }
-    /* Tabela estilo */
+
+    .device-card.offline {
+        opacity: 0.8;
+    }
+
+    .device-icon-container {
+        width: 50px;
+        height: 50px;
+        background: rgba(99, 102, 241, 0.1);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .device-status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .device-status-badge.online {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--member-success);
+        border: 1px solid var(--member-success);
+    }
+
+    .device-status-badge.offline {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--member-error);
+        border: 1px solid var(--member-error);
+    }
+
+    .device-command code {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        color: var(--member-accent);
+    }
+
+    .border-top {
+        border-top: 1px solid var(--member-border) !important;
+    }
+
+    .btn-link {
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .btn-link:hover {
+        text-decoration: underline;
+    }
 </style>

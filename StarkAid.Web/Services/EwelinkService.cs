@@ -18,7 +18,20 @@ public class EwelinkService : IEwelinkService
 
     public async Task<bool> ToggleDeviceAsync(string deviceId, bool turnOn)
     {
-        var response = await _http.PostAsJsonAsync($"ewelink/{deviceId}/toggle", new { TurnOn = turnOn });
-        return response.IsSuccessStatusCode;
+        var payload = new { @switch = turnOn ? "on" : "off" };
+
+        var response = await _http.PostAsJsonAsync(
+            $"api/v1/ewelink/dispositivos/{deviceId}/controlar",
+            payload);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return true;
+        }
+
+        // Opcional: log do erro para debug
+        var error = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"Erro ao controlar dispositivo: {response.StatusCode} - {error}");
+        return false;
     }
 }

@@ -395,12 +395,12 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
             if (isOnline()) {
                 // busca e salva o role assincronamente se estiver online
-                CoroutineScope(Dispatchers.IO).launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     val role = fetchUserRoleFromEndpoint()
                     role?.let { sessionManager.saveUserRole(it) }
                 }
                 // Marcar usuário como online
-                CoroutineScope(Dispatchers.IO).launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     setUserOnline()
                 }
             } else {
@@ -420,7 +420,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             val contatoDao = db.contatoDao()
 
             if (isOnline()) {
-                CoroutineScope(Dispatchers.IO).launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     try {
                         val userId = sessionManager.fetchUserId()
                         val token = sessionManager.fetchAuthToken()
@@ -554,7 +554,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
             // busca e salva o role assincronamente
             if (isOnline()) {
-                CoroutineScope(Dispatchers.IO).launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     try {
                         val role = fetchUserRoleFromEndpoint()
                         role?.let { sessionManager.saveUserRole(it) }
@@ -590,7 +590,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             usuarioApi = retrofit.create(UsuarioApi::class.java)
 
             // Verificar se está em processo de resolução de suporte
-            CoroutineScope(Dispatchers.IO).launch {
+            lifecycleScope.launch(Dispatchers.IO) {
                 if (isOnline()) {
                     verificarResolvendoSuporte()
                 }
@@ -683,7 +683,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             }, 300)
 
             // Atualização dinâmica de status
-            CoroutineScope(Dispatchers.Main).launch {
+            lifecycleScope.launch {
                 while (isActive) {
                     updateConnectionStatus()
                     delay(5000) // Atualiza a cada 5 segundos
@@ -819,7 +819,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
             // Sincronizar logs de erro após login (uma única vez ao iniciar)
             if (userId != null && !sessionManager.fetchAuthToken().isNullOrEmpty()) {
-                CoroutineScope(Dispatchers.IO).launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     try {
                         errorLogSync.syncLogsToBackend()
                     } catch (e: Exception) {
@@ -1028,7 +1028,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         }
 
         // Verificar status no backend primeiro
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val retrofit = ApiClient.getClient(this@MainActivity)
                 val ewelinkApi = retrofit.create(com.starkaid.starkaidapp.services.EwelinkApi::class.java)
@@ -1072,7 +1072,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             return
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val retrofit = ApiClient.getClient(this@MainActivity)
                 val ewelinkApi = retrofit.create(com.starkaid.starkaidapp.services.EwelinkApi::class.java)
@@ -1317,7 +1317,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             return
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val retrofit = ApiClient.getClient(this@MainActivity)
                 val ewelinkApi = retrofit.create(com.starkaid.starkaidapp.services.EwelinkApi::class.java)
@@ -1423,7 +1423,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             return
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val retrofit = ApiClient.getClient(this@MainActivity)
                 val ewelinkApi = retrofit.create(com.starkaid.starkaidapp.services.EwelinkApi::class.java)
@@ -1921,7 +1921,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         
         if (!token.isNullOrEmpty() && !apiKey.isNullOrEmpty()) {
             // Usar a API do backend para pré-carregar
-            CoroutineScope(Dispatchers.IO).launch {
+            lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val retrofit = ApiClient.getClient(this@MainActivity)
                     val ewelinkApi = retrofit.create(com.starkaid.starkaidapp.services.EwelinkApi::class.java)
@@ -2072,7 +2072,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     .show()
             }
 
-            CoroutineScope(Dispatchers.IO).launch {
+            lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     Log.d("SignalR", "Entrou na CoroutineScope")
                     val retrofit = ApiClient.getClient(this@MainActivity)
@@ -2087,25 +2087,22 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     if (response.isSuccessful) {
                         response.body()?.let { deviceResponses ->
                             deviceList.clear()
-                            val fake = DeviceResponse(
-                                "1",
-                                "Lampada",
-                                "topic/lampada",
-                                "192.168.0.10",
-                                "ON",
-                                "OK"
-                            )
-                            Log.d("Debug", "Fake device = $fake")
+                            // val fake = DeviceResponse(...) // Removed fake or update if needed
 
                             val devices: List<Device> = deviceResponses.map { response ->
                                 Device(
                                     id = response.id,
+                                    deviceId = response.deviceId ?: response.id,
                                     name = response.name,
+                                    type = response.type ?: "Switch",
+                                    online = response.online,
+                                    isOn = response.isOn,
+                                    familyId = response.familyId,
+                                    roomId = response.roomId,
+                                    apiKey = response.apiKey,
+                                    userId = response.userId,
                                     mqttTopic = response.mqttTopic,
-                                    comando = response.comando,
-                                    resposta = response.resposta,
-                                    ip = response.ip,
-                                    isOn = false
+                                    comando = response.comando
                                 )
                             }
 
@@ -2128,13 +2125,20 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                         }
                     } else {
                         Log.e("SignalR", "Erro ao carregar dispositivos: ${response.code()}")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@MainActivity, "Erro ao carregar dispositivos. Tente mais tarde.", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e("SignalR", "Exceção: ${e.message}")
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@MainActivity, "Dispositivos não carregados. Tente mais tarde.", Toast.LENGTH_SHORT).show()
+                    }
+                }
                 }
             }
         }
-    }
+
 
     private fun saveDevicesLocally(devices: List<Device>) {
         try {
@@ -2401,7 +2405,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     }
 
     private fun statusSessionGet() {
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val userId = sessionManager.fetchUserId()
                 val token = sessionManager.fetchAuthToken()
@@ -2485,7 +2489,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     }
 
     private fun criarSessaoWhatsapp() {
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val token = sessionManager.fetchAuthToken()
                 val userId = sessionManager.fetchUserId()
@@ -2575,7 +2579,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     fun getStarkcoins() {
         val authToken = sessionManager.fetchAuthToken() ?: return
 
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val retrofit = ApiClient.getClient(this@MainActivity)
                 val usersApi = retrofit.create(UsersApi::class.java)
@@ -4518,7 +4522,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         resetJob?.cancel()
 
         // Cria um novo timer coroutine que desativa após 2 minutos
-        resetJob = CoroutineScope(Dispatchers.Default).launch {
+        resetJob = lifecycleScope.launch(Dispatchers.Default) {
             delay(2 * 60 * 1000L) // 2 minutos = 120.000 ms
             iaativa.set(false)
             if (switchIa.isChecked){
@@ -6134,7 +6138,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         val locationListener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
                 // Correção: Executar geocoding em background com timeout
-                CoroutineScope(Dispatchers.IO).launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     try {
                         val geocoder = Geocoder(this@MainActivity, Locale.getDefault())
                         val addresses = withTimeout(5000) {
@@ -6479,7 +6483,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         
         // Marcar usuário como online quando o app volta ao foreground
         if (isOnline()) {
-            CoroutineScope(Dispatchers.IO).launch {
+            lifecycleScope.launch(Dispatchers.IO) {
                 setUserOnline()
             }
         }
@@ -6635,7 +6639,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
         // Marcar usuário como offline quando o app vai para background
         if (isOnline()) {
-            CoroutineScope(Dispatchers.IO).launch {
+            lifecycleScope.launch(Dispatchers.IO) {
                 setUserOffline()
             }
         }
@@ -6718,7 +6722,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         val authToken = sessionManager.fetchAuthToken() ?: return
         val apiKey = sessionManager.fetchApiKey() ?: return
 
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val retrofit = ApiClient.getClient(this@MainActivity)
                 val api = retrofit.create(StatusApi::class.java)
@@ -6775,7 +6779,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     }
 
     override fun onDeviceClick(device: Device) {
-        CoroutineScope(Dispatchers.Main).launch {
+        lifecycleScope.launch {
             try {
                 // Verificar status do MQTT primeiro
                 val isMqttConnected = withContext(Dispatchers.IO) {
@@ -6800,7 +6804,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         val authToken = sessionManager.fetchAuthToken() ?: return
         val apiKey = sessionManager.fetchApiKey() ?: return
 
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val retrofit = ApiClient.getClient(this@MainActivity)
                 val api = retrofit.create(StatusApi::class.java)
@@ -6890,7 +6894,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         }
     }
     private fun sendCommand(command: String, device: Device): Deferred<Boolean> {
-        return CoroutineScope(Dispatchers.IO).async {
+        return lifecycleScope.async(Dispatchers.IO) {
             commandMutex.withLock {
                 if (checkApiHealth() && sendViaApi(device, command)) {
                     return@async true
@@ -7040,7 +7044,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             }
             
             // Limpar logs de erro locais
-            CoroutineScope(Dispatchers.IO).launch {
+            lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     errorLogger.clearAllLogs()
                 } catch (e: Exception) {
@@ -7246,7 +7250,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                             .setTitle("Suporte")
                             .setMessage(mensagem)
                             .setPositiveButton("Sim") { _, _ ->
-                                CoroutineScope(Dispatchers.IO).launch {
+                                lifecycleScope.launch(Dispatchers.IO) {
                                     marcarResolvido()
                                 }
                             }
@@ -7271,7 +7275,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     }
 
     private fun startUdpListener() {
-        udpListenerJob = CoroutineScope(Dispatchers.IO).launch {
+        udpListenerJob = lifecycleScope.launch(Dispatchers.IO) {
             val socket = try {
                 DatagramSocket(12345).apply {
                     broadcast = true
@@ -7344,7 +7348,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         val retrofit = ApiClient.getClient(this)
         val api = retrofit.create(DisparoApi::class.java)
 
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val response = api.listarDisparos()
                 if (response.isSuccessful) {

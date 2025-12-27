@@ -65,6 +65,10 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(5000);
+    });
 
     builder.Host.UseSerilog();
 

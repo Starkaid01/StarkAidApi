@@ -1,4 +1,4 @@
-﻿@page "/starkcoins"
+@page "/starkcoins"
 @using StarkAid.Web.Services
 @inject ApiService ApiService
 @inject IJSRuntime JS
@@ -6,22 +6,30 @@
 
 <h3>Starkcoins</h3>
 
-<div class="cards">
-    <div class="card">
-        <h4>5 Starkcoins (R$ 4,90)</h4>
-        <button @onclick="() => Comprar(5)" class="btn btn-primary">Comprar</button>
+<div class="stark-grid">
+    <div class="card stark-card text-center">
+        <div class="coin-icon">💰</div>
+        <h4>5 Starkcoins</h4>
+        <p class="mb-4">Valor: <strong>R$ 4,90</strong></p>
+        <button @onclick="() => Comprar(5)" class="btn btn-primary w-100">Comprar Agora</button>
     </div>
-    <div class="card">
-        <h4>15 Starkcoins (R$ 9,90)</h4>
-        <button @onclick="() => Comprar(15)" class="btn btn-primary">Comprar</button>
+    <div class="card stark-card text-center">
+        <div class="coin-icon">💎</div>
+        <h4>15 Starkcoins</h4>
+        <p class="mb-4">Valor: <strong>R$ 9,90</strong></p>
+        <button @onclick="() => Comprar(15)" class="btn btn-primary w-100">Comprar Agora</button>
     </div>
-    <div class="card">
-        <h4>50 Starkcoins (R$ 19,90)</h4>
-        <button @onclick="() => Comprar(50)" class="btn btn-primary">Comprar</button>
+    <div class="card stark-card text-center">
+        <div class="coin-icon">🌟</div>
+        <h4>50 Starkcoins</h4>
+        <p class="mb-4">Valor: <strong>R$ 19,90</strong></p>
+        <button @onclick="() => Comprar(50)" class="btn btn-primary w-100">Comprar Agora</button>
     </div>
-    <div class="card">
-        <h4>120 Starkcoins (R$ 39,90)</h4>
-        <button @onclick="() => Comprar(120)" class="btn btn-primary">Comprar</button>
+    <div class="card stark-card text-center">
+        <div class="coin-icon">👑</div>
+        <h4>120 Starkcoins</h4>
+        <p class="mb-4">Valor: <strong>R$ 39,90</strong></p>
+        <button @onclick="() => Comprar(120)" class="btn btn-primary w-100">Comprar Agora</button>
     </div>
 </div>
 
@@ -36,25 +44,24 @@
 }
 
 <style>
-    .cards {
+    .stark-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
     }
 
-    .card {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    .stark-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 220px;
     }
 
-    .btn-primary {
-        background: #007bff;
-        color: white;
-        padding: 0.5rem 1rem;
-        border: none;
-        cursor: pointer;
+    .coin-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        text-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
     }
 </style>

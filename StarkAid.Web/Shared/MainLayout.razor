@@ -1,44 +1,54 @@
 ﻿@inherits LayoutComponentBase
+@inject IJSRuntime JS
+
+<head>
+    <link href="css/member.css" rel="stylesheet" />
+</head>
 
 <div class="app-container">
-    <NavMenu />
+    <header class="mobile-only header-hamburger">
+        <button class="hamburger-btn" @onclick="ToggleMobileMenu">
+            <span></span><span></span><span></span>
+        </button>
+        <span class="header-title">StarkAid</span>
+    </header>
+
+    <NavMenu IsMobileMenuOpen="mobileMenuOpen" OnCloseMenu="CloseMobileMenu" />
+
     <div class="main-content">
-        <div class="content px-4 py-3">
-            @Body
+        <div class="content">
+            <ErrorBoundary>
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent Context="ex">
+                    <div class="error-boundary" style="padding: 2rem; text-align: center; color: #ef4444;">
+                        <h3>Ocorreu um erro na página</h3>
+                        <p>@((ex as Exception)?.Message ?? "Erro desconhecido")</p>
+                        <button @onclick="ReloadPage" class="btn btn-primary">Recarregar página</button>
+
+                        @if (ex is not null)
+                        {
+                            <details style="margin-top: 1rem; text-align: left;">
+                                <summary>Detalhes técnicos</summary>
+                                <pre>@ex</pre>
+                            </details>
+                        }
+                    </div>
+                </ErrorContent>
+            </ErrorBoundary>
         </div>
     </div>
 </div>
 
-<style>
-    .app-container {
-        display: flex;
-        min-height: 100vh;
-    }
+@code {
+    private bool mobileMenuOpen = false;
 
-    .main-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        background: #f9fafb; /* fundo claro para conteúdo */
-    }
+    private void ToggleMobileMenu() => mobileMenuOpen = !mobileMenuOpen;
+    private void CloseMobileMenu() => mobileMenuOpen = false;
 
-    .content {
-        flex: 1;
-        overflow-y: auto;
-        padding: 2rem;
-    }
-
-    @@media (max-width: 768px) {
-        .app-container
-
+    private async Task ReloadPage()
     {
-        flex-direction: column;
+        await JS.InvokeVoidAsync("eval", "location.reload()");
     }
-
-    .nav-menu {
-        width: 100% !important;
-        height: auto;
-    }
-
-    }
-</style>
+}

@@ -1,50 +1,94 @@
-﻿@page "/ewelink"
+@page "/ewelink"
 @using StarkAid.Web.DTOs
 @using StarkAid.Web.Services
+@using StarkAid.Web.Shared
 @inject ApiService ApiService
 @inject IJSRuntime JS
+@inject NavigationManager NavigationManager
 
-<h3>eWeLink</h3>
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <h3>Dispositivos eWeLink</h3>
+    @if (status?.IsLoggedIn == true)
+    {
+        <button class="btn btn-outline-secondary" @onclick="Sincronizar">
+            <i class="bi bi-arrow-repeat"></i> Sincronizar
+        </button>
+    }
+</div>
 
 @if (status == null)
 {
-    <p>Carregando...</p>
+    <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Carregando status...</p>
+    </div>
+}
+else if (!status.IsLoggedIn)
+{
+    <div class="alert-premium bg-warning-glow">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-content">
+            <h4>Conta não conectada</h4>
+            <p>Você precisa conectar sua conta eWeLink para gerenciar seus dispositivos.</p>
+            <button class="btn btn-primary mt-2" @onclick="IniciarLogin">Conectar agora</button>
+        </div>
+    </div>
 }
 else
 {
-    <p>Logado: @(status.IsLoggedIn ? "Sim" : "Não")</p>
-}
+    <div class="connection-status mb-4">
+        <span class="status-indicator online"></span>
+        <span>Conectado à conta eWeLink</span>
+    </div>
 
-<h4>Dispositivos</h4>
-@if (dispositivos == null)
-{
-    <p>Carregando...</p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>Online</th>
-                <th>Ligado</th>
-                <th>Ação</th>
-            </tr>
-        </thead>
-        <tbody>
+    @if (dispositivos == null)
+    {
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Buscando dispositivos...</p>
+        </div>
+    }
+    else if (!dispositivos.Any())
+    {
+        <div class="alert alert-info">
+            <p>Nenhum dispositivo encontrado. Tente sincronizar sua conta.</p>
+        </div>
+    }
+    else
+    {
+        <div class="dashboard-cards">
             @foreach (var disp in dispositivos)
             {
-                <tr>
-                    <td>@disp.Name</td>
-                    <td>@(disp.Online ? "Sim" : "Não")</td>
-                    <td>@(disp.IsOn ? "Sim" : "Não")</td>
-                    <td>
-                        <button @onclick="() => Toggle(disp.Id, !disp.IsOn)" class="btn btn-primary">@(disp.IsOn ? "Desligar" : "Ligar")</button>
-                    </td>
-                </tr>
+                <div class="dashboard-card device-card @(disp.Online ? "" : "offline")">
+                    <div class="device-header">
+                        <div class="device-icon-container">
+                            <span class="device-icon">💡</span>
+                        </div>
+                        <div class="device-status-badge @(disp.Online ? "online" : "offline")">
+                            @(disp.Online ? "Online" : "Offline")
+                        </div>
+                    </div>
+                    
+                    <div class="device-info mt-3">
+                        <h4 class="device-name">@disp.Name</h4>
+                        <p class="device-details">ID: @disp.DeviceId</p>
+                    </div>
+
+                    <div class="device-control mt-4">
+                        <div class="status-text mb-2">
+                            Estado: <strong class="@(disp.IsOn ? "text-success" : "text-muted")">@(disp.IsOn ? "LIGADO" : "DESLIGADO")</strong>
+                        </div>
+                        <button @onclick="() => Toggle(disp.DeviceId, disp.IsOn)"
+                                class="btn-toggle-switch @(disp.IsOn ? "active" : "")"
+                                disabled="@(!disp.Online)">
+                            <div class="switch-handle"></div>
+                            <span class="btn-text">@(disp.IsOn ? "Desligar" : "Ligar")</span>
+                        </button>
+                    </div>
+                </div>
             }
-        </tbody>
-    </table>
+        </div>
+    }
 }
 
 @code {
@@ -53,43 +97,188 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+        if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(apiKey))
+        {
+            status = new EwelinkStatusResponse { IsLoggedIn = false };
+            return;
+        }
+
         status = await ApiService.GetEwelinkStatusAsync(token, apiKey);
         dispositivos = await ApiService.GetEwelinkDispositivosAsync(token, apiKey);
     }
 
-    private async Task Toggle(string deviceId, bool isOn)
+    private async Task Toggle(string deviceId, bool currentState)
     {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
-        var success = await ApiService.ToggleEwelinkDeviceAsync(deviceId, isOn, token, apiKey);
-        if (success) await OnInitializedAsync(); // Refresh
+
+        var success = await ApiService.ToggleEwelinkDeviceAsync(deviceId, !currentState, token, apiKey);
+
+        if (success)
+        {
+            var disp = dispositivos?.FirstOrDefault(d => d.DeviceId == deviceId);
+            if (disp != null) disp.IsOn = !currentState;
+            StateHasChanged();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Falha ao controlar o dispositivo.");
+        }
+    }
+
+    private void IniciarLogin()
+    {
+        NavigationManager.NavigateTo("/ewelink/auth");
+    }
+
+    private async Task Sincronizar()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+        var success = await ApiService.SincronizarEwelinkAsync(token, apiKey);
+        if (success)
+        {
+            await JS.InvokeVoidAsync("alert", "Sincronização concluída!");
+            await LoadData();
+        }
     }
 }
 
 <style>
-    .table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-        .table th, .table td {
-            border: 1px solid #ddd;
-            padding: 0.5rem;
-        }
-
-    .cards {
+    .device-card {
+        padding: 1.5rem;
         display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 280px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    .card {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 8px;
-        flex: 1;
-        min-width: 200px;
+    .device-card.offline {
+        opacity: 0.7;
+        filter: grayscale(0.5);
+    }
+
+    .device-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .device-icon-container {
+        width: 50px;
+        height: 50px;
+        background: rgba(99, 102, 241, 0.1);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .device-status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .device-status-badge.online {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--member-success);
+        border: 1px solid var(--member-success);
+    }
+
+    .device-status-badge.offline {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--member-error);
+        border: 1px solid var(--member-error);
+    }
+
+    .device-name {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .device-details {
+        font-size: 0.85rem;
+        color: var(--member-text-muted);
+        margin: 0;
+    }
+
+    .btn-toggle-switch {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 12px;
+        border: none;
+        background: var(--member-bg-hover);
+        color: var(--member-text);
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        transition: all 0.3s;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-toggle-switch.active {
+        background: linear-gradient(135deg, var(--member-success), #059669);
+        color: white;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-toggle-switch:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .connection-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--member-text-secondary);
+    }
+
+    .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .status-indicator.online {
+        background: var(--member-success);
+        box-shadow: 0 0 10px var(--member-success);
+        animation: glow 2s infinite;
+    }
+
+    .alert-premium {
+        display: flex;
+        gap: 1.5rem;
+        padding: 2rem;
+        border-radius: 16px;
+        background: rgba(245, 158, 11, 0.05);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .bg-warning-glow {
+        box-shadow: 0 0 30px rgba(245, 158, 11, 0.1);
+    }
+
+    .alert-icon {
+        font-size: 3rem;
     }
 </style>

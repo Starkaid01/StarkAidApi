@@ -7,39 +7,62 @@
 
 <h3>Configuração do Usuário</h3>
 
-@if (user == null)
-{
-    <p>Carregando...</p>
-}
-else
-{
-    <EditForm Model="@user" OnValidSubmit="UpdateProfile">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="dashboard-card">
+            @if (user == null)
+            {
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <p>Carregando perfil...</p>
+                </div>
+            }
+            else
+            {
+                <EditForm Model="@user" OnValidSubmit="UpdateProfile">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
 
-        <div class="form-group">
-            <label>Nome</label>
-            <InputText @bind-Value="user.Name" class="form-control" />
+                    <div class="form-group mb-4">
+                        <label>Nome Completo</label>
+                        <InputText @bind-Value="user.Name" class="form-control" placeholder="Seu nome" />
+                    </div>
+                    <div class="form-group mb-4">
+                        <label>Email</label>
+                        <InputText @bind-Value="user.Email" class="form-control" disabled />
+                        <small class="text-muted">O email não pode ser alterado.</small>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="form-group">
+                                <label>Estado</label>
+                                <InputText @bind-Value="user.Estado" class="form-control" placeholder="UF" />
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="form-group">
+                                <label>Cidade</label>
+                                <InputText @bind-Value="user.Cidade" class="form-control" placeholder="Sua cidade" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label>Bairro</label>
+                        <InputText @bind-Value="user.Bairro" class="form-control" placeholder="Seu bairro" />
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-save"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </EditForm>
+            }
         </div>
-        <div class="form-group">
-            <label>Email</label>
-            <InputText @bind-Value="user.Email" class="form-control" disabled />
-        </div>
-        <div class="form-group">
-            <label>Estado</label>
-            <InputText @bind-Value="user.Estado" class="form-control" />
-        </div>
-        <div class="form-group">
-            <label>Cidade</label>
-            <InputText @bind-Value="user.Cidade" class="form-control" />
-        </div>
-        <div class="form-group">
-            <label>Bairro</label>
-            <InputText @bind-Value="user.Bairro" class="form-control" />
-        </div>
-        <button type="submit" class="btn btn-primary">Salvar</button>
-    </EditForm>
-}
+    </div>
+</div>
 
 @code {
     private UserMeDto? user;
@@ -65,28 +88,5 @@ else
 <style>
     .form-group {
         margin-bottom: 1rem;
-    }
-
-    .form-control {
-        width: 100%;
-        padding: 0.5rem;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-    }
-
-    .btn-primary {
-        background: #007bff;
-        color: white;
-        padding: 0.5rem 1rem;
-        border: none;
-        cursor: pointer;
-    }
-    @@media (max-width: 768px) {
-        .form-group
-
-    {
-        font-size: 0.9rem;
-    }
-
     }
 </style>

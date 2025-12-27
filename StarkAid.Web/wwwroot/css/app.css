@@ -1,5 +1,147 @@
-﻿.dashboard-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1rem;
+/* Base Layout */
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #0a0e1a;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Custom Loading Screen */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #111827 0%, #0a0e1a 100%);
+    z-index: 9999;
+}
+
+.starkaid-logo {
+    font-size: 4rem;
+    font-weight: 900;
+    letter-spacing: 10px;
+    color: #fff;
+    text-transform: uppercase;
+    position: relative;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+.starkaid-logo::before,
+.starkaid-logo::after {
+    content: 'STARKAID';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.8;
+}
+
+.starkaid-logo::before {
+    color: #6366f1;
+    z-index: -1;
+    animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+}
+
+.starkaid-logo::after {
+    color: #ec4899;
+    z-index: -2;
+    animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) reverse both infinite;
+}
+
+.loading-bar-container {
+    width: 250px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    margin-top: 2rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.loading-bar {
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, #6366f1, #8b5cf6, transparent);
+    position: absolute;
+    animation: moveBar 1.5s linear infinite;
+}
+
+/* Animations */
+@keyframes glow {
+    from {
+        text-shadow: 0 0 10px rgba(99, 102, 241, 0.5), 0 0 20px rgba(99, 102, 241, 0.3);
+    }
+
+    to {
+        text-shadow: 0 0 20px rgba(99, 102, 241, 0.8), 0 0 30px rgba(99, 102, 241, 0.5), 0 0 40px rgba(99, 102, 241, 0.3);
+    }
+}
+
+@keyframes glitch {
+    0% {
+        transform: translate(0)
+    }
+
+    20% {
+        transform: translate(-3px, 3px)
+    }
+
+    40% {
+        transform: translate(-3px, -3px)
+    }
+
+    60% {
+        transform: translate(3px, 3px)
+    }
+
+    80% {
+        transform: translate(3px, -3px)
+    }
+
+    100% {
+        transform: translate(0)
+    }
+}
+
+@keyframes moveBar {
+    from {
+        left: -100%;
+    }
+
+    to {
+        left: 100%;
+    }
+}
+
+/* Blazor Error UI */
+#blazor-error-ui {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+#blazor-error-ui[style*="block"],
+#blazor-error-ui[style*="visible"] {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .starkaid-logo {
+        font-size: 2.5rem;
+        letter-spacing: 5px;
+    }
+
+    .loading-bar-container {
+        width: 180px;
+    }
 }

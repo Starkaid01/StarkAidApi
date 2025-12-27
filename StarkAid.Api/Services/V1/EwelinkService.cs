@@ -36,7 +36,7 @@ namespace StarkAid.Api.Services.V1
                 return $"{request.Scheme}://{request.Host}/auth/ewelink/callback.html";
             }
             
-            return "https://starkaid.runasp.net/auth/ewelink/callback.html";
+            return "https://starkaidautomacao.runasp.net/auth/ewelink/callback.html";
         }
 
         public EwelinkService(HttpClient http, AppDbContext context, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
@@ -97,14 +97,20 @@ namespace StarkAid.Api.Services.V1
                 redirectUrl = redirectUrl
             };
 
-            // Serializar com configuração que preserva a ordem
+            // Serializar com configuração que preserva a ordem e NÃO escapa barras
             var jsonBody = JsonConvert.SerializeObject(body, new JsonSerializerSettings
             {
-                NullValueHandling = NullValueHandling.Ignore
+                NullValueHandling = NullValueHandling.Ignore,
+                StringEscapeHandling = StringEscapeHandling.Default
             });
+            
             
             // Log do JSON serializado para verificar ordem
             System.Console.WriteLine($"[EWELINK TOKEN] JSON serializado: {jsonBody}");
+            System.Console.WriteLine($"[EWELINK TOKEN] redirectUrl RAW: '{redirectUrl}'");
+            System.Console.WriteLine($"[EWELINK TOKEN] redirectUrl Length: {redirectUrl.Length}");
+            System.Console.WriteLine($"[EWELINK TOKEN] redirectUrl Bytes: {string.Join(",", System.Text.Encoding.UTF8.GetBytes(redirectUrl))}");
+            
             // Para POST, a assinatura é baseada no corpo JSON completo
             string sign = HmacSign(jsonBody);
 

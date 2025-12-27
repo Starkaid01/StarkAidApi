@@ -1,85 +1,212 @@
-﻿@page "/comandos-sociais"
+@page "/comandos-sociais"
 @using StarkAid.Web.DTOs
 @using StarkAid.Web.Services
+@using StarkAid.Web.Shared
 @inject ApiService ApiService
 @inject IJSRuntime JS
 
-<h3>Comandos Sociais</h3>
-
-<div class="form">
-    <input @bind="newDto.Comando" placeholder="Comando" class="form-control" />
-    <input @bind="newDto.Resposta" placeholder="Resposta" class="form-control" />
-    <input @bind="newDto.Estilo" placeholder="Estilo" class="form-control" />
-    <button @onclick="Create" class="btn btn-primary">Criar</button>
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <h3>Comandos Sociais</h3>
+    <button class="btn btn-primary" @onclick="() => OpenModal()">
+        <i class="bi bi-chat-dots"></i> Novo Comando
+    </button>
 </div>
 
-@if (comandos != null)
+@if (comandos == null)
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Comando</th>
-                <th>Resposta</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var cmd in comandos)
-            {
-                <tr>
-                    <td>@cmd.Comando</td>
-                    <td>@cmd.Resposta</td>
-                    <td>
-                        <button @onclick="() => Edit(cmd.Id)" class="btn btn-secondary">Editar</button>
-                        <button @onclick="() => Delete(cmd.Id)" class="btn btn-danger">Excluir</button>
-                    </td>
-                </tr>
-            }
-
-
-        </tbody>
-    </table>
+    <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Carregando comandos sociais...</p>
+    </div>
+}
+else if (!comandos.Any())
+{
+    <div class="alert alert-info">
+        <p>Nenhum comando social encontrado. Clique em "Novo Comando" para começar.</p>
+    </div>
 }
 else
 {
-    <p>Carregando Comandos Sociais...</p>
+    <div class="dashboard-cards">
+        @foreach (var cmd in comandos)
+        {
+            <div class="dashboard-card item-card">
+                <div class="card-header-icon">
+                    <span class="icon-circle">💬</span>
+                </div>
+                <div class="card-info">
+                    <h4 class="command-trigger">@cmd.Comando</h4>
+                    <p class="command-response">
+                        <strong>Resposta:</strong> @cmd.Resposta
+                    </p>
+                    <p class="command-style">
+                        <strong>Estilo:</strong> <span class="badge bg-primary">@cmd.Estilo</span>
+                    </p>
+                </div>
+                <div class="card-actions">
+                    <button @onclick="() => OpenModal(cmd)" class="btn btn-outline-secondary btn-sm">Editar</button>
+                    <button @onclick="() => Delete(cmd.Id)" class="btn btn-danger btn-sm">Excluir</button>
+                </div>
+            </div>
+        }
+    </div>
 }
 
-
-
+<Modal IsOpen="isModalOpen" Title="@(isEditing ? "Editar Comando" : "Novo Comando")" OnClose="CloseModal">
+    <div class="form-container">
+        <div class="mb-3">
+            <label class="form-label">Comando (Gatilho)</label>
+            <input @bind="currentDto.Comando" placeholder="Ex: oi, tudo bem?" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Resposta</label>
+            <textarea @bind="currentDto.Resposta" placeholder="O que o bot deve responder" class="form-control" rows="3"></textarea>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Estilo</label>
+            <select @bind="currentDto.Estilo" class="form-control">
+                <option value="Normal">Normal</option>
+                <option value="Engraçado">Engraçado</option>
+                <option value="Sério">Sério</option>
+                <option value="Sarcástico">Sarcástico</option>
+                <option value="Amigável">Amigável</option>
+            </select>
+        </div>
+        <div class="modal-footer d-flex gap-2 justify-content-end mt-4">
+            <button class="btn btn-outline-secondary" @onclick="CloseModal">Cancelar</button>
+            <button class="btn btn-primary" @onclick="Save">Salvar</button>
+        </div>
+    </div>
+</Modal>
 
 @code {
-    private ComandoSocialCreateDto newDto = new();
     private List<ComandoSocialDto>? comandos;
+    private ComandoSocialCreateDto currentDto = new();
+    private bool isModalOpen = false;
+    private bool isEditing = false;
+    private string editingId = "";
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadComandos();
+    }
+
+    private async Task LoadComandos()
     {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
         comandos = await ApiService.GetComandosSociaisAsync(token, apiKey);
     }
 
-    private async Task Create()
+    private void OpenModal(ComandoSocialDto? cmd = null)
     {
-        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
-        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
-        var newCmd = await ApiService.CreateComandoSocialAsync(newDto, token, apiKey);
-        if (newCmd != null) await OnInitializedAsync();
+        if (cmd != null)
+        {
+            isEditing = true;
+            editingId = cmd.Id;
+            currentDto = new ComandoSocialCreateDto
+            {
+                Comando = cmd.Comando,
+                Resposta = cmd.Resposta,
+                Estilo = cmd.Estilo
+            };
+        }
+        else
+        {
+            isEditing = false;
+            currentDto = new ComandoSocialCreateDto { Estilo = "Normal" };
+        }
+        isModalOpen = true;
     }
 
-    private async Task Edit(string id)
+    private void CloseModal()
     {
-        // Implementar
-        await JS.InvokeVoidAsync("alert", "Editar comando.");
+        isModalOpen = false;
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(currentDto.Comando) || string.IsNullOrWhiteSpace(currentDto.Resposta))
+        {
+            await JS.InvokeVoidAsync("alert", "Preencha todos os campos.");
+            return;
+        }
+
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+        if (isEditing)
+        {
+            var success = await ApiService.EditComandoSocialAsync(editingId, currentDto, token, apiKey);
+            if (success) await LoadComandos();
+        }
+        else
+        {
+            var newCmd = await ApiService.CreateComandoSocialAsync(currentDto, token, apiKey);
+            if (newCmd != null) await LoadComandos();
+        }
+        isModalOpen = false;
     }
 
     private async Task Delete(string id)
     {
-        // API não tem DELETE para comandos, adicionar se necessário
-        await JS.InvokeVoidAsync("alert", "Excluir não implementado na API.");
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Tem certeza que deseja excluir este comando?");
+        if (!confirmed) return;
+
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        var success = await ApiService.DeleteComandoSocialAsync(id, token, apiKey);
+        if (success) await LoadComandos();
     }
 }
 
 <style>
-    /* Estilo */
+    .item-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 220px;
+    }
+
+    .card-header-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        background: rgba(99, 102, 241, 0.1);
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--member-primary);
+    }
+
+    .command-trigger {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+        color: var(--member-primary);
+    }
+
+    .command-response {
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+
+    .bg-primary { background-color: var(--member-primary); }
+
+    .card-actions {
+        margin-top: 1.5rem;
+        display: flex;
+        gap: 0.5rem;
+    }
 </style>

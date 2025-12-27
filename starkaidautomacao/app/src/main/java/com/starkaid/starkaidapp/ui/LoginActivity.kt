@@ -20,6 +20,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import com.google.firebase.messaging.FirebaseMessaging
 import com.starkaid.starkaidapp.R
 import com.starkaid.starkaidapp.data.SessionManager
@@ -83,7 +84,8 @@ class LoginActivity : AppCompatActivity() {
             val password = editPassword.text.toString()
             Log.d("LoginActivity", "Login button clicked with email=$email")
 
-            CoroutineScope(Dispatchers.IO).launch {
+            lifecycleScope.launch(Dispatchers.IO) {
+
                 try {
                     val response = authService.login(email, password)
                     Log.d("LoginActivity", "Login response: $response")
@@ -219,7 +221,7 @@ class LoginActivity : AppCompatActivity() {
         }
 
         // Extrair role do token JWT em vez de fazer chamada à API
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             val role = extractRoleFromToken(response.token)
             role?.let { sessionManager.saveUserRole(it) }
         }
@@ -231,7 +233,7 @@ class LoginActivity : AppCompatActivity() {
                 val fcmToken = task.result
                 sessionManager.saveFcmToken(fcmToken)
 
-                CoroutineScope(Dispatchers.IO).launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     try {
                         val retrofit = ApiClient.getClient(this@LoginActivity)
                         val api = retrofit.create(AuthApi::class.java)
@@ -319,7 +321,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun sendPasswordResetRequest(email: String) {
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val retrofit = ApiClient.getClient(this@LoginActivity)
                 val api = retrofit.create(AuthApi::class.java)

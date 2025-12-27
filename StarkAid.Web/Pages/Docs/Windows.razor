@@ -1,4 +1,163 @@
 ﻿@page "/docs/windows"
 
-<h3>Starkaid-Windows-Software</h3>
-<p>Documentação para o software Windows...</p>
+<div class="docs-container">
+    <section class="docs-section">
+        <h1>Introdução ao StarkAid</h1>
+        <p>
+            O <strong>StarkAid</strong> é um assistente virtual inteligente para Windows que permite controlar 
+            seu computador e dispositivos através de comandos de voz. Com recursos avançados de automação, 
+            integração com dispositivos IoT, e inteligência artificial, o StarkAid transforma sua experiência 
+            de uso do computador.
+        </p>
+        <h2>Principais Funcionalidades</h2>
+        <ul>
+            <li>🎤 <strong>Reconhecimento de Voz:</strong> Controle total através de comandos de voz</li>
+            <li>🤖 <strong>Inteligência Artificial:</strong> Respostas inteligentes e contextualizadas</li>
+            <li>🔌 <strong>Controle de Dispositivos:</strong> Gerencie dispositivos ESP, Ewelink e StarkSwitch</li>
+            <li>⏰ <strong>Agendamentos:</strong> Automatize tarefas e comandos</li>
+            <li>📚 <strong>Aprendizado:</strong> O sistema aprende com suas interações</li>
+            <li>⏰ <strong>Alarmes e Lembretes:</strong> Nunca mais esqueça compromissos importantes</li>
+            <li>💰 <strong>StarkCoins:</strong> Sistema de créditos para uso de recursos premium</li>
+        </ul>
+    </section>
+
+    <section class="docs-section">
+        <h1>Instalação</h1>
+        <h2>Requisitos do Sistema</h2>
+        <ul>
+            <li>Windows 10 ou superior</li>
+            <li>.NET 8.0 Runtime</li>
+            <li>WebView2 Runtime (instalado automaticamente se necessário)</li>
+            <li>Microfone funcional</li>
+            <li>Conexão com internet (para recursos de IA e sincronização)</li>
+        </ul>
+        <h2>Processo de Instalação</h2>
+        <ol>
+            <li>Execute o instalador do StarkAid</li>
+            <li>Siga as instruções do assistente de instalação</li>
+            <li>Após a instalação, o aplicativo será iniciado automaticamente</li>
+            <li>Na primeira execução, você precisará fazer login ou criar uma conta</li>
+        </ol>
+    </section>
+
+    <section class="docs-section">
+        <h1>Configuração Inicial</h1>
+        <h2>1. Login e Conta</h2>
+        <p>
+            Ao iniciar o aplicativo pela primeira vez, você precisará fazer login com suas credenciais. 
+            Se não tiver uma conta, você pode criar uma através da interface de login.
+        </p>
+
+        <h2>2. Configurar Assistente</h2>
+        <p>
+            Acesse <strong>🤖 Configurar Assistente</strong> no menu lateral para personalizar:
+        </p>
+        <ul>
+            <li><strong>Nome do Assistente:</strong> O nome que você usará para ativar o assistente</li>
+            <li><strong>Resposta Padrão:</strong> Mensagem que o assistente fala quando você chama apenas pelo nome</li>
+            <li><strong>Voz:</strong> Selecione a voz do assistente (disponível conforme sistema operacional)</li>
+            <li><strong>Velocidade de Fala:</strong> Ajuste a velocidade da voz</li>
+        </ul>
+
+        <h3>Exemplo de Configuração:</h3>
+        <div class="docs-command-card">
+            <h4>Nome do Assistente</h4>
+            <div class="docs-example-box">Jarvis</div>
+            <p class="mt-2 small text-muted">
+                Quando você disser apenas "Jarvis", o assistente responderá com a resposta padrão configurada.
+            </p>
+        </div>
+    </section>
+
+    <section class="docs-section">
+        <h1>Comandos Predefinidos <span class="docs-badge badge-system">Sistema</span></h1>
+        <p>
+            Os comandos predefinidos são comandos do sistema que não precisam ser configurados pelo usuário. 
+            Eles estão sempre disponíveis e funcionam imediatamente após a instalação.
+        </p>
+
+        <h2>Data e Hora</h2>
+        <div class="docs-command-card">
+            <h4>Que Horas São</h4>
+            <div class="docs-example-box">"Que horas são"</div>
+            <p class="mt-2 small text-muted">O assistente informa a hora atual no formato 24 horas.</p>
+        </div>
+
+        <div class="docs-command-card">
+            <h4>Que Dia É Hoje</h4>
+            <div class="docs-example-box">"Que dia é hoje"</div>
+            <p class="mt-2 small text-muted">Informa a data completa incluindo dia da semana.</p>
+        </div>
+
+        <h2>Previsão do Tempo</h2>
+        <div class="docs-command-card">
+            <h4>Previsão do Tempo</h4>
+            <div class="docs-example-box">"Como está o tempo" ou "Qual a previsão do tempo"</div>
+            <p class="mt-2 small text-muted">Busca informações sobre temperatura e condições climáticas.</p>
+        </div>
+
+        <h2>Abrir Sites</h2>
+        <table class="docs-table">
+            <thead>
+                <tr>
+                    <th>Site</th>
+                    <th>Comando de Exemplo</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>YouTube</td><td>"Abrir YouTube"</td></tr>
+                <tr><td>Google</td><td>"Abrir Google"</td></tr>
+                <tr><td>WhatsApp</td><td>"Abrir WhatsApp"</td></tr>
+                <tr><td>Gmail</td><td>"Abrir Gmail"</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="docs-section">
+        <h1>Comandos Sociais <span class="docs-badge badge-custom">Personalizável</span></h1>
+        <p>
+            Os comandos sociais são comandos personalizados que você pode criar para interações específicas.
+        </p>
+        <div class="docs-code-pre">
+            <code>
+{
+  "alternativas": [
+    "Por que o programador não dorme? Porque ele tem bugs na cabeça!",
+    "O que é um terapeuta? 1024 gigaterapeutas!"
+  ]
+}
+            </code>
+        </div>
+    </section>
+
+    <section class="docs-section">
+        <h1>Inteligência Artificial</h1>
+        <p>
+            O StarkAid possui um sistema de inteligência artificial integrado para responder perguntas e executar tarefas complexas.
+        </p>
+        <div class="docs-command-card">
+            <h4>Perguntas Gerais</h4>
+            <div class="docs-example-box">
+                "Qual a capital do Brasil?"<br />
+                "Me explique o que é inteligência artificial"
+            </div>
+        </div>
+    </section>
+    
+    <section class="docs-section">
+        <h1>Solução de Problemas</h1>
+        <h3>O assistente não está ouvindo</h3>
+        <ul>
+            <li>Verifique se o microfone está conectado e funcionando</li>
+            <li>Verifique as permissões de microfone do Windows</li>
+            <li>Reinicie o aplicativo</li>
+        </ul>
+        
+        <h3>IA não está respondendo</h3>
+        <ul>
+            <li>Verifique se a IA está ativada no dashboard</li>
+            <li>Confirme que você tem StarkCoins suficientes</li>
+            <li>Verifique a conexão com a internet</li>
+        </ul>
+    </section>
+</div>

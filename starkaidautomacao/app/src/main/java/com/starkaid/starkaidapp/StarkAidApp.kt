@@ -13,6 +13,7 @@ class StarkAidApp : Application(), Application.ActivityLifecycleCallbacks {
 
     companion object {
         var isAppVisible = false
+        var currentActivity: Activity? = null
         private lateinit var instance: StarkAidApp
 
         fun getAppContext(): Context = instance.applicationContext
@@ -29,10 +30,14 @@ class StarkAidApp : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onActivityResumed(activity: Activity) {
         isAppVisible = true
+        currentActivity = activity
     }
-
+ 
     override fun onActivityPaused(activity: Activity) {
         isAppVisible = false
+        if (currentActivity == activity) {
+            currentActivity = null
+        }
     }
 
     override fun onActivityStarted(activity: Activity) {}

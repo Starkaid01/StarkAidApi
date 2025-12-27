@@ -139,18 +139,18 @@ namespace StarkAid.Api.Services.V1.SuperIA
             var mensagens = new[]
             {
                 new {role = "system", content = @"INSTRUÇÕES CRÍTICAS:
-1. Você deve retornar APENAS o texto da mensagem pronta para enviar
-2. NUNCA comece com 'Você pode dizer:', 'Diga:', ou qualquer prefixo
-3. NUNCA use placeholders como [seu nome], [nome], etc.
-4. A mensagem deve estar 100% completa e direta
-5. Se o usuário pedir para 'diga que...', remova o 'diga que' e escreva diretamente
+                    1. Você deve retornar APENAS o texto da mensagem pronta para enviar
+                    2. NUNCA comece com 'Você pode dizer:', 'Diga:', ou qualquer prefixo
+                    3. NUNCA use placeholders como [seu nome], [nome], etc.
+                    4. A mensagem deve estar 100% completa e direta
+                    5. Se o usuário pedir para 'diga que...', remova o 'diga que' e escreva diretamente
 
-EXEMPLOS:
-Input: 'diga que não posso ir hoje na festa'
-Output: 'Desculpe, não poderei ir à festa hoje.'
+                    EXEMPLOS:
+                    Input: 'diga que não posso ir hoje na festa'
+                    Output: 'Desculpe, não poderei ir à festa hoje.'
 
-Input: 'avise que não vou à reunião'
-Output: 'Não poderei comparecer à reunião.'"
+                    Input: 'avise que não vou à reunião'
+                    Output: 'Não poderei comparecer à reunião.'"
                 },
                 new { role = "user", content = contextoUser },
                 new { role = "assistant", content = contextoIA },

@@ -26,50 +26,60 @@ class RefreshTokenInterceptor(context: Context) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
+        
+        // 1. Skip interception for login/auth endpoints
+        if (isAuthRequest(request)) {
+            return chain.proceed(request)
+        }
+
         val initialResponse = chain.proceed(request)
 
-        // Se não for 401, retorne a resposta normalmente
+        // 2. If not 401, return normally
         if (initialResponse.code != 401) {
             return initialResponse
         }
 
-        initialResponse.close() // Feche a resposta imediatamente
-
+        // 3. 401 Detected! Try to refresh sync using a lock
         return synchronized(lock) {
-            // Se já estamos atualizando, aguarde e tente novamente
-            if (isRefreshing) {
-                lock.wait(3000)
-                val newToken = sessionManager.fetchAuthToken()
-                if (!newToken.isNullOrEmpty()) {
-                    return@synchronized chain.proceed(
-                        request.newBuilder()
-                            .header("Authorization", "Bearer $newToken")
-                            .build()
-                    )
-                }
+            // Check if another thread already refreshed while we were waiting for the lock
+            val currentToken = sessionManager.fetchAuthToken()
+            val requestToken = request.header("Authorization")?.removePrefix("Bearer ")
+            
+            if (!currentToken.isNullOrEmpty() && currentToken != requestToken) {
+                // Someone already refreshed! Retry original request with new token
+                initialResponse.close()
+                return@synchronized chain.proceed(
+                    request.newBuilder()
+                        .header("Authorization", "Bearer $currentToken")
+                        .build()
+                )
             }
 
-            isRefreshing = true
-            try {
-                val newToken = refreshTokenSync()
+            // Perform refresh
+            val newToken = refreshTokenSync()
 
-                if (newToken != null) {
-                    // Tente a requisição original com o novo token
-                    chain.proceed(
-                        request.newBuilder()
-                            .header("Authorization", "Bearer $newToken")
-                            .build()
-                    )
-                } else {
-                    // Falha ao renovar - sessão expirada
-                    SessionExpiredHandler.notifySessionExpired()
-                    initialResponse // Retorne a resposta original
-                }
-            } finally {
-                isRefreshing = false
-                lock.notifyAll()
+            if (newToken != null) {
+                // Success! Close old and proceed with new
+                initialResponse.close()
+                chain.proceed(
+                    request.newBuilder()
+                        .header("Authorization", "Bearer $newToken")
+                        .build()
+                )
+            } else {
+                // Failure! notify session expired but RETURN the original response (unclosed)
+                // so the caller can read the error body (e.g., AuthService or DeviceApi)
+                SessionExpiredHandler.notifySessionExpired()
+                initialResponse
             }
         }
+    }
+
+    private fun isAuthRequest(request: Request): Boolean {
+        val path = request.url.encodedPath
+        return path.endsWith("/login") || 
+               path.contains("/Auth/login") || 
+               path.contains("/Auth/refresh-token")
     }
 
     private fun refreshTokenSync(): String? {
@@ -141,7 +151,7 @@ class RefreshTokenInterceptor(context: Context) : Interceptor {
                 }
             }
         } catch (e: Exception) {
-            Log.e("RefreshToken", "Erro ao renovar token", e)
+            Log.e("RefreshToken", "Erro ao renovar token (possível timeout/offline)", e)
         } finally {
             response?.close()
         }

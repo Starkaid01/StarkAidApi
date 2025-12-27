@@ -118,7 +118,8 @@ namespace StarkAid.Api.Controllers.V1
                 // Buscar e salvar dispositivos
                 await SyncDevicesAsync(userId, accessToken?.ToString() ?? "", region);
 
-                return Ok(new { message = "Login realizado com sucesso.", account });
+                return Ok(new { message = "Login realizado com sucesso.", redirectTo = "/ewelink" });
+
             }
             catch (Exception ex)
             {

@@ -1,0 +1,119 @@
+@page "/contato"
+@layout PublicLayout
+
+<div class="contact-hero">
+    <div class="container">
+        <h1 class="page-title">Entre em <span class="gradient-text">Contato</span></h1>
+        <p class="page-subtitle">Estamos aqui para ajudar você</p>
+    </div>
+</div>
+
+<section class="contact-section">
+    <div class="container">
+        <div class="contact-grid">
+            <div class="contact-info">
+                <h2>Fale Conosco</h2>
+                <p>Tem alguma dúvida ou sugestão? Entre em contato conosco!</p>
+                
+                <div class="contact-methods">
+                    <div class="contact-method">
+                        <div class="method-icon">📧</div>
+                        <div class="method-content">
+                            <h3>Email</h3>
+                            <a href="mailto:contato@starkaid.com">contato@starkaid.com</a>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-method">
+                        <div class="method-icon">💬</div>
+                        <div class="method-content">
+                            <h3>WhatsApp</h3>
+                            <p>Em breve</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-method">
+                        <div class="method-icon">🌐</div>
+                        <div class="method-content">
+                            <h3>Redes Sociais</h3>
+                            <p>Em breve</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-form-container">
+                <form class="contact-form" @onsubmit="HandleSubmit" @onsubmit:preventDefault>
+                    <div class="form-group">
+                        <label>Nome</label>
+                        <input type="text" @bind="nome" placeholder="Seu nome" required />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" @bind="email" placeholder="seu@email.com" required />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Assunto</label>
+                        <input type="text" @bind="assunto" placeholder="Assunto da mensagem" required />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Mensagem</label>
+                        <textarea @bind="mensagem" placeholder="Sua mensagem..." rows="5" required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary-large" disabled="@isSubmitting">
+                        @(isSubmitting ? "Enviando..." : "Enviar Mensagem")
+                    </button>
+                    
+                    @if (!string.IsNullOrEmpty(statusMessage))
+                    {
+                        <div class="status-message @statusClass">@statusMessage</div>
+                    }
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private string nome = "";
+    private string email = "";
+    private string assunto = "";
+    private string mensagem = "";
+    private bool isSubmitting = false;
+    private string statusMessage = "";
+    private string statusClass = "";
+
+    private async Task HandleSubmit()
+    {
+        isSubmitting = true;
+        statusMessage = "";
+        
+        try
+        {
+            // Aqui você pode adicionar a lógica para enviar o email
+            await Task.Delay(1000); // Simulação
+            
+            statusMessage = "Mensagem enviada com sucesso! Entraremos em contato em breve.";
+            statusClass = "success";
+            
+            // Limpar formulário
+            nome = "";
+            email = "";
+            assunto = "";
+            mensagem = "";
+        }
+        catch (Exception)
+        {
+            statusMessage = "Erro ao enviar mensagem. Tente novamente.";
+            statusClass = "error";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

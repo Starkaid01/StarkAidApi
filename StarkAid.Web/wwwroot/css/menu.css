@@ -1,0 +1,201 @@
+﻿/* Estilos principais para Menu */
+/* Adiciona espaço no final do menu para o Logout ficar visível ao rolar */
+.nav-menu {
+    width: 220px;
+    background: #1F2937;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem 0.5rem 4rem 0.2rem; /* ← AQUI: padding-bottom maior (4rem ou mais) */
+    text-align:center;
+    height: 100vh;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    box-sizing: border-box; /* garante que padding não quebre o layout */
+}
+
+    .nav-menu ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .nav-menu li {
+        margin: 0.5rem 0;
+        background: #27384f;
+    }
+
+    .nav-menu a,
+    .nav-menu .has-submenu > a {
+        color: white;
+        text-decoration: none;
+        font-weight: bold;
+        display: block;
+        padding: 0.65rem 0.8rem;
+        border-radius: 0.375rem;
+        transition: all 0.2s;
+    }
+
+        .nav-menu a:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        /* Destaque do item ativo */
+        .nav-menu a.active {
+            background-color: #374151;
+            color: #3b82f6 !important;
+        }
+
+/* Submenu */
+.has-submenu .submenu {
+    list-style: none;
+    padding-left: 1rem;
+    margin-top: 0.5rem;
+}
+
+.submenu a {
+    color: #9ca3af;
+    font-weight: normal;
+    font-size: 0.95rem;
+    padding-left: 0.5rem;
+}
+
+    .submenu a:hover {
+        color: #3b82f6;
+    }
+
+.arrow {
+    float: right;
+    font-size: 0.8rem;
+}
+
+/* Hamburguer Header - só aparece em mobile */
+.header-hamburger {
+    display: none; /* por padrão escondido */
+    align-items: center;
+    background: #1F2937;
+    color: white;
+    padding: 0.9rem 1rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1001;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.hamburger-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+    .hamburger-btn span {
+        width: 25px;
+        height: 3px;
+        background: white;
+        border-radius: 3px;
+    }
+
+.header-title {
+    margin-left: 1rem;
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+/* =============== RESPONSIVO =============== */
+
+/* MOBILE (até 768px) */
+@media (max-width: 768px) {
+    .header-hamburger {
+        display: flex !important;
+    }
+
+    .nav-menu {
+        transform: translateX(-100%);
+        width: 260px;
+        padding-top: 70px; /* espaço para o header */
+    }
+
+        .nav-menu.open {
+            transform: translateX(0);
+        }
+
+    .main-content {
+        margin-left: 0 !important;
+    }
+}
+
+/* DESKTOP (769px ou mais) */
+@media (min-width: 769px) {
+    .header-hamburger {
+        display: none !important; /* ««««« FORÇA O HEADER A SUMIR NO DESKTOP */
+    }
+
+    .main-content {
+        margin-left: 220px;
+    }
+
+    .nav-menu {
+        padding-top: 0.2rem; /* espaço bonito no topo em desktop */
+    }
+}
+
+/* Overlay ao abrir menu em mobile */
+.menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+    .menu-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+/* Botão close no drawer mobile */
+.menu-header {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.5rem 1rem;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    z-index: 10;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.8rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    display: none;
+}
+
+/* Em mobile, mostra o botão close apenas quando o menu está aberto */
+@media (max-width: 768px) {
+    .close-btn{
+        display: flex !important;
+    }
+}
+
+/* Em desktop, garante que nunca apareça */
+@media (min-width: 769px) {
+    .close-btn {
+        display: none !important;
+    }
+}

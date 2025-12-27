@@ -33,7 +33,8 @@ public class AuthController : ControllerBase
         if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
             return BadRequest("Email e senha são obrigatórios.");
 
-        var user = await _authService.GetUserByEmailAsync(request.Email);
+        var email = request.Email.Trim().ToLower();
+        var user = await _authService.GetUserByEmailAsync(email);
         if (user == null || !_authService.VerifyPasswordHash(request.Password, user.PasswordHash))
             return Unauthorized("Credenciais inválidas.");
 
@@ -86,7 +87,8 @@ public class AuthController : ControllerBase
         if (request.Password.Length < 6)
             return BadRequest("A senha deve ter no mínimo 6 caracteres.");
 
-        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        var email = request.Email.Trim().ToLower();
+        var existingUser = await _authService.GetUserByEmailAsync(email);
         if (existingUser != null)
             return BadRequest("Email já cadastrado.");
 
@@ -96,7 +98,7 @@ public class AuthController : ControllerBase
         {
             Id = Guid.NewGuid(),
             Name = request.Name,
-            Email = request.Email,
+            Email = email,
             PasswordHash = _authService.HashPassword(request.Password),
             ApiKey = apiKey,
             StarkCoins = 0,

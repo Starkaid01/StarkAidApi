@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>StarkAid Avatar 3D</title>
+<style>
+  body {
+    margin: 0;
+    background: radial-gradient(#06162e, #000);
+    height: 100vh;
+    color: #00cfff;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+  }
+
+  #c {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  #ui {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    width: min(520px, calc(100vw - 32px));
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(0, 207, 255, 0.25);
+    border-radius: 12px;
+    padding: 12px;
+    backdrop-filter: blur(8px);
+  }
+
+  #text {
+    width: 100%;
+    height: 72px;
+    resize: none;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 207, 255, 0.25);
+    background: rgba(0, 0, 0, 0.55);
+    color: #e8fbff;
+    padding: 10px 12px;
+    outline: none;
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  .row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  select, button {
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 207, 255, 0.25);
+    background: rgba(0, 0, 0, 0.55);
+    color: #e8fbff;
+    padding: 0 12px;
+    outline: none;
+  }
+
+  button {
+    cursor: pointer;
+    background: rgba(0, 207, 255, 0.18);
+  }
+
+  button:active {
+    transform: translateY(1px);
+  }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div id="ui">
+  <textarea id="text">Eu sou o StarkAid, um robô futurista inspirado no Homem de Ferro.</textarea>
+  <div class="row">
+    <select id="voice"></select>
+    <button id="speakBtn" type="button">Falar</button>
+    <button id="stopBtn" type="button">Parar</button>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+const canvas = document.getElementById("c");
+const textEl = document.getElementById("text");
+const voiceEl = document.getElementById("voice");
+const speakBtn = document.getElementById("speakBtn");
+const stopBtn = document.getElementById("stopBtn");
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 200);
+camera.position.set(0, 1.25, 3.2);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.target.set(0, 1.15, 0);
+
+const hemi = new THREE.HemisphereLight(0x66caff, 0x0b0b0b, 0.55);
+scene.add(hemi);
+
+const key = new THREE.DirectionalLight(0xffe1b3, 1.1);
+key.position.set(4, 6, 3);
+scene.add(key);
+
+const rim = new THREE.DirectionalLight(0x66caff, 0.55);
+rim.position.set(-6, 2.5, -3);
+scene.add(rim);
+
+let robotRoot = null;
+let mouthMesh = null;
+let leftEyeMesh = null;
+let rightEyeMesh = null;
+let arcMesh = null;
+
+let mouthPulse = 0;
+let talkRaf = 0;
+
+function resize() {
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  renderer.setSize(width, height, false);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+}
+
+window.addEventListener("resize", resize);
+resize();
+
+function setMouth(amount) {
+  if (!mouthMesh) return;
+  const a = THREE.MathUtils.clamp(amount, 0, 1);
+  mouthMesh.scale.y = 0.25 + a * 1.75;
+  mouthMesh.material.opacity = 0.25 + a * 0.75;
+}
+
+function setEyesGlow(amount) {
+  if (!leftEyeMesh || !rightEyeMesh) return;
+  const a = THREE.MathUtils.clamp(amount, 0, 1);
+  leftEyeMesh.material.opacity = 0.35 + a * 0.65;
+  rightEyeMesh.material.opacity = 0.35 + a * 0.65;
+}
+
+function stopTalkingVisual() {
+  if (talkRaf) cancelAnimationFrame(talkRaf);
+  talkRaf = 0;
+  mouthPulse = 0;
+  setMouth(0);
+  setEyesGlow(0.9);
+}
+
+function startTalkingVisual() {
+  if (talkRaf) return;
+  const tick = () => {
+    if (!speechSynthesis.speaking) {
+      stopTalkingVisual();
+      return;
+    }
+    const t = performance.now();
+    const base = (Math.sin(t * 0.02) + 1) * 0.35;
+    mouthPulse *= 0.88;
+    const amount = THREE.MathUtils.clamp(base + mouthPulse + Math.random() * 0.08, 0, 1);
+    setMouth(amount);
+
+    const blink = (Math.sin(t * 0.004 + 1.3) + 1) * 0.5;
+    setEyesGlow(0.75 + blink * 0.25);
+    talkRaf = requestAnimationFrame(tick);
+  };
+  talkRaf = requestAnimationFrame(tick);
+}
+
+function populateVoices() {
+  const voices = speechSynthesis.getVoices().slice().sort((a, b) => {
+    const aPt = a.lang?.toLowerCase().startsWith("pt");
+    const bPt = b.lang?.toLowerCase().startsWith("pt");
+    if (aPt !== bPt) return aPt ? -1 : 1;
+    return (a.name || "").localeCompare(b.name || "");
+  });
+
+  const currentValue = voiceEl.value;
+  voiceEl.innerHTML = "";
+
+  for (const v of voices) {
+    const opt = document.createElement("option");
+    opt.value = v.name;
+    opt.textContent = `${v.name} (${v.lang})`;
+    voiceEl.appendChild(opt);
+  }
+
+  const preferred = voices.find(v => v.lang?.toLowerCase().startsWith("pt-br")) || voices.find(v => v.lang?.toLowerCase().startsWith("pt"));
+  if (currentValue && voices.some(v => v.name === currentValue)) voiceEl.value = currentValue;
+  else if (preferred) voiceEl.value = preferred.name;
+}
+
+speechSynthesis.addEventListener("voiceschanged", populateVoices);
+populateVoices();
+
+function speak() {
+  if (!("speechSynthesis" in window)) return;
+  const text = (textEl.value || "").trim();
+  if (!text) return;
+
+  speechSynthesis.cancel();
+  stopTalkingVisual();
+
+  const utter = new SpeechSynthesisUtterance(text);
+  const selected = speechSynthesis.getVoices().find(v => v.name === voiceEl.value);
+  if (selected) utter.voice = selected;
+  utter.lang = selected?.lang || "pt-BR";
+
+  utter.onstart = () => startTalkingVisual();
+  utter.onend = () => stopTalkingVisual();
+  utter.onerror = () => stopTalkingVisual();
+  utter.onboundary = (e) => {
+    if (e.name === "word") mouthPulse = Math.min(1, mouthPulse + 0.55);
+  };
+
+  speechSynthesis.speak(utter);
+}
+
+function stop() {
+  speechSynthesis.cancel();
+  stopTalkingVisual();
+}
+
+speakBtn.addEventListener("click", speak);
+stopBtn.addEventListener("click", stop);
+
+const loader = new GLTFLoader();
+loader.load(
+  "scene.gltf",
+  (gltf) => {
+    robotRoot = gltf.scene;
+
+    robotRoot.traverse((obj) => {
+      if (!obj.isMesh) return;
+      obj.castShadow = true;
+      obj.receiveShadow = true;
+      const m = obj.material;
+      if (Array.isArray(m)) return;
+      if (!m) return;
+      if (m.isMeshStandardMaterial || m.isMeshPhysicalMaterial) {
+        m.color = new THREE.Color(0xb10d18);
+        m.roughness = 0.35;
+        m.metalness = 0.9;
+        m.envMapIntensity = 0.9;
+      }
+    });
+
+    scene.add(robotRoot);
+
+    const box = new THREE.Box3().setFromObject(robotRoot);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    robotRoot.position.sub(center);
+
+    const box2 = new THREE.Box3().setFromObject(robotRoot);
+    const size2 = new THREE.Vector3();
+    box2.getSize(size2);
+    const max = box2.max.clone();
+
+    const headY = max.y - size2.y * 0.22;
+    const faceZ = max.z - size2.z * 0.04;
+
+    const mouthGeo = new THREE.PlaneGeometry(size2.x * 0.22, size2.y * 0.055);
+    const mouthMat = new THREE.MeshBasicMaterial({
+      color: 0x44f1ff,
+      transparent: true,
+      opacity: 0.25,
+      depthWrite: false
+    });
+    mouthMesh = new THREE.Mesh(mouthGeo, mouthMat);
+    mouthMesh.position.set(0, headY - size2.y * 0.08, faceZ);
+    robotRoot.add(mouthMesh);
+    setMouth(0);
+
+    const eyeGeo = new THREE.PlaneGeometry(size2.x * 0.06, size2.y * 0.03);
+    const eyeMat = new THREE.MeshBasicMaterial({
+      color: 0x8dffff,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false
+    });
+    leftEyeMesh = new THREE.Mesh(eyeGeo, eyeMat);
+    rightEyeMesh = new THREE.Mesh(eyeGeo.clone(), eyeMat.clone());
+    leftEyeMesh.position.set(-size2.x * 0.12, headY + size2.y * 0.03, faceZ);
+    rightEyeMesh.position.set(size2.x * 0.12, headY + size2.y * 0.03, faceZ);
+    robotRoot.add(leftEyeMesh, rightEyeMesh);
+
+    const plateGeo = new THREE.PlaneGeometry(size2.x * 0.34, size2.y * 0.22);
+    const plateMat = new THREE.MeshBasicMaterial({
+      color: 0xd3ab47,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false
+    });
+    const faceplate = new THREE.Mesh(plateGeo, plateMat);
+    faceplate.position.set(0, headY + size2.y * 0.02, faceZ + size2.z * 0.004);
+    robotRoot.add(faceplate);
+
+    const arcGeo = new THREE.CircleGeometry(size2.x * 0.055, 48);
+    const arcMat = new THREE.MeshBasicMaterial({
+      color: 0x57f7ff,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false
+    });
+    arcMesh = new THREE.Mesh(arcGeo, arcMat);
+    arcMesh.position.set(0, box2.min.y + size2.y * 0.64, max.z - size2.z * 0.06);
+    robotRoot.add(arcMesh);
+
+    const arcLight = new THREE.PointLight(0x57f7ff, 1.1, size2.y * 4, 2);
+    arcLight.position.copy(arcMesh.position);
+    robotRoot.add(arcLight);
+
+    const distance = Math.max(size2.x, size2.y, size2.z) * 1.9;
+    camera.position.set(0, size2.y * 0.38, distance);
+    controls.target.set(0, size2.y * 0.18, 0);
+    controls.update();
+  },
+  undefined,
+  () => {}
+);
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (arcMesh) {
+    const t = performance.now();
+    arcMesh.material.opacity = 0.85 + (Math.sin(t * 0.003) + 1) * 0.075;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+</script>
+
+</body>
+</html>
