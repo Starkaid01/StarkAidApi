@@ -43,6 +43,19 @@ public class AppDbContext : DbContext
     public DbSet<ResolvendoSuporte> ResolvendoSuportes => Set<ResolvendoSuporte>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<StarkCoinPurchase> StarkCoinPurchases => Set<StarkCoinPurchase>();
+    public DbSet<Aprendizado> Aprendizados => Set<Aprendizado>();
+    public DbSet<UserConversaContext> UserConversaContexts => Set<UserConversaContext>();
+    public DbSet<GcExecutionLog> GcExecutionLogs => Set<GcExecutionLog>();
+    public DbSet<AprendizadoResposta> AprendizadoRespostas => Set<AprendizadoResposta>();
+    public DbSet<Telemetria> Telemetrias => Set<Telemetria>();
+    public DbSet<AiInteractionEvent> AiInteractionEvents => Set<AiInteractionEvent>();
+    public DbSet<YouTubeMusicCache> YouTubeMusicCaches => Set<YouTubeMusicCache>();
+    
+    // Fun Module
+    public DbSet<Piada> Piadas => Set<Piada>();
+    public DbSet<Receita> Receitas => Set<Receita>();
+    public DbSet<ReceitaPasso> ReceitaPassos => Set<ReceitaPasso>();
+    public DbSet<UserFunState> UserFunStates => Set<UserFunState>();
 
   
 
@@ -468,9 +481,195 @@ public class AppDbContext : DbContext
             
             entity.HasOne(e => e.User)
                   .WithMany()
-                  .HasForeignKey(e => e.UserId)
+                   .HasForeignKey(e => e.UserId)
+                   .OnDelete(DeleteBehavior.Cascade);
+         });
+
+         modelBuilder.Entity<Aprendizado>(entity =>
+         {
+             entity.HasKey(e => e.Id);
+             entity.Property(e => e.Texto).IsRequired();
+             entity.Property(e => e.Resposta).IsRequired();
+             entity.Property(e => e.Contexto).HasMaxLength(500);
+             entity.Property(e => e.Tipo).IsRequired().HasMaxLength(50);
+             entity.Property(e => e.CreatedAt).HasColumnType("datetimeoffset").IsRequired();
+             entity.Property(e => e.UserId).IsRequired(false);
+             
+             entity.HasIndex(e => new { e.UserId, e.Tipo });
+             entity.HasIndex(e => e.Tipo).HasFilter("[Tipo] = 'Global'");
+             
+             entity.HasOne<User>()
+                   .WithMany()
+                   .HasForeignKey(e => e.UserId)
+                   .OnDelete(DeleteBehavior.SetNull);
+
+             entity.HasMany(e => e.Respostas)
+                   .WithOne(r => r.Aprendizado)
+                   .HasForeignKey(r => r.AprendizadoId)
+                   .OnDelete(DeleteBehavior.Cascade);
+         });
+
+         modelBuilder.Entity<AprendizadoResposta>(entity =>
+         {
+             entity.HasKey(e => e.Id);
+             entity.Property(e => e.Texto).IsRequired();
+             entity.Property(e => e.CreatedAt).HasColumnType("datetimeoffset").IsRequired();
+         });
+
+         // Configurações de UserConversaContext
+         modelBuilder.Entity<UserConversaContext>(entity =>
+         {
+             entity.HasKey(e => e.UserId);
+             entity.Property(e => e.ContextoAtual).HasMaxLength(500);
+             entity.Property(e => e.LastUpdatedAt).HasColumnType("datetimeoffset").IsRequired();
+         });
+
+         modelBuilder.Entity<Telemetria>(entity =>
+         {
+             entity.HasKey(t => t.Id);
+             entity.Property(t => t.Origem).IsRequired().HasMaxLength(50);
+             entity.Property(t => t.Evento).IsRequired().HasMaxLength(100);
+             entity.Property(t => t.Categoria).IsRequired().HasMaxLength(50);
+             entity.Property(t => t.CriadoEm).HasColumnType("datetimeoffset").IsRequired();
+             
+             entity.HasOne(t => t.User)
+                   .WithMany()
+                   .HasForeignKey(t => t.UserId)
+                   .OnDelete(DeleteBehavior.Cascade);
+         });
+
+         // Configurações de YouTubeMusicCache
+         modelBuilder.Entity<YouTubeMusicCache>(entity =>
+         {
+             entity.HasKey(e => e.Id);
+             entity.HasIndex(e => e.NormalizedQuery).IsUnique();
+             entity.Property(e => e.NormalizedQuery).IsRequired().HasMaxLength(500);
+             entity.Property(e => e.VideoId).IsRequired().HasMaxLength(50);
+         });
+
+         // --- Fun Module Configurations & Seeding ---
+
+         modelBuilder.Entity<Piada>(entity =>
+         {
+             entity.HasKey(p => p.Id);
+             entity.Property(p => p.Texto).IsRequired();
+             
+             // Seed 30 Jokes
+             entity.HasData(
+                new Piada { Id = 1, Texto = "Por que o computador foi ao médico? Porque estava com vírus.", Categoria = "Tecnologia" },
+                new Piada { Id = 2, Texto = "O que o zero disse para o oito? Que cinto bonito!", Categoria = "Geral" },
+                new Piada { Id = 3, Texto = "Por que o livro de matemática se suicidou? Porque tinha muitos problemas.", Categoria = "Escola" },
+                new Piada { Id = 4, Texto = "Qual é o cúmulo da força? Dobrar a esquina.", Categoria = "Geral" },
+                new Piada { Id = 5, Texto = "O que uma impressora disse para a outra? Essa folha é sua ou é impressão minha?", Categoria = "Tecnologia" },
+                new Piada { Id = 6, Texto = "Por que a plantinha não foi ao médico? Porque só tinha médico de plantão.", Categoria = "Natureza" },
+                new Piada { Id = 7, Texto = "O que o pato disse para a pata? Vem Quá!", Categoria = "Animais" },
+                new Piada { Id = 8, Texto = "Qual o pé que é mais rápido? O pé-ligeiro.", Categoria = "Geral" },
+                new Piada { Id = 9, Texto = "Por que o pinheiro não se perde na floresta? Porque ele tem uma pinha.", Categoria = "Natureza" },
+                new Piada { Id = 10, Texto = "O que o tomate foi fazer no banco? Tirar extrato.", Categoria = "Comida" },
+                new Piada { Id = 11, Texto = "Qual é a tecla preferida do astronauta? A barra de espaço.", Categoria = "Tecnologia" },
+                new Piada { Id = 12, Texto = "Por que o jacaré tirou o filho da escola? Porque ele réptil de ano.", Categoria = "Animais" },
+                new Piada { Id = 13, Texto = "Qual é o rei dos queijos? O Requeijão.", Categoria = "Comida" },
+                new Piada { Id = 14, Texto = "O que é um ponto verde na antártida? Um ping-green.", Categoria = "Geral" },
+                new Piada { Id = 15, Texto = "Por que o bombeiro não gosta de andar? Porque ele socorre.", Categoria = "Profissões" },
+                new Piada { Id = 16, Texto = "Qual é o animal que não vale mais nada? O javali.", Categoria = "Animais" },
+                new Piada { Id = 17, Texto = "O que o pagodeiro foi fazer na igreja? Cantar pá god.", Categoria = "Geral" },
+                new Piada { Id = 18, Texto = "Por que a velhinha não usa relógio? Porque ela é sem hora.", Categoria = "Geral" },
+                new Piada { Id = 19, Texto = "Como o Batman faz para entrar na Bat-caverna? Ele bat-palma.", Categoria = "Herois" },
+                new Piada { Id = 20, Texto = "Qual o doce preferido do átomo? Pé-de-moleculas.", Categoria = "Ciencia" },
+                new Piada { Id = 21, Texto = "O que a Lua disse ao Sol? Nossa, você é tão grande e não te deixam sair à noite!", Categoria = "Espaço" },
+                new Piada { Id = 22, Texto = "Por que as estrelas não fazem miau? Porque Astronomia.", Categoria = "Ciencia" },
+                new Piada { Id = 23, Texto = "O que a banana suicida falou? Macacos me mordam!", Categoria = "Comida" },
+                new Piada { Id = 24, Texto = "Qual o estado que quer ser carro? Sergipe.", Categoria = "Geografia" },
+                new Piada { Id = 25, Texto = "O que é, o que é: cai em pé e corre deitado? A chuva.", Categoria = "Charada" },
+                new Piada { Id = 26, Texto = "Em qual cidade o Thor mora? Valhalla? Não, Pousada.", Categoria = "Geral" },
+                new Piada { Id = 27, Texto = "Por que o elétron não foi à festa? Porque precisa ser positivo.", Categoria = "Ciencia" },
+                new Piada { Id = 28, Texto = "O que o advogado do frango foi fazer? Foi soltar a franga.", Categoria = "Animais" },
+                new Piada { Id = 29, Texto = "Qual a diferença entre o gato e a coca-cola? O gato faz miau e a coca-cola faz tshhh.", Categoria = "Animais" },
+                new Piada { Id = 30, Texto = "O que o martelo foi fazer no culto? Pregador.", Categoria = "Ferramentas" }
+             );
+         });
+
+         modelBuilder.Entity<Receita>(entity =>
+         {
+             entity.HasKey(r => r.Id);
+             entity.Property(r => r.Nome).IsRequired();
+             entity.Property(r => r.Ingredientes).IsRequired();
+             
+             entity.HasMany(r => r.Passos)
+                   .WithOne(p => p.Receita)
+                   .HasForeignKey(p => p.ReceitaId)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+             // Seed 5 Recipes
+             entity.HasData(
+                 new Receita { Id = 1, Nome = "Bolo de Cenoura", Categoria = "Doces", Ingredientes = "3 cenouras, 4 ovos, 1 xícara de óleo, 2 xícaras de açúcar, 2 xícaras de farinha, 1 colher de fermento." },
+                 new Receita { Id = 2, Nome = "Omelete Simples", Categoria = "Salgados", Ingredientes = "2 ovos, sal a gosto, queijo, presunto, orégano." },
+                 new Receita { Id = 3, Nome = "Arroz Branco", Categoria = "Acompanhamentos", Ingredientes = "1 xícara de arroz, 2 xícaras de água, alho, sal, óleo." },
+                 new Receita { Id = 4, Nome = "Brigadeiro", Categoria = "Doces", Ingredientes = "1 lata de leite condensado, 4 colheres de chocolate em pó, 1 colher de manteiga, granulado." },
+                 new Receita { Id = 5, Nome = "Suco de Limão", Categoria = "Bebidas", Ingredientes = "3 limões, 1 litro de água, açúcar ou adoçante a gosto, gelo." }
+             );
+         });
+
+         modelBuilder.Entity<ReceitaPasso>(entity =>
+         {
+             entity.HasKey(p => p.Id);
+             entity.Property(p => p.Descricao).IsRequired();
+
+             // Seed Steps (Deterministic IDs)
+             entity.HasData(
+                 // Bolo de Cenoura (Id 1)
+                 new ReceitaPasso { Id = 1, ReceitaId = 1, Ordem = 1, Descricao = "Descasque e corte as cenouras em rodelas." },
+                 new ReceitaPasso { Id = 2, ReceitaId = 1, Ordem = 2, Descricao = "No liquidificador, bata as cenouras, os ovos e o óleo." },
+                 new ReceitaPasso { Id = 3, ReceitaId = 1, Ordem = 3, Descricao = "Em uma tigela, misture o açúcar, a farinha e o fermento." },
+                 new ReceitaPasso { Id = 4, ReceitaId = 1, Ordem = 4, Descricao = "Despeje a mistura do liquidificador na tigela e mexa bem." },
+                 new ReceitaPasso { Id = 5, ReceitaId = 1, Ordem = 5, Descricao = "Unte uma forma e despeje a massa." },
+                 new ReceitaPasso { Id = 6, ReceitaId = 1, Ordem = 6, Descricao = "Asse em forno pré-aquecido a 180 graus por 40 minutos." },
+
+                 // Omelete (Id 2)
+                 new ReceitaPasso { Id = 7, ReceitaId = 2, Ordem = 1, Descricao = "Quebre os ovos em um prato fundo." },
+                 new ReceitaPasso { Id = 8, ReceitaId = 2, Ordem = 2, Descricao = "Bata os ovos ligeiramente com um garfo." },
+                 new ReceitaPasso { Id = 9, ReceitaId = 2, Ordem = 3, Descricao = "Tempere com sal e orégano." },
+                 new ReceitaPasso { Id = 10, ReceitaId = 2, Ordem = 4, Descricao = "Aqueça uma frigideira com um pouco de óleo." },
+                 new ReceitaPasso { Id = 11, ReceitaId = 2, Ordem = 5, Descricao = "Despeje os ovos e adicione o queijo e presunto." },
+                 new ReceitaPasso { Id = 12, ReceitaId = 2, Ordem = 6, Descricao = "Dobre ao meio e deixe dourar dos dois lados." },
+
+                 // Arroz (Id 3)
+                 new ReceitaPasso { Id = 13, ReceitaId = 3, Ordem = 1, Descricao = "Lave o arroz se desejar." },
+                 new ReceitaPasso { Id = 14, ReceitaId = 3, Ordem = 2, Descricao = "Aqueça o óleo e refogue o alho picado." },
+                 new ReceitaPasso { Id = 15, ReceitaId = 3, Ordem = 3, Descricao = "Adicione o arroz e refogue por um minuto." },
+                 new ReceitaPasso { Id = 16, ReceitaId = 3, Ordem = 4, Descricao = "Adicione a água fervente e o sal." },
+                 new ReceitaPasso { Id = 17, ReceitaId = 3, Ordem = 5, Descricao = "Cozinhe em fogo baixo com a panela semi-tampada." },
+                 new ReceitaPasso { Id = 18, ReceitaId = 3, Ordem = 6, Descricao = "Quando a água secar, desligue e deixe descansar." },
+
+                 // Brigadeiro (Id 4)
+                 new ReceitaPasso { Id = 19, ReceitaId = 4, Ordem = 1, Descricao = "Em uma panela, coloque o leite condensado." },
+                 new ReceitaPasso { Id = 20, ReceitaId = 4, Ordem = 2, Descricao = "Adicione o chocolate em pó e a manteiga." },
+                 new ReceitaPasso { Id = 21, ReceitaId = 4, Ordem = 3, Descricao = "Leve ao fogo baixo, mexendo sempre." },
+                 new ReceitaPasso { Id = 22, ReceitaId = 4, Ordem = 4, Descricao = "Mexa até desgrudar do fundo da panela." },
+                 new ReceitaPasso { Id = 23, ReceitaId = 4, Ordem = 5, Descricao = "Despeje em um prato untado e deixe esfriar." },
+                 new ReceitaPasso { Id = 24, ReceitaId = 4, Ordem = 6, Descricao = "Enrole as bolinhas e passe no granulado." },
+                 
+                 // Suco de Limão (Id 5)
+                 new ReceitaPasso { Id = 25, ReceitaId = 5, Ordem = 1, Descricao = "Lave bem os limões." },
+                 new ReceitaPasso { Id = 26, ReceitaId = 5, Ordem = 2, Descricao = "Corte os limões ao meio." },
+                 new ReceitaPasso { Id = 27, ReceitaId = 5, Ordem = 3, Descricao = "Esprema o suco dos limões em uma jarra." },
+                 new ReceitaPasso { Id = 28, ReceitaId = 5, Ordem = 4, Descricao = "Adicione a água e misture." },
+                 new ReceitaPasso { Id = 29, ReceitaId = 5, Ordem = 5, Descricao = "Adoce a gosto e mexa bem até dissolver." },
+                 new ReceitaPasso { Id = 30, ReceitaId = 5, Ordem = 6, Descricao = "Adicione gelo e sirva imediatamente." }
+             );
+         });
+
+         modelBuilder.Entity<UserFunState>(entity =>
+         {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PiadasContadasIds).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.ReceitasVistasIds).HasColumnType("nvarchar(max)");
+            
+            entity.HasOne(e => e.User)
+                  .WithOne()
+                  .HasForeignKey<UserFunState>(u => u.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
-        });
-       
-    }
+         });
+
+     }
 }

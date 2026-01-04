@@ -109,6 +109,11 @@
             android:id="@+id/cardNivel3"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cardNivel2"
+            app:layout_constraintWidth_percent="0.95"
             android:visibility="gone"/>
 
         <!-- Nível 4 -->
@@ -116,6 +121,11 @@
             android:id="@+id/cardNivel4"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cardNivel3"
+            app:layout_constraintWidth_percent="0.95"
             android:visibility="gone"/>
 
         <!-- Nível 5 -->
@@ -123,6 +133,11 @@
             android:id="@+id/cardNivel5"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cardNivel4"
+            app:layout_constraintWidth_percent="0.95"
             android:visibility="gone"/>
 
         <!-- Nível 6 -->
@@ -130,6 +145,11 @@
             android:id="@+id/cardNivel6"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cardNivel5"
+            app:layout_constraintWidth_percent="0.95"
             android:visibility="gone"/>
 
         <!-- Nível 7 -->
@@ -137,6 +157,11 @@
             android:id="@+id/cardNivel7"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cardNivel6"
+            app:layout_constraintWidth_percent="0.95"
             android:visibility="gone"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

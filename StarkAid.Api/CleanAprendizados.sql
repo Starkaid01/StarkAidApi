@@ -1,0 +1,7 @@
+DELETE
+FROM
+Aprendizados
+WHERE
+UserId
+IS
+NULL

@@ -1,0 +1,29 @@
+.stark-avatar-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #1a1919;
+    overflow: hidden;
+}
+
+.stark-avatar-canvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.stark-avatar-rain {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: none;
+}
+
+.stark-avatar-scene {
+    position: absolute;
+    z-index: 1;
+}

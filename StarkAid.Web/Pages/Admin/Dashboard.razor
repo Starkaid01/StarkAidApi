@@ -1,0 +1,331 @@
+@page "/admin/dashboard"
+@using StarkAid.Web.Services
+@using StarkAid.Web.DTOs
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrador")]
+@inject AdminService AdminService
+@inject IAuthService AuthService
+
+<PageTitle>Dashboard Admin - StarkAid</PageTitle>
+
+<div class="admin-dashboard">
+    <div class="header-section">
+        <h1>Dashboard Administrativo</h1>
+        <p class="subtitle">Visão geral do sistema e métricas principais</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Carregando dados do sistema...</p>
+        </div>
+    }
+    else if (stats == null)
+    {
+        <div class="error-state">
+            <p>Não foi possível carregar as estatísticas. Verifique sua conexão ou permissões.</p>
+            <button class="btn btn-primary" @onclick="LoadData">Tentar Novamente</button>
+        </div>
+    }
+    else
+    {
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon-wrapper users">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Total Usuários</h3>
+                    <div class="value">@stats.TotalUsers</div>
+                    <div class="subtext">@stats.ActiveUsers ativos / @stats.InactiveUsers inativos</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="icon-wrapper online">
+                    <i class="fas fa-signal"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Status API</h3>
+                    <div class="value status-@(stats.ApiStatus == "OK" ? "ok" : "error")">@stats.ApiStatus</div>
+                    <div class="subtext">StarkAid API</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="icon-wrapper mqtt">
+                    <i class="fas fa-network-wired"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Status MQTT</h3>
+                    <div class="value status-@(stats.MqttConnected ? "ok" : "error")">@stats.MqttStatus</div>
+                    <div class="subtext">Broker Connection</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="icon-wrapper plans">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Assinaturas Ativas</h3>
+                    <div class="value">@usersWithPlans.Count</div>
+                    <div class="subtext">Usuários com plano ativo</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="section-card users-list">
+                <div class="card-header">
+                    <h2>Últimos Usuários com Assinatura</h2>
+                    <a href="/admin/users" class="btn btn-sm btn-outline">Ver Todos</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Plano</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Expira Em</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in usersWithPlans.Take(5))
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="user-info">
+                                            <span class="name">@user.Name</span>
+                                            <span class="email">@user.Email</span>
+                                        </div>
+                                    </td>
+                                    <td>@user.Plano</td>
+                                    <td>@user.Valor.ToString("C")</td>
+                                    <td>
+                                        <span class="badge badge-@(user.Status?.ToLower() == "ativa" ? "success" : "warning")">
+                                            @user.Status
+                                        </span>
+                                    </td>
+                                    <td>@(user.ExpiraEm?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                                </tr>
+                            }
+                            @if (!usersWithPlans.Any())
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center">Nenhuma assinatura ativa encontrada.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .admin-dashboard {
+        padding: 2rem;
+        color: var(--text-primary);
+    }
+
+    .header-section {
+        margin-bottom: 2rem;
+    }
+
+    .header-section h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(to right, #fff, #a5b4fc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+        color: var(--text-secondary);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        backdrop-filter: blur(10px);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        border-color: rgba(99, 102, 241, 0.2);
+    }
+
+    .icon-wrapper {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .icon-wrapper.users { background: rgba(59, 130, 246, 0.1); color: #60a5fa; }
+    .icon-wrapper.online { background: rgba(16, 185, 129, 0.1); color: #34d399; }
+    .icon-wrapper.mqtt { background: rgba(245, 158, 11, 0.1); color: #fbbf24; }
+    .icon-wrapper.plans { background: rgba(139, 92, 246, 0.1); color: #a78bfa; }
+
+    .stat-content h3 {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .stat-content .value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-content .subtext {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .value.status-ok { color: #34d399; }
+    .value.status-error { color: #ef4444; }
+
+    .section-card {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table th {
+        text-align: left;
+        padding: 1rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+        font-size: 0.875rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .table td {
+        padding: 1rem;
+        color: var(--text-primary);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        vertical-align: middle;
+    }
+
+    .user-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .user-info .name {
+        font-weight: 500;
+    }
+
+    .user-info .email {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .badge {
+        padding: 0.35rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-success { background: rgba(16, 185, 129, 0.1); color: #34d399; }
+    .badge-warning { background: rgba(245, 158, 11, 0.1); color: #fbbf24; }
+    .badge-danger { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+
+    .loading-state, .error-state {
+        text-align: center;
+        padding: 4rem;
+        color: var(--text-secondary);
+    }
+</style>
+
+@code {
+    private AdminStatsDto stats;
+    private List<UserWithPlanDto> usersWithPlans = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            var token = await AuthService.GetAccessTokenAsync();
+            var apiKey = await AuthService.GetApiKeyAsync();
+            
+            if (!string.IsNullOrEmpty(token))
+            {
+                var statsTask = AdminService.GetStatsAsync(token, apiKey);
+                var plansTask = AdminService.GetUsersWithPlansAsync(token, apiKey);
+
+                await Task.WhenAll(statsTask, plansTask);
+
+                stats = await statsTask;
+                usersWithPlans = await plansTask;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar dashboard admin: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

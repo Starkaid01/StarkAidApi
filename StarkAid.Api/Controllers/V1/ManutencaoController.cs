@@ -34,23 +34,45 @@ public class ManutencaoController : ControllerBase
     // ========== SOFTWARE ==========
 
     [HttpPost("software/iniciar")]
-    public IActionResult IniciarManutencaoSoftware([FromBody] IniciarManutencaoRequest request)
+    public async Task<IActionResult> IniciarManutencaoSoftware([FromBody] IniciarManutencaoRequest request)
     {
         if (request.UserId == Guid.Empty)
             return BadRequest("UserId é obrigatório.");
 
         _manutencaoAtiva[request.UserId] = true;
+
+        // Enviar comando via SignalR para o software Windows Forms (usando o grupo do usuário)
+        try
+        {
+            await _dispositivoEspHubContext.Clients.Group($"client_{request.UserId}").SendAsync("SuporteComando", "iniciarmanutencao");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Erro ao enviar comando de manutenção via SignalR: {ex.Message}");
+        }
+
         return Ok(new { message = $"Manutenção iniciada para usuário: {request.UserId}", userId = request.UserId });
     }
 
     [HttpPost("software/finalizar")]
-    public IActionResult FinalizarManutencaoSoftware([FromBody] IniciarManutencaoRequest request)
+    public async Task<IActionResult> FinalizarManutencaoSoftware([FromBody] IniciarManutencaoRequest request)
     {
         if (request.UserId == Guid.Empty)
             return BadRequest("UserId é obrigatório.");
 
         _manutencaoAtiva.Remove(request.UserId);
         _nomeAssistenteProvisorio.Remove(request.UserId);
+
+        // Enviar comando via SignalR para o software Windows Forms (usando o grupo do usuário)
+        try
+        {
+            await _dispositivoEspHubContext.Clients.Group($"client_{request.UserId}").SendAsync("SuporteComando", "finalizarmanutencao");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Erro ao enviar comando de finalizar manutenção via SignalR: {ex.Message}");
+        }
+
         return Ok(new { message = $"Manutenção finalizada para usuário: {request.UserId}", userId = request.UserId });
     }
 
@@ -160,10 +182,10 @@ public class ManutencaoController : ControllerBase
         if (request.UserId == Guid.Empty)
             return BadRequest("UserId é obrigatório.");
 
-        // Enviar comando via SignalR para o software Windows Forms
+        // Enviar comando via SignalR para o software Windows Forms (usando o grupo do usuário)
         try
         {
-            await _dispositivoEspHubContext.Clients.Group("type_software").SendAsync("SuporteComando", "limparcache");
+            await _dispositivoEspHubContext.Clients.Group($"client_{request.UserId}").SendAsync("SuporteComando", "limparcache");
         }
         catch (Exception ex)
         {
@@ -203,10 +225,10 @@ public class ManutencaoController : ControllerBase
         if (request.UserId == Guid.Empty)
             return BadRequest("UserId é obrigatório.");
 
-        // Enviar comando via SignalR para o software Windows Forms
+        // Enviar comando via SignalR para o software Windows Forms (usando o grupo do usuário)
         try
         {
-            await _dispositivoEspHubContext.Clients.Group("type_software").SendAsync("SuporteComando", "logout");
+            await _dispositivoEspHubContext.Clients.Group($"client_{request.UserId}").SendAsync("SuporteComando", "logout");
         }
         catch (Exception ex)
         {
@@ -239,10 +261,10 @@ public class ManutencaoController : ControllerBase
         if (request.UserId == Guid.Empty)
             return BadRequest("UserId é obrigatório.");
 
-        // Enviar comando via SignalR para o app Android
+        // Enviar comando via SignalR para o app Android (usando o grupo do usuário)
         try
         {
-            await _dispositivoEspHubContext.Clients.Group("type_app").SendAsync("SuporteComando", "limparcache");
+            await _dispositivoEspHubContext.Clients.Group($"client_{request.UserId}").SendAsync("SuporteComando", "limparcache");
         }
         catch (Exception ex)
         {
@@ -276,10 +298,10 @@ public class ManutencaoController : ControllerBase
         if (request.UserId == Guid.Empty)
             return BadRequest("UserId é obrigatório.");
 
-        // Enviar comando via SignalR para o app Android
+        // Enviar comando via SignalR para o app Android (usando o grupo do usuário)
         try
         {
-            await _dispositivoEspHubContext.Clients.Group("type_app").SendAsync("SuporteComando", "logout");
+            await _dispositivoEspHubContext.Clients.Group($"client_{request.UserId}").SendAsync("SuporteComando", "logout");
         }
         catch (Exception ex)
         {

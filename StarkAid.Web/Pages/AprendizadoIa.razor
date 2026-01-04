@@ -1,70 +1,635 @@
 @page "/aprendizado-ia"
 @using StarkAid.Web.DTOs
 @using StarkAid.Web.Services
+@using StarkAid.Web.Shared
+@using System.Text.Json
 @inject ApiService ApiService
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 
-<h3>Aprendizado IA</h3>
+<div class="page-header d-flex justify-content-between align-items-center mb-2">
+    <div class="header-left">
+        <h3>Aprendizado IA <small class="text-muted" style="font-size: 0.9rem;">(Context Signature System)</small></h3>
+        <span class="badge bg-info">Base de Conhecimento Local</span>
+    </div>
+    <div class="d-flex gap-2">
+        <div class="search-box">
+            <input type="text" @bind="searchTerm" @bind:event="oninput" placeholder="Pesquisar..." class="form-control form-control-sm" style="width: 200px;" />
+        </div>
+        <div class="form-check form-switch d-flex align-items-center gap-1" title="Mostrar apenas itens em quarentena">
+            <input class="form-check-input" type="checkbox" @bind="showQuarantineOnly" id="chkQuarentena">
+            <label class="form-check-label small" for="chkQuarentena">☣️ Quarentena</label>
+        </div>
+        <div class="form-check form-switch d-flex align-items-center gap-1" title="Mostrar inativos">
+            <input class="form-check-input" type="checkbox" @bind="showInactive" id="chkInativo">
+            <label class="form-check-label small" for="chkInativo">💀 Inativos</label>
+        </div>
+        <button class="btn btn-primary btn-sm" @onclick="() => OpenModal()">
+            <i class="bi bi-plus-lg"></i> Novo
+        </button>
+    </div>
+</div>
 
-@if (aprendizado != null)
+@if (stats != null)
 {
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Comando Usuário</th>
-                    <th>Resposta IA</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in aprendizado)
-                {
-                    <tr>
-                        <td>@item.ComandoUsuario</td>
-                        <td>@item.RespostaIa</td>
-                        <td>
-                            <button @onclick="() => Edit(item)" class="btn btn-secondary">Editar</button>
-                            <button @onclick="() => Delete(item)" class="btn btn-danger">Excluir</button>
-                        </td>
-                    </tr>
-                }
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stats-card glass">
+                <div class="stats-icon bg-primary-soft"><i class="bi bi-database"></i></div>
+                <div class="stats-info">
+                    <span class="stats-label">Total Itens</span>
+                    <span class="stats-value">@stats.Value.GetProperty("totalItens").GetInt32()</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card glass">
+                <div class="stats-icon bg-success-soft"><i class="bi bi-lightning-charge"></i></div>
+                <div class="stats-info">
+                    <span class="stats-label">Cache Hits</span>
+                    <span class="stats-value">@stats.Value.GetProperty("totalHits").GetInt32()</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card glass">
+                <div class="stats-icon bg-info-soft"><i class="bi bi-cpu"></i></div>
+                <div class="stats-info">
+                    <span class="stats-label">Tokens Economizados</span>
+                    <span class="stats-value">@stats.Value.GetProperty("tokensEconomizados").GetInt32().ToString("N0")</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card glass highlight">
+                <div class="stats-icon bg-warning-soft"><i class="bi bi-currency-dollar"></i></div>
+                <div class="stats-info">
+                    <span class="stats-label">Economia Estimada</span>
+                    <span class="stats-value text-success">$ @stats.Value.GetProperty("economiaEstimadaDolar").GetDouble().ToString("F2")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
-            </tbody>
-        </table>
+@if (aprendizados == null)
+{
+    <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Carregando base de aprendizado...</p>
+    </div>
+}
+else if (!aprendizados.Any())
+{
+    <div class="alert alert-info d-flex justify-content-between align-items-center">
+        <p class="mb-0">A IA ainda não aprendeu nenhum comando novo. Interaja com a Super IA ou crie um novo aprendizado manualmente.</p>
+        <button class="btn btn-primary btn-sm" @onclick="() => OpenModal()">Criar Agora</button>
     </div>
 }
 else
 {
-    <p>Carregando aprendizado...</p>
+    <div class="dashboard-card p-0 overflow-hidden shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="bg-light">
+                    <tr>
+                        <th style="width: 22%;">Texto (Comando)</th>
+                        <th style="width: 10%;">Tipo</th>
+                        <th style="width: 12%;">Contexto</th>
+                        <th style="width: 22%;">Resposta IA</th>
+                        <th style="width: 8%;">Confiança</th>
+                        <th style="width: 5%;" class="text-center">Respostas</th>
+                        <th style="width: 5%;" class="text-center">Variantes</th>
+                        <th style="width: 5%;" class="text-center">Hits</th>
+                        <th style="width: 16%;" class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in FilteredAprendizados)
+                    {
+                        <tr class="@(item.EmQuarentena ? "table-warning" : (!item.Ativo ? "table-secondary text-muted" : ""))">
+                            <td>
+                                <div class="text-truncate fw-500" style="max-width: 250px;" title="@item.Texto">
+                                    @if (!item.Ativo) { <i class="bi bi-slash-circle me-1" title="Inativo"></i> }
+                                    @item.Texto
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column gap-1">
+                                    <span class="badge @(item.Tipo == "Global" ? "bg-success" : (item.Tipo == "Usuario" ? "bg-primary" : "bg-warning text-dark"))">
+                                        @item.Tipo
+                                    </span>
+                                    @if (item.EmQuarentena)
+                                    {
+                                        <span class="badge bg-danger rounded-pill" title="Em Quarentena desde @item.QuarentenaDesde?.ToString("dd/MM")">
+                                            <i class="bi bi-radioactive"></i> Quarentena
+                                        </span>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <div class="text-truncate text-muted" style="max-width: 150px;">
+                                    @(string.IsNullOrEmpty(item.Contexto) ? "-" : item.Contexto)
+                                </div>
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 250px;" title="@item.Resposta">@item.Resposta</div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height: 6px;" title="Score: @item.ConfidenceScore%">
+                                        <div class="progress-bar @(item.ConfidenceScore > 80 ? "bg-success" : (item.ConfidenceScore > 40 ? "bg-info" : "bg-warning"))" 
+                                             role="progressbar" 
+                                             style="width: @item.ConfidenceScore%">
+                                        </div>
+                                    </div>
+                                    <small class="fw-bold" style="font-size: 0.7rem;">@item.ConfidenceScore%</small>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge @(item.Respostas?.Count > 1 ? "bg-info-subtle text-info" : "bg-light text-muted") border" title="Variações de resposta">
+                                    @(item.Respostas?.Count ?? 0) <i class="bi bi-layers-fill ms-1"></i>
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge @(item.VariantesDistintasUsadas >= 3 ? "bg-info" : "bg-light text-dark") border" title="Variantes detectadas">
+                                    @item.VariantesDistintasUsadas <i class="bi bi-shuffle ms-1"></i>
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark border" title="Hit Count: @item.HitCount">
+                                    @item.HitCount <i class="bi bi-eye-fill text-muted ms-1"></i>
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group shadow-sm">
+                                    @if (item.Tipo == "Usuario")
+                                    {
+                                        <button @onclick="() => Promote(item.Id)" class="btn btn-light btn-sm text-success" title="Promover a Global">
+                                            <i class="bi bi-arrow-up-circle-fill"></i>
+                                        </button>
+                                    }
+                                    else if (item.Tipo == "Global")
+                                    {
+                                        <button @onclick="() => Demote(item.Id)" class="btn btn-light btn-sm text-warning" title="Rebaixar a Privado">
+                                            <i class="bi bi-arrow-down-circle"></i>
+                                        </button>
+                                    }
+                                    <button @onclick="() => ToggleQuarantine(item.Id)" class="btn btn-light btn-sm @(item.EmQuarentena ? "text-danger" : "text-muted")" title="Alternar Quarentena">
+                                        <i class="bi bi-shield-exclamation"></i>
+                                    </button>
+                                    <button @onclick="() => OpenModal(item)" class="btn btn-light btn-sm text-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button @onclick="() => Delete(item.Id)" class="btn btn-light btn-sm text-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 }
 
+<Modal IsOpen="isModalOpen" Title="@(isEditing ? "Editar Aprendizado" : "Novo Aprendizado Manual")" OnClose="CloseModal">
+    <div class="form-container p-3">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Tipo de Aprendizado</label>
+                <select class="form-select border-primary" value="@selectedItem.Tipo" @onchange="OnTipoChanged">
+                    <option value="Global">Global (Pergunta Direta)</option>
+                    <option value="Contextual">Contextual (Follow-up)</option>
+                    <option value="Usuario">Usuario (Pessoal)</option>
+                </select>
+                <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                    @if (selectedItem.Tipo == "Global") { <span>Visível para <strong>todos</strong>. Use para fatos gerais.</span> }
+                    else if (selectedItem.Tipo == "Contextual") { <span>Depende de conversa anterior.</span> }
+                    else { <span>Privado do usuário.</span> }
+                </small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Contexto / Ancoragem</label>
+                <input @bind="selectedItem.Contexto" class="form-control" placeholder="Ex: limpeza chao madeira" disabled="@(selectedItem.Tipo == "Global")" />
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label fw-bold">Texto (Gatilho)</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-chat-left-text"></i></span>
+                <input @bind="selectedItem.Texto" class="form-control" placeholder="Ex: quem descobriu a america" />
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Resposta IA (Base)</label>
+            <textarea @bind="selectedItem.Resposta" class="form-control" rows="3" placeholder="A resposta que a IA deve memorizar..."></textarea>
+        </div>
 
+        @if (isEditing)
+        {
+            <div class="mb-3">
+                <label class="form-label fw-bold d-flex justify-content-between">
+                    <span>Variações Geradas (Rodízio)</span>
+                    <span class="badge bg-secondary">@(selectedItem.Respostas?.Count ?? 0) itens</span>
+                </label>
+                
+                <div class="input-group mb-2">
+                    <input @bind="newVariationText" class="form-control form-control-sm" placeholder="Adicionar nova variação..." @onkeyup="@(e => e.Key == "Enter" ? AddVariation() : Task.CompletedTask)" />
+                    <button class="btn btn-outline-primary btn-sm" @onclick="AddVariation" type="button">
+                        <i class="bi bi-plus-lg"></i> Adicionar
+                    </button>
+                </div>
 
+                <div class="list-group list-group-flush border rounded-3 overflow-hidden shadow-sm" style="max-height: 150px; overflow-y: auto;">
+                    @if (selectedItem.Respostas != null)
+                    {
+                        @foreach (var v in selectedItem.Respostas.OrderByDescending(x => x.UsoCount))
+                        {
+                            <div class="list-group-item list-group-item-action py-2">
+                                <div class="d-flex justify-content-between align-items-center gap-2">
+                                    <p class="mb-0 small flex-grow-1 text-wrap text-break" style="line-height: 1.4;">
+                                        @v.Texto
+                                    </p>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge @(v.UsoCount > 0 ? "bg-success" : "bg-light text-muted border")" title="Vezes que esta versão foi usada" style="font-size: 0.7rem;">
+                                            @v.UsoCount
+                                        </span>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-light text-primary py-0" @onclick="() => EditVariation(v)" title="Editar texto">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-light text-danger py-0" @onclick="() => DeleteVariation(v.Id)" title="Remover variação">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+                <small class="text-muted mt-2 d-block" style="font-size: 0.75rem;">
+                    <i class="bi bi-info-circle me-1"></i> O sistema alterna entre estas respostas automaticamente priorizando as menos usadas.
+                </small>
+            </div>
+        }
+        
+        <div class="modal-footer d-flex justify-content-between mt-4 px-0 pt-3 border-top">
+             <div class="d-flex align-items-center gap-2">
+                 @if(isEditing)
+                 {
+                     <div class="form-check form-switch" title="Forçar inativação ou reativação">
+                         <input class="form-check-input" type="checkbox" @bind="selectedItem.Ativo" id="chkEditAtivo">
+                         <label class="form-check-label" for="chkEditAtivo">Ativo</label>
+                     </div>
+                     <div class="form-check form-switch ms-3" title="Colocar em quarentena (probatório)">
+                         <input class="form-check-input" type="checkbox" @bind="selectedItem.EmQuarentena" id="chkEditQuarentena">
+                         <label class="form-check-label" for="chkEditQuarentena">Quarentena</label>
+                     </div>
+                 }
+             </div>
+             <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary" @onclick="CloseModal">Cancelar</button>
+                <button class="btn btn-primary px-4" @onclick="Save">
+                    <i class="bi bi-check-lg me-1"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</Modal>
 
 @code {
-    private List<AprendizadoIaDto>? aprendizado;
+    private List<AprendizadoIaDto>? aprendizados;
+    private JsonElement? stats;
+    private string searchTerm = "";
+    private bool showQuarantineOnly = false;
+    private bool showInactive = false;
+    private AprendizadoIaDto selectedItem = new() { Tipo = "Global", Ativo = true };
+    private bool isModalOpen = false;
+    private bool isEditing = false;
+    private string newVariationText = "";
+
+    private async Task AddVariation()
+    {
+        if (string.IsNullOrWhiteSpace(newVariationText)) return;
+
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+        var success = await ApiService.AddAprendizadoRespostaAsync(selectedItem.Id, newVariationText, token, apiKey);
+        if (success)
+        {
+            newVariationText = ""; // Clear input
+            await RefreshModalItem();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao adicionar variação.");
+        }
+    }
+
+    private async Task EditVariation(AprendizadoRespostaDto resposta)
+    {
+        var newText = await JS.InvokeAsync<string>("prompt", "Editar texto da variação:", resposta.Texto);
+        if (string.IsNullOrWhiteSpace(newText) || newText == resposta.Texto) return;
+
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+        var success = await ApiService.UpdateAprendizadoRespostaAsync(resposta.Id, newText, token, apiKey);
+        if (success)
+        {
+            await RefreshModalItem();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao atualizar variação.");
+        }
+    }
+
+    private async Task DeleteVariation(Guid respostaId)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Tem certeza que deseja excluir esta variação?");
+        if (!confirmed) return;
+
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+        var success = await ApiService.DeleteAprendizadoRespostaAsync(respostaId, token, apiKey);
+        if (success)
+        {
+            await RefreshModalItem();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao excluir variação.");
+        }
+    }
+
+    private async Task RefreshModalItem()
+    {
+        // Guard current ID
+        var currentId = selectedItem.Id;
+        
+        // Reload all data to get updates
+        await LoadData();
+
+        // Re-find the item to update the modal's object
+        var updatedItem = aprendizados?.FirstOrDefault(a => a.Id == currentId);
+        if (updatedItem != null)
+        {
+            // Update fields manually or re-call OpenModal logic partially
+            // We just need to update the Respostas list primarily
+            selectedItem.Respostas = updatedItem.Respostas;
+            // Also update others just in case
+            selectedItem.Texto = updatedItem.Texto;
+            selectedItem.Resposta = updatedItem.Resposta;
+            // Trigger state change
+            StateHasChanged();
+        }
+    }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "prefill")]
+    public string? Prefill { get; set; }
+
+    private IEnumerable<AprendizadoIaDto> FilteredAprendizados 
+    {
+        get 
+        {
+            var query = aprendizados ?? Enumerable.Empty<AprendizadoIaDto>();
+
+            if (!showInactive)
+                query = query.Where(a => a.Ativo); 
+
+            if (showQuarantineOnly)
+                query = query.Where(a => a.EmQuarentena);
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                query = query.Where(a => a.Texto.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) 
+                                      || a.Resposta.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return query.OrderByDescending(x => x.CreatedAt);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadData();
+        
+        if (!string.IsNullOrEmpty(Prefill))
+        {
+            OpenModal(new AprendizadoIaDto { Texto = Prefill, Tipo = "Global", Ativo = true });
+        }
+    }
+
+    private void OnTipoChanged(ChangeEventArgs e)
+    {
+        selectedItem.Tipo = e.Value?.ToString() ?? "Global";
+        if (selectedItem.Tipo == "Global")
+        {
+            selectedItem.Contexto = null;
+        }
+    }
+
+    private async Task LoadData()
+    {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
-        aprendizado = await ApiService.GetAprendizadoIaAsync(token, apiKey);
+        
+        aprendizados = await ApiService.GetAprendizadoIaAsync(token, apiKey);
+        
+        var statsResult = await ApiService.GetAprendizadoStatsAsync(token, apiKey);
+        if (statsResult != null)
+        {
+            stats = (JsonElement)statsResult;
+        }
     }
 
-    private async Task Edit(AprendizadoIaDto item)
+    private async Task Promote(Guid id)
     {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
-        // Implementar
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        if (await ApiService.PromoverAprendizadoAsync(id, token, apiKey))
+            await LoadData();
     }
 
-    private async Task Delete(AprendizadoIaDto item)
+    private async Task Demote(Guid id)
     {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
-        // Implementar
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        if (await ApiService.RebaixarAprendizadoAsync(id, token, apiKey))
+            await LoadData();
+    }
+
+    private async Task ToggleQuarantine(Guid id)
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+        if (await ApiService.ToggleQuarentenaAsync(id, token, apiKey))
+            await LoadData();
+    }
+
+    private void OpenModal(AprendizadoIaDto? item = null)
+    {
+        if (item != null)
+        {
+            isEditing = (item.Id != Guid.Empty);
+            selectedItem = new AprendizadoIaDto
+            {
+                Id = item.Id,
+                Texto = item.Texto,
+                Resposta = item.Resposta,
+                Tipo = item.Tipo ?? "Global",
+                Contexto = item.Contexto,
+                CreatedAt = item.CreatedAt,
+                Ativo = item.Ativo,
+                EmQuarentena = item.EmQuarentena,
+                ConfidenceScore = item.ConfidenceScore,
+                HitCount = item.HitCount,
+                VariantesDistintasUsadas = item.VariantesDistintasUsadas,
+                Respostas = item.Respostas // Fix: Copy the variations list
+            };
+        }
+        else
+        {
+            isEditing = false;
+            selectedItem = new AprendizadoIaDto { Tipo = "Global", Ativo = true };
+        }
+        isModalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(selectedItem.Texto) || string.IsNullOrWhiteSpace(selectedItem.Resposta))
+        {
+            await JS.InvokeVoidAsync("alert", "Preencha todos os campos obrigatórios.");
+            return;
+        }
+
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+        bool success;
+        if (isEditing)
+        {
+            success = await ApiService.EditAprendizadoIaAsync(selectedItem.Id, selectedItem.Texto, selectedItem.Resposta, selectedItem.Tipo, selectedItem.Contexto, selectedItem.Ativo, selectedItem.EmQuarentena, token, apiKey);
+        }
+        else
+        {
+            success = await ApiService.CreateAprendizadoIaAsync(selectedItem.Texto, selectedItem.Resposta, selectedItem.Tipo, selectedItem.Contexto, token, apiKey);
+        }
+
+        if (success)
+        {
+            await LoadData();
+            isModalOpen = false;
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao salvar o aprendizado.");
+        }
+    }
+
+    private async Task Delete(Guid id)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Tem certeza que deseja excluir permanentemente este aprendizado da base de conhecimento?");
+        if (!confirmed) return;
+
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+        var success = await ApiService.DeleteAprendizadoIaAsync(id, token, apiKey);
+        if (success)
+        {
+            await LoadData();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao excluir o item.");
+        }
     }
 }
 
 <style>
-    /* Estilo */
+    .stats-card {
+        padding: 1.25rem;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: transform 0.2s;
+    }
+    
+    .stats-card:hover { transform: translateY(-3px); }
+    .stats-card.highlight { border-color: var(--bs-warning); background: rgba(255, 193, 7, 0.05); }
+    
+    .glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .stats-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .bg-primary-soft { background: #e0e7ff; color: #4f46e5; }
+    .bg-success-soft { background: #dcfce7; color: #16a34a; }
+    .bg-info-soft { background: #e0f2fe; color: #0284c7; }
+    .bg-warning-soft { background: #fef3c7; color: #d97706; }
+
+    .stats-label { display: block; font-size: 0.75rem; color: #64748b; font-weight: 500; }
+    .stats-value { display: block; font-size: 1.25rem; font-weight: 700; color: #1e293b; }
+
+    .fw-500 { font-weight: 500; }
+    .btn-icon { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+
+    .table th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        color: #64748b;
+        padding: 1rem 0.75rem;
+    }
+    
+    .table td { vertical-align: middle; font-size: 0.85rem; padding: 0.75rem; }
+
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 5rem;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(99, 102, 241, 0.1);
+        border-top: 4px solid #4f46e5;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    @@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>

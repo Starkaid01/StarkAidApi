@@ -1,4 +1,4 @@
-﻿using StarkAid.Web.Dtos;
+using StarkAid.Web.Dtos;
 using StarkAid.Web.DTOs;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -373,9 +373,157 @@ public class ApiService
     // Se a API for diferente, ajustar.
     public async Task<List<AprendizadoIaDto>> GetAprendizadoIaAsync(string token, string apiKey)
     {
-        // Placeholder: Implementar se API existir
-        var response = await Task.FromResult(false); // Simular chamada API
-        return new List<AprendizadoIaDto>();
+        var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Admin/aprendizados");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return new List<AprendizadoIaDto>();
+        return await response.Content.ReadFromJsonAsync<List<AprendizadoIaDto>>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<AprendizadoIaDto>();
+    }
+
+    public async Task<bool> CreateAprendizadoIaAsync(string texto, string resposta, string tipo, string? contexto, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/Admin/aprendizados");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        request.Content = JsonContent.Create(new { Texto = texto, Resposta = resposta, Tipo = tipo, Contexto = contexto });
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> EditAprendizadoIaAsync(Guid id, string texto, string resposta, string tipo, string? contexto, bool ativo, bool emQuarentena, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Put, $"api/v1/Admin/aprendizados/{id}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        request.Content = JsonContent.Create(new { Texto = texto, Resposta = resposta, Tipo = tipo, Contexto = contexto, Ativo = ativo, EmQuarentena = emQuarentena });
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> DeleteAprendizadoIaAsync(Guid id, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"api/v1/Admin/aprendizados/{id}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> PromoverAprendizadoAsync(Guid id, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, $"api/v1/Admin/aprendizados/{id}/promover");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> RebaixarAprendizadoAsync(Guid id, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, $"api/v1/Admin/aprendizados/{id}/rebaixar");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> ToggleQuarentenaAsync(Guid id, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, $"api/v1/Admin/aprendizados/{id}/quarentena");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> AddAprendizadoRespostaAsync(Guid aprendizadoId, string texto, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, $"api/v1/Admin/aprendizados/{aprendizadoId}/respostas");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        request.Content = JsonContent.Create(new { Texto = texto });
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> UpdateAprendizadoRespostaAsync(Guid respostaId, string texto, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Put, $"api/v1/Admin/aprendizados/respostas/{respostaId}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        request.Content = JsonContent.Create(new { Texto = texto });
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> DeleteAprendizadoRespostaAsync(Guid respostaId, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"api/v1/Admin/aprendizados/respostas/{respostaId}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<object?> GetAprendizadoStatsAsync(string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Admin/aprendizados/stats");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<object>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+    }
+
+    public async Task<object?> GetTelemetryOverviewAsync(string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Admin/ia/telemetry/overview");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<object>();
+    }
+
+    public async Task<object?> GetTelemetryQualityAsync(string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Admin/ia/telemetry/quality");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<object>();
+    }
+
+    public async Task<object?> GetTopMissesAsync(string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Admin/ia/telemetry/top-misses");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<object>();
+    }
+
+    public async Task<object?> GetRoiHistoryAsync(string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Admin/ia/telemetry/roi-history");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<object>();
+    }
+
+    public async Task<object?> GetFuzzyAnalyticsAsync(string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Admin/ia/telemetry/fuzzy-analytics");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<object>();
     }
 
     public async Task<bool> SincronizarEwelinkAsync(string token, string apiKey)
@@ -428,4 +576,72 @@ public class ApiService
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<WeatherForecastDto>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
     }
+    public async Task<IaResponse?> ChamarSuperIAAsync(IaRequest dto, string token, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/Users/ia/super");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Api-Key", apiKey);
+        request.Content = JsonContent.Create(dto);
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<IaResponse>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+    }
+}
+
+public class IaRequest
+{
+    [System.Text.Json.Serialization.JsonPropertyName("texto")]
+    public string Pergunta { get; set; } = string.Empty;
+
+    [System.Text.Json.Serialization.JsonPropertyName("estilo")]
+    public string Personalidade { get; set; } = string.Empty;
+
+    [System.Text.Json.Serialization.JsonPropertyName("contextoUser")]
+    public string UltimoContextoUser { get; set; } = string.Empty;
+
+    [System.Text.Json.Serialization.JsonPropertyName("contextoIA")]
+    public string UltimoContextoIA { get; set; } = string.Empty;
+
+    [System.Text.Json.Serialization.JsonPropertyName("useStarkCoins")]
+    public bool UsarStarkCoins { get; set; }
+}
+
+public class IaResponse
+{
+    public IaResultado? Resultado { get; set; }
+    public string? PlanType { get; set; }
+    public int? StarkCoinBalance { get; set; }
+    public int? TokensConsumidosSemana { get; set; }
+    public int? TokensSemanaMax { get; set; }
+    public int? TokensRestantes { get; set; }
+    public bool? AdsEnabled { get; set; }
+    public int? AgendamentosMax { get; set; }
+    public int? AgendamentosRestantes { get; set; }
+    public int? Rate { get; set; }
+    public int? NovoSaldo { get; set; }
+    public EconomicPayload? Economy { get; set; }
+}
+
+public class IaResultado
+{
+    public string Texto { get; set; } = string.Empty;
+    public string? HitResult { get; set; }
+    public double? SimilarityScore { get; set; }
+    public string? AprendizadoTipo { get; set; }
+    public Guid? AprendizadoId { get; set; }
+}
+
+public class EconomicPayload
+{
+    public string PlanType { get; set; } = string.Empty;
+    public int StarkCoinBalance { get; set; }
+    public int TokensConsumidosSemana { get; set; }
+    public int TokensSemanaMax { get; set; }
+    public int TokensRestantes { get; set; }
+    public bool AdsEnabled { get; set; }
+    public int AgendamentosMax { get; set; }
+    public int AgendamentosRestantes { get; set; }
+    public int Rate { get; set; }
+
+    public int Balance() => StarkCoinBalance;
 }

@@ -1,0 +1,80 @@
+@using StarkAid.Web.Services
+@inject ConfirmService ConfirmService
+
+@if (show)
+{
+    <div class="confirm-overlay">
+        <div class="confirm-modal">
+            <div class="confirm-header">
+                <h3>@title</h3>
+            </div>
+            <div class="confirm-body">
+                <p>@message</p>
+            </div>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary" @onclick="() => Close(false)">Cancelar</button>
+                <button class="btn btn-danger" @onclick="() => Close(true)">Confirmar</button>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .confirm-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        animation: fade-in 0.2s ease-out;
+    }
+
+    .confirm-modal {
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        width: 90%;
+        max-width: 400px;
+        padding: 1.5rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        animation: scale-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @@keyframes scale-in { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .confirm-header h3 { margin: 0; font-size: 1.25rem; color: white; }
+    .confirm-body { margin: 1.5rem 0; color: #94a3b8; line-height: 1.5; }
+    .confirm-actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
+</style>
+
+@code {
+    private bool show = false;
+    private string title = "";
+    private string message = "";
+
+    protected override void OnInitialized()
+    {
+        ConfirmService.OnShow += HandleShow;
+    }
+
+    private void HandleShow(string t, string m)
+    {
+        title = t;
+        message = m;
+        show = true;
+        StateHasChanged();
+    }
+
+    private void Close(bool result)
+    {
+        show = false;
+        ConfirmService.SetResult(result);
+    }
+}

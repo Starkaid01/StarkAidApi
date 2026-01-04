@@ -26,6 +26,7 @@ using StarkAid.Api.Services.V1.SocialCommand;
 using StarkAid.Api.Services.V1.SuperIA;
 using StarkAid.Api.Services.V1.Email;
 using StarkAid.Api.Services.V1.Firebase;
+using StarkAid.Api.Services.V1.IA;
 using StarkAid.Api.Services.V1.Disparo;
 using StarkAid.Api.Services.V1.DispositivoEsp;
 using StarkAid.Api.Services.V1.License;
@@ -33,6 +34,11 @@ using StarkAid.Api.Services.V1.Weather;
 using StarkAid.Api.Services.V1.Suporte;
 using StarkAid.Api.Services.V1.Payment.Stripe;
 using StarkAid.Api.Hubs;
+using StarkAid.Api.Services.Telemetry;
+using StarkAid.Api.Services.CommandRouter;
+using StarkAid.Api.Services.CommandRouter.Handlers;
+using StarkAid.Api.Services.V1.Fun;
+using StarkAid.Api.Services.V1.Music;
 using Stripe;
 using System.Diagnostics;
 using System.Threading.RateLimiting;
@@ -255,9 +261,10 @@ try
     {
         options.AddPolicy("AllowAll", policy => 
         {
-            policy.AllowAnyOrigin()
+            policy.SetIsOriginAllowed(_ => true)
                   .AllowAnyMethod()
                   .AllowAnyHeader()
+                  .AllowCredentials()
                   .WithExposedHeaders("X-RateLimit-Remaining", "X-RateLimit-Reset");
         });
     });
@@ -336,6 +343,31 @@ try
     builder.Services.AddSingleton<IStarkCoinConversionService, StarkCoinConversionService>();
     builder.Services.AddScoped<ITokenUsageService, TokenUsageService>();
 
+    // 9. Command Router e Telemetria
+    builder.Services.AddScoped<ITelemetryService, TelemetryService>();
+    builder.Services.AddScoped<ICommandRouter, CommandRouter>();
+    
+    // Fun Module Services (Prioridade Máxima)
+    builder.Services.AddScoped<IIntentDetector, StarkAid.Api.Services.V1.Fun.IntentDetector>();
+    builder.Services.AddScoped<IMathService, StarkAid.Api.Services.V1.Fun.MathService>();
+    builder.Services.AddScoped<IJokeService, StarkAid.Api.Services.V1.Fun.JokeService>();
+    builder.Services.AddScoped<ILocalCommandRouter, StarkAid.Api.Services.V1.Fun.LocalCommandRouter>();
+    builder.Services.AddScoped<ICommandHandler, FunCommandHandler>();
+
+    // Music Module Services
+    builder.Services.AddScoped<IRadioBrowserService, RadioBrowserService>();
+    builder.Services.AddScoped<IMusicIntentService, MusicIntentService>();
+    builder.Services.AddScoped<IYouTubeMusicService, YouTubeMusicService>();
+
+    // Outros Handlers
+    builder.Services.AddScoped<ICommandHandler, DeviceCommandHandler>();
+    builder.Services.AddScoped<ICommandHandler, SocialCommandHandler>();
+    builder.Services.AddScoped<ICommandHandler, SystemCommandHandler>();
+    builder.Services.AddScoped<ICommandHandler, LearningCommandHandler>();
+    
+    // builder.Services.AddScoped<ICommandHandler, IaCommandHandler>();
+    builder.Services.AddScoped<IAprendizadoService, AprendizadoService>();
+
 
     // 🧩 Lê o domínio Cloudflare atual do banco e injeta na configuração
     using (var scope = builder.Services.BuildServiceProvider().CreateScope())
@@ -360,6 +392,7 @@ try
     builder.Services.AddHostedService<MqttHostedService>();
     builder.Services.AddHostedService<AssinaturaStatusChecker>();
     builder.Services.AddHostedService<WeeklyTokensResetService>();
+    builder.Services.AddHostedService<StarkAid.Api.Services.Background.CognitiveGarbageCollectorService>();
 
     builder.Services.AddSingleton<IMqttClientService, MqttClientService>();
 
@@ -367,6 +400,8 @@ try
     builder.Services.Configure<WppConnectOptions>(builder.Configuration.GetSection("WppConnectOptions"));
 
     builder.Services.Configure<NlpConnectOptions>(builder.Configuration.GetSection("NlpConnectOptions"));
+
+    builder.Services.Configure<AiTelemetryOptions>(builder.Configuration.GetSection(AiTelemetryOptions.ConfigSection));
 
 
     builder.Services.Configure<IaApiKeys>(builder.Configuration.GetSection("IaApiKeys"));
@@ -491,10 +526,11 @@ try
 
     // 10. Pipeline
     //app.UseHttpsRedirection();
+    app.UseDefaultFiles();
     app.UseStaticFiles();
     app.UseRouting();
-    app.UseRateLimiter(); // Rate limiting deve vir antes de CORS
     app.UseCors("AllowAll");
+    app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -513,6 +549,7 @@ try
     app.MapHub<StarkAid.Api.Hubs.DeviceHub>("/hubs/device");
     app.MapHub<StarkAid.Api.Hubs.DispositivoEspHub>("/hubs/dispositivo-esp");
     app.MapHub<StarkAid.Api.Hubs.SupportChatHub>("/hubs/support-chat");
+    app.MapHub<StarkAid.Api.Hubs.AvatarHub>("/hubs/avatar");
 
     // Swagger disponível em Development
     // IMPORTANTE: Para acessar via IP (ex: http://192.168.2.106:5000/swagger),

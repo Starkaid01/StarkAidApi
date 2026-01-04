@@ -1,0 +1,9 @@
+  Determinando os projetos a serem restaurados...
+  Todos os projetos est├úo atualizados para restaura├º├úo.
+  StarkAid.Api -> E:\projetos\StarkaidAPI\StarkAid\StarkAid.Api\bin\Debug\net8.0\win-x64\StarkAid.Api.dll
+
+Compila├º├úo com ├¬xito.
+    0 Aviso(s)
+    0 Erro(s)
+
+Tempo Decorrido 00:00:01.82

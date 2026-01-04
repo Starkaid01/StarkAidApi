@@ -10,14 +10,23 @@
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
         <div class="dashboard-card">
-            @if (user == null)
+            @if (isLoading)
             {
                 <div class="loading-container">
                     <div class="spinner"></div>
                     <p>Carregando perfil...</p>
                 </div>
             }
-            else
+            else if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> @errorMessage
+                    <div class="mt-3">
+                        <button class="btn btn-outline-danger" @onclick="OnInitializedAsync">Tentar Novamente</button>
+                    </div>
+                </div>
+            }
+            else if (user != null)
             {
                 <EditForm Model="@user" OnValidSubmit="UpdateProfile">
                     <DataAnnotationsValidator />
@@ -66,22 +75,57 @@
 
 @code {
     private UserMeDto? user;
+    private string? errorMessage;
+    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
-        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
-        if (string.IsNullOrEmpty(token)) NavigationManager.NavigateTo("/login");
+        try
+        {
+            isLoading = true;
+            errorMessage = null;
 
-        user = await ApiService.GetMeAsync(token, apiKey);
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+            var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                NavigationManager.NavigateTo("/login");
+                return;
+            }
+
+            user = await ApiService.GetMeAsync(token, apiKey);
+
+            if (user == null)
+            {
+                errorMessage = "Não foi possível carregar os dados do perfil. Por favor, tente fazer login novamente.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar perfil: {ex.Message}";
+            await JS.InvokeVoidAsync("console.error", errorMessage);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 
     private async Task UpdateProfile()
     {
-        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
-        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
-        var message = await ApiService.UpdateProfileAsync(user!, token, apiKey);
-        await JS.InvokeVoidAsync("alert", message);
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+            var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+            var message = await ApiService.UpdateProfileAsync(user!, token, apiKey);
+            await JS.InvokeVoidAsync("alert", message);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao salvar: " + ex.Message);
+        }
     }
 }
 

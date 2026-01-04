@@ -24,7 +24,7 @@
             android:layout_marginBottom="32dp"
             android:src="@drawable/ic_mic_on"
             android:contentDescription="Microfone"
-            android:tint="?attr/colorPrimary" />
+            app:tint="?attr/colorPrimary" />
 
         <!-- Texto Explicativo -->
         <TextView
@@ -106,4 +106,3 @@
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-

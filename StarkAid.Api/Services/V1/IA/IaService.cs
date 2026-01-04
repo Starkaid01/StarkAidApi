@@ -11,6 +11,9 @@ using System.Text.Json;
 using System.Text.Unicode;
 using System.Threading.Tasks;
 using System.Web;
+using System.Linq;
+using System.Collections.Concurrent;
+using System.Net;
 
 namespace StarkAid.Api.Services.V1.SuperIA
 {
@@ -199,13 +202,16 @@ Output: 'Não poderei comparecer à reunião.'"
             return resultadoGroq;
         }
 
-        private async Task<IaResultado?> ChamarGroq(object[] mensagens)
+        private async Task<IaResultado?> ChamarGroq(object[] mensagens, int maxTokens = 300)
         {
+            const string modelo = "llama-3.3-70b-versatile";
+            if (ModeloEsgotado(modelo)) return null;
+
             var requestBody = new
             {
-                model = "llama3-8b-8192",
+                model = modelo,
                 messages = mensagens,
-                max_tokens = 150,
+                max_tokens = maxTokens,
                 temperature = 0.5
             };
 
@@ -216,8 +222,29 @@ Output: 'Não poderei comparecer à reunião.'"
             };
             request.Headers.Add("Authorization", $"Bearer {_groApiKey}");
 
-            var response = await _httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode) return null;
+            HttpResponseMessage response;
+            try
+            {
+                response = await _httpClient.SendAsync(request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro de rede ao chamar Groq");
+                return null;
+            }
+
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                MarcarModeloComoEsgotado(modelo, response);
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var erro = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Groq retornou erro {0}: {1}", response.StatusCode, erro);
+                return null;
+            }
 
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             var texto = doc.RootElement.GetProperty("choices")[0]
@@ -234,7 +261,7 @@ Output: 'Não poderei comparecer à reunião.'"
                 Texto = texto ?? "",
                 PromptTokens = promptTokens,
                 CompletionTokens = completionTokens,
-                Modelo = "groq-llama3-8b-8192"
+                Modelo = modelo
             };
         }
 
@@ -243,29 +270,96 @@ Output: 'Não poderei comparecer à reunião.'"
             "google/gemini-2.0-flash-exp:free",
             "meta-llama/llama-3.3-70b-instruct:free",
             "google/gemma-3-27b-it:free",
-            "nousresearch/hermes-3-405b:free",
             "meta-llama/llama-3.2-3b-instruct:free"
         };
 
-        public async Task<IaResultado?> ChamarOpenRouter(object[] mensagens)
+        private class ModeloEstado
+        {
+            public bool Esgotado { get; set; }
+            public DateTimeOffset? RetryAfter { get; set; }
+        }
+
+        private static readonly ConcurrentDictionary<string, ModeloEstado> EstadoModelos = new();
+
+        private bool ModeloEsgotado(string modelo)
+        {
+            if (!EstadoModelos.TryGetValue(modelo, out var estado))
+                return false;
+
+            if (estado.RetryAfter == null)
+                return estado.Esgotado;
+
+            if (DateTimeOffset.UtcNow >= estado.RetryAfter)
+            {
+                EstadoModelos.TryRemove(modelo, out _);
+                return false;
+            }
+
+            return true;
+        }
+
+        private void MarcarModeloComoEsgotado(string modelo, HttpResponseMessage response)
+        {
+            DateTimeOffset? retryAfter = null;
+
+            // 1. Tentar ler Retry-After (segundos ou data)
+            if (response.Headers.TryGetValues("Retry-After", out var values))
+            {
+                var val = values.First();
+                if (int.TryParse(val, out var seconds))
+                    retryAfter = DateTimeOffset.UtcNow.AddSeconds(seconds);
+                else if (DateTimeOffset.TryParse(val, out var dto))
+                    retryAfter = dto;
+            }
+
+            // 2. Tentar ler x-ratelimit-reset (Unix timestamp) - Comum na OpenRouter/Groq
+            if (retryAfter == null && response.Headers.TryGetValues("x-ratelimit-reset", out var resetValues))
+            {
+                if (long.TryParse(resetValues.First(), out var unixTimestamp))
+                {
+                    // Se for um timestamp muito grande, é data. Se pequeno, segundos.
+                    if (unixTimestamp > 1000000000)
+                        retryAfter = DateTimeOffset.FromUnixTimeSeconds(unixTimestamp);
+                    else
+                        retryAfter = DateTimeOffset.UtcNow.AddSeconds(unixTimestamp);
+                }
+            }
+
+            EstadoModelos[modelo] = new ModeloEstado
+            {
+                Esgotado = true,
+                RetryAfter = retryAfter ?? DateTimeOffset.UtcNow.AddMinutes(10) // Fallback 10 min
+            };
+            
+            _logger.LogWarning("⚠️ Modelo {0} em cooldown. Retorno previsto: {1}", modelo, EstadoModelos[modelo].RetryAfter);
+        }
+
+        public async Task<IaResultado?> ChamarOpenRouter(object[] mensagens, int maxTokens = 300)
         {
             foreach (var modelo in ModelosFree)
             {
-                var resultado = await TentarModelo(modelo, mensagens);
+                if (ModeloEsgotado(modelo)) 
+                {
+                    _logger.LogInformation("⏭️ Pulando modelo esgotado: {0}", modelo);
+                    continue;
+                }
+
+                var resultado = await TentarModelo(modelo, mensagens, maxTokens);
                 if (resultado != null)
                     return resultado;
             }
 
-            // Nenhum modelo respondeu
+            // Nenhum modelo respondeu ou todos esgotados
             return null;
         }
-        private async Task<IaResultado?> TentarModelo(string modelo, object[] mensagens)
+
+        private async Task<IaResultado?> TentarModelo(string modelo, object[] mensagens, int maxTokens)
         {
             var requestBody = new
             {
                 model = modelo,
                 messages = mensagens,
-                max_tokens = 150,
+                max_tokens = maxTokens,
                 temperature = 0.6
             };
 
@@ -287,22 +381,34 @@ Output: 'Não poderei comparecer à reunião.'"
             {
                 response = await _httpClient.SendAsync(request);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Erro de rede ao chamar modelo {0}", modelo);
+                return null;
+            }
+
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                MarcarModeloComoEsgotado(modelo, response);
                 return null;
             }
 
             if (!response.IsSuccessStatusCode)
             {
-                // Log útil para debug
                 var erro = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Modelo {0} retornou erro {1}: {2}", modelo, response.StatusCode, erro);
                 return null;
             }
 
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
-            var texto = doc.RootElement
-                .GetProperty("choices")[0]
+            if (!doc.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
+            {
+                _logger.LogWarning("Modelo {0} retornou resposta sem choices.", modelo);
+                return null;
+            }
+
+            var texto = choices[0]
                 .GetProperty("message")
                 .GetProperty("content")
                 .GetString();
@@ -399,11 +505,69 @@ Output: 'Não poderei comparecer à reunião.'"
                 };
             }
 
-            var resultado = await ChamarOpenRouter(mensagens) ?? await ChamarGroq(mensagens);
+            var resultado = await ChamarOpenRouter(mensagens, maxTokens: 400) ?? await ChamarGroq(mensagens, maxTokens: 400);
             if (resultado == null || string.IsNullOrWhiteSpace(resultado.Texto))
                 return null;
 
             return resultado.Texto;
+        }
+
+        public async Task<List<string>> GerarVariacoesParaGlobal(string pergunta, string respostaBase)
+        {
+            var mensagens = new[]
+            {
+                new { role = "system", content = "Você é um gerador de variações de resposta para uma base de conhecimento factual. " +
+                                                 "Gere 3 respostas semanticamente equivalentes à resposta base enviada, mas com formulações diferentes. " +
+                                                 "As respostas devem ser neutras, objetivas e profissionais. Não use gírias nem invente fatos novos. " +
+                                                 "Mantenha o mesmo conteúdo factual. Responda SOMENTE um JSON no formato: { \"variacoes\": [\"...\",\"...\",\"...\"] }" },
+                new { role = "user", content = $"Pergunta: {pergunta}\nResposta base: {respostaBase}" }
+            };
+
+            var resultado = await ChamarOpenRouter(mensagens, maxTokens: 500) ?? await ChamarGroq(mensagens, maxTokens: 500);
+            if (resultado == null || string.IsNullOrWhiteSpace(resultado.Texto))
+            {
+                _logger.LogWarning("IA retornou texto vazio ou nulo ao gerar variações.");
+                return new List<string>();
+            }
+
+            try
+            {
+                _logger.LogInformation("GerarVariacoesParaGlobal - Resposta Bruta da IA: {0}", resultado.Texto);
+
+                // Limpeza básica se a IA retornar markdown
+                var text = resultado.Texto.Replace("```json", "").Replace("```", "").Trim();
+
+                // Tentar extrair apenas o objeto JSON se houver texto ao redor
+                int startIndex = text.IndexOf('{');
+                int endIndex = text.LastIndexOf('}');
+                
+                if (startIndex >= 0 && endIndex > startIndex)
+                {
+                    text = text.Substring(startIndex, endIndex - startIndex + 1);
+                }
+
+                using var doc = JsonDocument.Parse(text);
+                if (doc.RootElement.TryGetProperty("variacoes", out var variacoes))
+                {
+                    var lista = variacoes.EnumerateArray()
+                        .Select(v => v.GetString() ?? "")
+                        .Where(v => !string.IsNullOrWhiteSpace(v))
+                        .ToList();
+                        
+                    _logger.LogInformation("GerarVariacoesParaGlobal - {0} variações extraídas com sucesso.", lista.Count);
+                    return lista;
+                }
+                else
+                {
+                     _logger.LogWarning("JSON válido mas propriedade 'variacoes' não encontrada. JSON: {0}", text);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao parsear variações da IA. Conteúdo original: {0}", resultado.Texto);
+            }
+
+            return new List<string>();
         }
     }
 }

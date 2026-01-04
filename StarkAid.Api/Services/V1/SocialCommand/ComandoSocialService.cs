@@ -291,4 +291,42 @@ public class ComandoSocialService
             agRest,
             100);
     }
+
+    public async Task<string?> ProcessSocialAsync(Guid userId, string text)
+    {
+        var normalizedText = text.ToLower().Trim();
+        
+        // Busca direta
+        var social = await _context.ComandosSociais
+            .Where(c => c.UserId == userId && c.Comando.ToLower() == normalizedText)
+            .FirstOrDefaultAsync();
+
+        if (social == null)
+        {
+             // Busca por "contém" ou similar simples se não achou exato
+             social = await _context.ComandosSociais
+                .Where(c => c.UserId == userId && normalizedText.Contains(c.Comando.ToLower()))
+                .OrderByDescending(c => c.Comando.Length) // Pega o mais longo/específico
+                .FirstOrDefaultAsync();
+        }
+
+        if (social != null)
+        {
+             // Se houver respostas aleatórias (JSON), escolhe uma
+             if (!string.IsNullOrEmpty(social.RespostasAleatorias))
+             {
+                 try {
+                     var doc = JsonDocument.Parse(social.RespostasAleatorias);
+                     if (doc.RootElement.TryGetProperty("alternativas", out var alts) && alts.GetArrayLength() > 0)
+                     {
+                         var index = new Random().Next(alts.GetArrayLength());
+                         return alts[index].GetString();
+                     }
+                 } catch {}
+             }
+             return social.Resposta;
+        }
+
+        return null;
+    }
 }

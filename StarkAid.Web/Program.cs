@@ -1,3 +1,5 @@
+using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using StarkAid.Web;
@@ -12,11 +14,12 @@ builder.Services.AddScoped(sp =>
 {
     return new HttpClient
     {
-        BaseAddress = new Uri("https://starkaid.runasp.net/")  // Confirme se é 5000 ou 5001; logs mostram 5000
+        BaseAddress = new Uri("https://starkaid.runasp.net/")  // Confirme se ï¿½ 5000 ou 5001; logs mostram 5000
     };
 });
 
-// Serviços da API
+// Serviï¿½os da API
+builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<ApiService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -25,5 +28,11 @@ builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<IHealthCheckService, HealthCheckService>();
 builder.Services.AddScoped<IEwelinkService, EwelinkService>();
 builder.Services.AddScoped<ILicenseService, LicenseService>();
+builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<ToastService>();
+builder.Services.AddScoped<ConfirmService>();
+
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 
 await builder.Build().RunAsync();

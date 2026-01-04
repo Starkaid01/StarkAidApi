@@ -1005,7 +1005,7 @@ Der Bestätigungscode wird an Ihr Mobiltelefon gesendet:%s</string>
   <string name="google_flip_link_google_info">Nachdem Sie Ihr App-Konto und Ihr Google-Konto verbunden haben, können Sie mit Google Home Smart Speaker Geräte steuern, die mit Google Assisatant zusammenarbeiten. Sie können beispielsweise \"Ok Google, Licht einschalten\" sagen.</string>
   <string name="google_flip_permission">· Berechtigung zu Gerätekontrolle</string>
   <string name="google_flip_refuse_auth">Autorisierung verweigert</string>
-  <string name="google_flip_success_tip_content">OK Google, Licht einschalten \n \n OK Google, Licht aufhellen \n \n OK Google, Küchenlampe auf Blau ändern \n \n OK Google, Licht auf 50% einstellen</string>
+  <string name="google_flip_success_tip_content" formatted="false">OK Google, Licht einschalten \n \n OK Google, Licht aufhellen \n \n OK Google, Küchenlampe auf Blau ändern \n \n OK Google, Licht auf 50% einstellen</string>
   <string name="google_flip_unbind_info">Sie können die Autorisierung jederzeit widerrufen.</string>
   <string name="google_flip_unbind_info_goto_app">Heben Sie die Bindung der Aktion in Google Home auf.</string>
   <!-- formatted=false aplicado para evitar erro de merge de resources (Gradle/AAPT) -->

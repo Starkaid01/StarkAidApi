@@ -64,7 +64,157 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Agendamentos", (string)null);
+                    b.ToTable("Agendamentos");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.AiInteractionEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AprendizadoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AprendizadoTipo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("ChamouIaExterna")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal>("EconomiaUSD")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("LatenciaMs")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Origem")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Resultado")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<double?>("SimilarityScore")
+                        .HasColumnType("float");
+
+                    b.Property<string>("TextoNormalizado")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TextoOriginal")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TokensEstimadosEvitados")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AiInteractionEvents");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.Aprendizado", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ConfidenceScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Contexto")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("EmQuarentena")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("HitCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("LastUsedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("QuarentenaDesde")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Resposta")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Texto")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTimeOffset?>("UltimaRessurreicaoAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("VariantesDistintasUsadas")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Tipo")
+                        .HasFilter("[Tipo] = 'Global'");
+
+                    b.HasIndex("UserId", "Tipo");
+
+                    b.ToTable("Aprendizados");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.AprendizadoResposta", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AprendizadoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Texto")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UsoCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AprendizadoId");
+
+                    b.ToTable("AprendizadoRespostas");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Assinatura", b =>
@@ -118,7 +268,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Assinaturas", (string)null);
+                    b.ToTable("Assinaturas");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ComandoSocial", b =>
@@ -145,7 +295,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ComandosSociais", (string)null);
+                    b.ToTable("ComandosSociais");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ConfiguracaoSistema", b =>
@@ -169,7 +319,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ConfiguracoesSistema", (string)null);
+                    b.ToTable("ConfiguracoesSistema");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ConfiguracaoStarkNlp", b =>
@@ -188,7 +338,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ConfiguracoesStarkNlp", (string)null);
+                    b.ToTable("ConfiguracoesStarkNlp");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Device", b =>
@@ -223,7 +373,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Devices", (string)null);
+                    b.ToTable("Devices");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Disparo", b =>
@@ -257,7 +407,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Disparos", (string)null);
+                    b.ToTable("Disparos");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.DispositivoDisparo", b =>
@@ -291,7 +441,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("DispositivosDisparo", (string)null);
+                    b.ToTable("DispositivosDisparo");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.DispositivoEsp", b =>
@@ -345,7 +495,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("DispositivosEsp", (string)null);
+                    b.ToTable("DispositivosEsp");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ErrorCodeDescription", b =>
@@ -376,7 +526,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("CodigoDeErro");
 
-                    b.ToTable("ErrorCodeDescriptions", (string)null);
+                    b.ToTable("ErrorCodeDescriptions");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ErrorLogApp", b =>
@@ -426,7 +576,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ErrorLogsApp", (string)null);
+                    b.ToTable("ErrorLogsApp");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ErrorLogSoft", b =>
@@ -476,7 +626,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ErrorLogsSoft", (string)null);
+                    b.ToTable("ErrorLogsSoft");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.EwelinkAccount", b =>
@@ -523,7 +673,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("EwelinkAccounts", (string)null);
+                    b.ToTable("EwelinkAccounts");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.EwelinkDevice", b =>
@@ -577,7 +727,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("EwelinkDevices", (string)null);
+                    b.ToTable("EwelinkDevices");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.FirebaseToken", b =>
@@ -600,7 +750,37 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("FirebaseTokens", (string)null);
+                    b.ToTable("FirebaseTokens");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.GcExecutionLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("DataExecucao")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long>("DuracaoMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("ItensEmQuarentena")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItensInativados")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItensRessuscitados")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LogDetalhado")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GcExecutionLogs");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.IaHistorico", b =>
@@ -627,7 +807,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("IaHistoricos", (string)null);
+                    b.ToTable("IaHistoricos");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.License", b =>
@@ -674,7 +854,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Licenses", (string)null);
+                    b.ToTable("Licenses");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.LicenseActivation", b =>
@@ -712,7 +892,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("LicenseId");
 
-                    b.ToTable("LicenseActivations", (string)null);
+                    b.ToTable("LicenseActivations");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.LogFalhaSoft", b =>
@@ -843,7 +1023,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PagamentosAvulsos", (string)null);
+                    b.ToTable("PagamentosAvulsos");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.PasswordResetToken", b =>
@@ -866,7 +1046,542 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PasswordResetTokens", (string)null);
+                    b.ToTable("PasswordResetTokens");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.Piada", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Texto")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Piadas");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Ativa = true,
+                            Categoria = "Tecnologia",
+                            Texto = "Por que o computador foi ao médico? Porque estava com vírus."
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Ativa = true,
+                            Categoria = "Geral",
+                            Texto = "O que o zero disse para o oito? Que cinto bonito!"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Ativa = true,
+                            Categoria = "Escola",
+                            Texto = "Por que o livro de matemática se suicidou? Porque tinha muitos problemas."
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Ativa = true,
+                            Categoria = "Geral",
+                            Texto = "Qual é o cúmulo da força? Dobrar a esquina."
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Ativa = true,
+                            Categoria = "Tecnologia",
+                            Texto = "O que uma impressora disse para a outra? Essa folha é sua ou é impressão minha?"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Ativa = true,
+                            Categoria = "Natureza",
+                            Texto = "Por que a plantinha não foi ao médico? Porque só tinha médico de plantão."
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Ativa = true,
+                            Categoria = "Animais",
+                            Texto = "O que o pato disse para a pata? Vem Quá!"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Ativa = true,
+                            Categoria = "Geral",
+                            Texto = "Qual o pé que é mais rápido? O pé-ligeiro."
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Ativa = true,
+                            Categoria = "Natureza",
+                            Texto = "Por que o pinheiro não se perde na floresta? Porque ele tem uma pinha."
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Ativa = true,
+                            Categoria = "Comida",
+                            Texto = "O que o tomate foi fazer no banco? Tirar extrato."
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Ativa = true,
+                            Categoria = "Tecnologia",
+                            Texto = "Qual é a tecla preferida do astronauta? A barra de espaço."
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Ativa = true,
+                            Categoria = "Animais",
+                            Texto = "Por que o jacaré tirou o filho da escola? Porque ele réptil de ano."
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Ativa = true,
+                            Categoria = "Comida",
+                            Texto = "Qual é o rei dos queijos? O Requeijão."
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Ativa = true,
+                            Categoria = "Geral",
+                            Texto = "O que é um ponto verde na antártida? Um ping-green."
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Ativa = true,
+                            Categoria = "Profissões",
+                            Texto = "Por que o bombeiro não gosta de andar? Porque ele socorre."
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Ativa = true,
+                            Categoria = "Animais",
+                            Texto = "Qual é o animal que não vale mais nada? O javali."
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Ativa = true,
+                            Categoria = "Geral",
+                            Texto = "O que o pagodeiro foi fazer na igreja? Cantar pá god."
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Ativa = true,
+                            Categoria = "Geral",
+                            Texto = "Por que a velhinha não usa relógio? Porque ela é sem hora."
+                        },
+                        new
+                        {
+                            Id = 19,
+                            Ativa = true,
+                            Categoria = "Herois",
+                            Texto = "Como o Batman faz para entrar na Bat-caverna? Ele bat-palma."
+                        },
+                        new
+                        {
+                            Id = 20,
+                            Ativa = true,
+                            Categoria = "Ciencia",
+                            Texto = "Qual o doce preferido do átomo? Pé-de-moleculas."
+                        },
+                        new
+                        {
+                            Id = 21,
+                            Ativa = true,
+                            Categoria = "Espaço",
+                            Texto = "O que a Lua disse ao Sol? Nossa, você é tão grande e não te deixam sair à noite!"
+                        },
+                        new
+                        {
+                            Id = 22,
+                            Ativa = true,
+                            Categoria = "Ciencia",
+                            Texto = "Por que as estrelas não fazem miau? Porque Astronomia."
+                        },
+                        new
+                        {
+                            Id = 23,
+                            Ativa = true,
+                            Categoria = "Comida",
+                            Texto = "O que a banana suicida falou? Macacos me mordam!"
+                        },
+                        new
+                        {
+                            Id = 24,
+                            Ativa = true,
+                            Categoria = "Geografia",
+                            Texto = "Qual o estado que quer ser carro? Sergipe."
+                        },
+                        new
+                        {
+                            Id = 25,
+                            Ativa = true,
+                            Categoria = "Charada",
+                            Texto = "O que é, o que é: cai em pé e corre deitado? A chuva."
+                        },
+                        new
+                        {
+                            Id = 26,
+                            Ativa = true,
+                            Categoria = "Geral",
+                            Texto = "Em qual cidade o Thor mora? Valhalla? Não, Pousada."
+                        },
+                        new
+                        {
+                            Id = 27,
+                            Ativa = true,
+                            Categoria = "Ciencia",
+                            Texto = "Por que o elétron não foi à festa? Porque precisa ser positivo."
+                        },
+                        new
+                        {
+                            Id = 28,
+                            Ativa = true,
+                            Categoria = "Animais",
+                            Texto = "O que o advogado do frango foi fazer? Foi soltar a franga."
+                        },
+                        new
+                        {
+                            Id = 29,
+                            Ativa = true,
+                            Categoria = "Animais",
+                            Texto = "Qual a diferença entre o gato e a coca-cola? O gato faz miau e a coca-cola faz tshhh."
+                        },
+                        new
+                        {
+                            Id = 30,
+                            Ativa = true,
+                            Categoria = "Ferramentas",
+                            Texto = "O que o martelo foi fazer no culto? Pregador."
+                        });
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.Receita", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Ingredientes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Receitas");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Categoria = "Doces",
+                            Ingredientes = "3 cenouras, 4 ovos, 1 xícara de óleo, 2 xícaras de açúcar, 2 xícaras de farinha, 1 colher de fermento.",
+                            Nome = "Bolo de Cenoura"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Categoria = "Salgados",
+                            Ingredientes = "2 ovos, sal a gosto, queijo, presunto, orégano.",
+                            Nome = "Omelete Simples"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Categoria = "Acompanhamentos",
+                            Ingredientes = "1 xícara de arroz, 2 xícaras de água, alho, sal, óleo.",
+                            Nome = "Arroz Branco"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Categoria = "Doces",
+                            Ingredientes = "1 lata de leite condensado, 4 colheres de chocolate em pó, 1 colher de manteiga, granulado.",
+                            Nome = "Brigadeiro"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Categoria = "Bebidas",
+                            Ingredientes = "3 limões, 1 litro de água, açúcar ou adoçante a gosto, gelo.",
+                            Nome = "Suco de Limão"
+                        });
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.ReceitaPasso", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReceitaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceitaId");
+
+                    b.ToTable("ReceitaPassos");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Descricao = "Descasque e corte as cenouras em rodelas.",
+                            Ordem = 1,
+                            ReceitaId = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Descricao = "No liquidificador, bata as cenouras, os ovos e o óleo.",
+                            Ordem = 2,
+                            ReceitaId = 1
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Descricao = "Em uma tigela, misture o açúcar, a farinha e o fermento.",
+                            Ordem = 3,
+                            ReceitaId = 1
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Descricao = "Despeje a mistura do liquidificador na tigela e mexa bem.",
+                            Ordem = 4,
+                            ReceitaId = 1
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Descricao = "Unte uma forma e despeje a massa.",
+                            Ordem = 5,
+                            ReceitaId = 1
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Descricao = "Asse em forno pré-aquecido a 180 graus por 40 minutos.",
+                            Ordem = 6,
+                            ReceitaId = 1
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Descricao = "Quebre os ovos em um prato fundo.",
+                            Ordem = 1,
+                            ReceitaId = 2
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Descricao = "Bata os ovos ligeiramente com um garfo.",
+                            Ordem = 2,
+                            ReceitaId = 2
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Descricao = "Tempere com sal e orégano.",
+                            Ordem = 3,
+                            ReceitaId = 2
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Descricao = "Aqueça uma frigideira com um pouco de óleo.",
+                            Ordem = 4,
+                            ReceitaId = 2
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Descricao = "Despeje os ovos e adicione o queijo e presunto.",
+                            Ordem = 5,
+                            ReceitaId = 2
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Descricao = "Dobre ao meio e deixe dourar dos dois lados.",
+                            Ordem = 6,
+                            ReceitaId = 2
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Descricao = "Lave o arroz se desejar.",
+                            Ordem = 1,
+                            ReceitaId = 3
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Descricao = "Aqueça o óleo e refogue o alho picado.",
+                            Ordem = 2,
+                            ReceitaId = 3
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Descricao = "Adicione o arroz e refogue por um minuto.",
+                            Ordem = 3,
+                            ReceitaId = 3
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Descricao = "Adicione a água fervente e o sal.",
+                            Ordem = 4,
+                            ReceitaId = 3
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Descricao = "Cozinhe em fogo baixo com a panela semi-tampada.",
+                            Ordem = 5,
+                            ReceitaId = 3
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Descricao = "Quando a água secar, desligue e deixe descansar.",
+                            Ordem = 6,
+                            ReceitaId = 3
+                        },
+                        new
+                        {
+                            Id = 19,
+                            Descricao = "Em uma panela, coloque o leite condensado.",
+                            Ordem = 1,
+                            ReceitaId = 4
+                        },
+                        new
+                        {
+                            Id = 20,
+                            Descricao = "Adicione o chocolate em pó e a manteiga.",
+                            Ordem = 2,
+                            ReceitaId = 4
+                        },
+                        new
+                        {
+                            Id = 21,
+                            Descricao = "Leve ao fogo baixo, mexendo sempre.",
+                            Ordem = 3,
+                            ReceitaId = 4
+                        },
+                        new
+                        {
+                            Id = 22,
+                            Descricao = "Mexa até desgrudar do fundo da panela.",
+                            Ordem = 4,
+                            ReceitaId = 4
+                        },
+                        new
+                        {
+                            Id = 23,
+                            Descricao = "Despeje em um prato untado e deixe esfriar.",
+                            Ordem = 5,
+                            ReceitaId = 4
+                        },
+                        new
+                        {
+                            Id = 24,
+                            Descricao = "Enrole as bolinhas e passe no granulado.",
+                            Ordem = 6,
+                            ReceitaId = 4
+                        },
+                        new
+                        {
+                            Id = 25,
+                            Descricao = "Lave bem os limões.",
+                            Ordem = 1,
+                            ReceitaId = 5
+                        },
+                        new
+                        {
+                            Id = 26,
+                            Descricao = "Corte os limões ao meio.",
+                            Ordem = 2,
+                            ReceitaId = 5
+                        },
+                        new
+                        {
+                            Id = 27,
+                            Descricao = "Esprema o suco dos limões em uma jarra.",
+                            Ordem = 3,
+                            ReceitaId = 5
+                        },
+                        new
+                        {
+                            Id = 28,
+                            Descricao = "Adicione a água e misture.",
+                            Ordem = 4,
+                            ReceitaId = 5
+                        },
+                        new
+                        {
+                            Id = 29,
+                            Descricao = "Adoce a gosto e mexa bem até dissolver.",
+                            Ordem = 5,
+                            ReceitaId = 5
+                        },
+                        new
+                        {
+                            Id = 30,
+                            Descricao = "Adicione gelo e sirva imediatamente.",
+                            Ordem = 6,
+                            ReceitaId = 5
+                        });
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.RefreshToken", b =>
@@ -896,7 +1611,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.ResolvendoSuporte", b =>
@@ -956,7 +1671,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("StarkCoinPurchases", (string)null);
+                    b.ToTable("StarkCoinPurchases");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.SuporteAcao", b =>
@@ -1121,6 +1836,43 @@ namespace StarkAid.Api.Migrations
                     b.ToTable("SuportePerguntasFrequentes", (string)null);
                 });
 
+            modelBuilder.Entity("StarkAid.Api.Entities.Telemetria", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTimeOffset>("CriadoEm")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Evento")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Origem")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Telemetrias");
+                });
+
             modelBuilder.Entity("StarkAid.Api.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1202,15 +1954,11 @@ namespace StarkAid.Api.Migrations
                     b.Property<DateTimeOffset?>("SpotifyTokenExpiresAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<int>("StarkCoinBalance")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
+                    b.Property<int>("StarkCoins")
+                        .HasColumnType("int");
 
                     b.Property<int>("TokensConsumidosSemana")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
+                        .HasColumnType("int");
 
                     b.Property<DateTimeOffset?>("UltimoPagamentoConfirmadoEm")
                         .HasColumnType("datetimeoffset");
@@ -1220,7 +1968,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.UserActivity", b =>
@@ -1267,7 +2015,60 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserActivities", (string)null);
+                    b.ToTable("UserActivities");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.UserConversaContext", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContextoAtual")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset>("LastUpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("UserConversaContexts");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.UserFunState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IniciouPassoAPasso")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PassoAtual")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PiadasContadasIds")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ReceitaAtualId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReceitasVistasIds")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserFunStates");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.UserSession", b =>
@@ -1308,7 +2109,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserSessions", (string)null);
+                    b.ToTable("UserSessions");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.WebhookLog", b =>
@@ -1340,7 +2141,59 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("WebhookLogs", (string)null);
+                    b.ToTable("WebhookLogs");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.YouTubeMusicCache", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Channel")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("DurationSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<int>("HitCount")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsLive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("LastUsedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("NormalizedQuery")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("VideoId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedQuery")
+                        .IsUnique();
+
+                    b.ToTable("YouTubeMusicCaches");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Agendamento", b =>
@@ -1366,6 +2219,25 @@ namespace StarkAid.Api.Migrations
                     b.Navigation("DispositivoEsp");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.Aprendizado", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.AprendizadoResposta", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.Aprendizado", "Aprendizado")
+                        .WithMany("Respostas")
+                        .HasForeignKey("AprendizadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Aprendizado");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Assinatura", b =>
@@ -1562,6 +2434,17 @@ namespace StarkAid.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StarkAid.Api.Entities.ReceitaPasso", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.Receita", "Receita")
+                        .WithMany("Passos")
+                        .HasForeignKey("ReceitaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Receita");
+                });
+
             modelBuilder.Entity("StarkAid.Api.Entities.RefreshToken", b =>
                 {
                     b.HasOne("StarkAid.Api.Entities.User", "User")
@@ -1617,11 +2500,33 @@ namespace StarkAid.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StarkAid.Api.Entities.Telemetria", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("StarkAid.Api.Entities.UserActivity", b =>
                 {
                     b.HasOne("StarkAid.Api.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.UserFunState", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithOne()
+                        .HasForeignKey("StarkAid.Api.Entities.UserFunState", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1639,6 +2544,11 @@ namespace StarkAid.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StarkAid.Api.Entities.Aprendizado", b =>
+                {
+                    b.Navigation("Respostas");
+                });
+
             modelBuilder.Entity("StarkAid.Api.Entities.DispositivoDisparo", b =>
                 {
                     b.Navigation("Disparos");
@@ -1647,6 +2557,11 @@ namespace StarkAid.Api.Migrations
             modelBuilder.Entity("StarkAid.Api.Entities.License", b =>
                 {
                     b.Navigation("Activations");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.Receita", b =>
+                {
+                    b.Navigation("Passos");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.User", b =>

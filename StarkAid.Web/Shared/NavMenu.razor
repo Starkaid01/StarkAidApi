@@ -1,4 +1,5 @@
 @using Microsoft.AspNetCore.Components.Routing
+@using StarkAid.Web.Services
 
 <nav class="nav-menu @(IsMobileMenuOpen ? "open" : "")">
     <div class="menu-header mobile-only">
@@ -20,6 +21,14 @@
         <li><NavLink href="/agendamento-udp" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Agendamento UDP</NavLink></li>
         <li><NavLink href="/comandos-sociais" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Comandos Sociais</NavLink></li>
         <li><NavLink href="/aprendizado-ia" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Aprendizado IA</NavLink></li>
+        <li><NavLink href="/assistente-voz" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Assistente de Voz</NavLink></li>
+
+        <AuthorizeView Roles="Administrador">
+            <li class="section-divider">ADMINISTRADOR</li>
+            <li><NavLink href="/admin/dashboard" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Dashboard Admin</NavLink></li>
+            <li><NavLink href="/admin/ia-telemetry" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Telemetria IA</NavLink></li>
+            <li><NavLink href="/admin/suporte" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Suporte Técnico</NavLink></li>
+        </AuthorizeView>
 
         <li class="has-submenu">
             <a href="#"
@@ -65,6 +74,17 @@
     .nav-spacer {
         height: 3rem;
         pointer-events: none;
+    }
+
+    .section-divider {
+        padding: 1rem 1rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted); /* or #94a3b8 */
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
     }
 </style>
 

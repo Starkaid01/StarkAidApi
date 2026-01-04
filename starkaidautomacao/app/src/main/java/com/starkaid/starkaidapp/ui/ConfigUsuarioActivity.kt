@@ -82,13 +82,14 @@ class ConfigUsuarioActivity : BaseActivity()  {
         // Busca os dados do usuário
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = usuarioApi.obterUsuarioAtual(userId)
+                val response = usuarioApi.obterUsuarioAtual()
                 if (response.isSuccessful && response.body() != null) {
                     val usuario = response.body()!!
+                    android.util.Log.d("ConfigUsuario", "Dados recebidos: Coins=${usuario.economy?.starkCoinBalance}")
                     runOnUiThread {
                         textViewNome.text = usuario.name
                         textViewEmail.text = usuario.email
-                        textViewCoins.text = usuario.economy?.starkCoinBalance.toString()
+                        textViewCoins.text = (usuario.economy?.starkCoinBalance ?: 0).toString()
                         textViewStatus.text = if (usuario.isActive) "Ativo" else "Inativo"
                         textViewStatus.setTextColor(
                             ContextCompat.getColor(this@ConfigUsuarioActivity,

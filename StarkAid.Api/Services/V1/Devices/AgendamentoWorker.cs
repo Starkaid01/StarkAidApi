@@ -223,7 +223,18 @@ public class AgendamentoWorker : BackgroundService
                 _logger.LogError(ex, "Erro no AgendamentoWorker");
             }
 
-            await Task.Delay(IntervalMs, stoppingToken);
+            try
+            {
+                await Task.Delay(IntervalMs, stoppingToken);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
         }
 
         _logger.LogInformation("AgendamentoWorker finalizado.");

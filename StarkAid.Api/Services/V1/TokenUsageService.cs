@@ -20,6 +20,7 @@ public interface ITokenUsageService
 {
     Task<TokenUsageResult> TryConsumeTokensAsync(User user, int tokensSolicitados, CancellationToken cancellationToken = default);
     Task<TokenUsageResult> TryConsumeTokensAsync(User user, int tokensSolicitados, bool allowAutoStarkCoinsUsage, CancellationToken cancellationToken = default);
+    TokenUsageResult ConsumeTokens(User user, int tokensSolicitados, bool allowAutoStarkCoinsUsage);
 }
 
 /// <summary>
@@ -49,6 +50,18 @@ public class TokenUsageService : ITokenUsageService
 
     public async Task<TokenUsageResult> TryConsumeTokensAsync(User user, int tokensSolicitados, bool allowAutoStarkCoinsUsage, CancellationToken cancellationToken = default)
     {
+        var result = ConsumeTokens(user, tokensSolicitados, allowAutoStarkCoinsUsage);
+
+        if (result.Success)
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        return result;
+    }
+
+    public TokenUsageResult ConsumeTokens(User user, int tokensSolicitados, bool allowAutoStarkCoinsUsage)
+    {
         if (tokensSolicitados <= 0)
             return new TokenUsageResult(true, false, 0, 0, 0);
 
@@ -60,7 +73,6 @@ public class TokenUsageService : ITokenUsageService
         if (tokensSolicitados <= tokensRestantes)
         {
             trackedUser.TokensConsumidosSemana += tokensSolicitados;
-            await _db.SaveChangesAsync(cancellationToken);
             return new TokenUsageResult(true, false, tokensSolicitados, 0, 0);
         }
 
@@ -81,7 +93,6 @@ public class TokenUsageService : ITokenUsageService
             trackedUser.StarkCoins -= coinsNecessariasAuto;
 
             trackedUser.TokensConsumidosSemana += tokensSolicitados;
-            await _db.SaveChangesAsync(cancellationToken);
             return new TokenUsageResult(true, false, tokensSolicitados, coinsNecessariasAuto, 0);
         }
 

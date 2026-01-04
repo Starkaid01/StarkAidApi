@@ -2690,7 +2690,7 @@
   <string name="thing_permission_tip_contact">Неуспешен достъп до Контактите на телефона.  Разрешете%s достъп до вашите контакти в \"Настройки\"</string>
   <string name="thing_permission_tip_location">Получете разрешение за достъп до местоположението на телефона</string>
   <string name="thing_permission_tip_phone_state">Получете разрешение за достъп до телефонни съобщения</string>
-  <string name="thing_permission_tip_read_set">За да използвате %1$ s, моля, дайте разрешение за „четене или писане на системни настройки“</string>
+  <string name="thing_permission_tip_read_set">За да използвате %1$s, моля, дайте разрешение за „четене или писане на системни настройки“</string>
   <string name="thing_permission_tip_tail">Моля отидете в \"Настройки - Приложение - %1$s - Разрешение\" за да разрешите достъп</string>
   <string name="thing_permission_tip_title">За да използвате %1s , моля дайте следните разрешения:</string>
   <string name="thing_permission_tip_write_storage">Получете разрешение, за да управлявате хранилището</string>

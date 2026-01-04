@@ -41,6 +41,9 @@ class ComandosSociaisViewModel(application: Application) : AndroidViewModel(appl
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
+    private val _starkCoins = MutableLiveData<Int>()
+    val starkCoins: LiveData<Int> = _starkCoins
+
     // -----------------------------------------------------------------------
     // Carregamento (Room + Servidor)
     // -----------------------------------------------------------------------
@@ -63,8 +66,12 @@ class ComandosSociaisViewModel(application: Application) : AndroidViewModel(appl
                     val response = api.listarComandos()
                     if (response.isSuccessful) {
                         val wrapper = response.body()
-                        val comandosRemotos = wrapper?.data ?: emptyList()
+                        val comandosRemotos = wrapper?.comandos ?: emptyList()
                         _comandos.value = comandosRemotos
+                        
+                        wrapper?.economy?.let {
+                            _starkCoins.value = it.starkCoinBalance
+                        }
 
                         // Atualiza Room
                         dao.deleteAll()
@@ -106,6 +113,10 @@ class ComandosSociaisViewModel(application: Application) : AndroidViewModel(appl
                         _errorMessage.value = "Saldo insuficiente. Recarregue ou faça upgrade."
                         speakTextFromService("Você não tem StarkCoins suficientes.")
                     } else if (response.isSuccessful) {
+                        val wrapper = response.body()
+                        wrapper?.economy?.let {
+                            _starkCoins.value = it.starkCoinBalance
+                        }
                     carregarComandos()
                     delay(600)                // pequeno “buffer” para garantir DB atualizado
                     comandosLocais = dao.getAll()
@@ -136,6 +147,8 @@ class ComandosSociaisViewModel(application: Application) : AndroidViewModel(appl
                     _errorMessage.value = "Saldo insuficiente. Recarregue ou faça upgrade."
                     speakTextFromService("Você não tem StarkCoins suficientes.")
                 } else if (response.isSuccessful) {
+                    // Aqui a resposta é Void no atualizarComando, 
+                    // então precisamos chamar carregarComandos para atualizar o saldo
                     carregarComandos()
                     onSuccess()
                 } else {

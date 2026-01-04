@@ -24,6 +24,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- Permission para Advertising ID (Android 13+) -->
@@ -85,13 +86,22 @@
             android:value="@integer/google_play_services_version" />
 
         <activity
-            android:name="com.starkaid.starkaidapp.ui.LoginActivity"
-            android:exported="true">
+            android:name="com.starkaid.starkaidapp.ui.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.StarkAid.Splash"
+            android:launchMode="singleTask"
+            android:alwaysRetainTaskState="true"
+            android:hardwareAccelerated="true"
+            android:clearTaskOnLaunch="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.LoginActivity"
+            android:exported="true" />
 
 
         <activity
@@ -243,7 +253,10 @@
             android:exported="false"
             android:foregroundServiceType="microphone"/>
 
-
+        <service
+            android:name="com.starkaid.starkaidapp.services.RadioPlayerService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"/>
 
 
         <service

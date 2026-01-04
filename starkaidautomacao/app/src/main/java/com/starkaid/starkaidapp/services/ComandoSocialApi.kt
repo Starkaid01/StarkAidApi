@@ -1,5 +1,6 @@
 package com.starkaid.starkaidapp.services
 
+import com.google.gson.annotations.SerializedName
 import com.starkaid.starkaidapp.models.ComandoSocial
 import com.starkaid.starkaidapp.models.CriarComandoSocialRequest
 import com.starkaid.starkaidapp.models.EconomicPayload
@@ -7,8 +8,9 @@ import retrofit2.Response
 import retrofit2.http.*
 
 data class ComandoSocialWrapper<T>(
-    val data: T?,
-    val economy: EconomicPayload?
+    @SerializedName("comandos") val comandos: T? = null,
+    @SerializedName("comando") val comando: T? = null,
+    @SerializedName("economy") val economy: EconomicPayload? = null
 )
 
 interface ComandoSocialApi {

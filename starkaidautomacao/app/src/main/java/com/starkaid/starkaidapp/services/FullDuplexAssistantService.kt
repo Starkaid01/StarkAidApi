@@ -22,6 +22,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.starkaid.starkaidapp.services.RadioPlayerService
 
 import kotlinx.coroutines.*
 
@@ -86,6 +87,7 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
     private var audioRecord: AudioRecord? = null
     private var estimatedSpeechEndTime = AtomicLong(0)
     private var silenceStartTime = AtomicLong(0)
+    private val lastTtsEndedAt = AtomicLong(0)
     private var speechEndValidationJob: Job? = null
 
 
@@ -123,10 +125,10 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
                 return@registerMusicListener
             }
 
-            if (isPlaying) {
+            if (isPlaying && !RadioPlayerService.isRunning()) {
                 if (!isExternalPlay.get()) {
                     isExternalPlay.set(true)
-                    Log.d(TAG, "🎵 Reprodução EXTERNA detectada — pausando reconhecimento")
+                    Log.d(TAG, "🎵 Reprodução EXTERNA detectada (não-rádio) — pausando reconhecimento")
                     if (!isSpeaking.get()){
                         // Para o SR sem reiniciar automaticamente
                         sr?.cancel()
@@ -293,8 +295,10 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
                 // Broadcast para MainActivity iniciar animações
                 val intent = Intent(BROADCAST_TTS_STARTED)
                 LocalBroadcastManager.getInstance(this@FullDuplexAssistantAdvancedService).sendBroadcast(intent)
-                // Iniciar monitoramento de áudio em tempo real
-                startAudioMonitoring()
+                
+                // RESTAURADO: Usar animação simulada que não usa o microfone físisco
+                // Isso evita conflito com o Google Speech Recognition (Erro 7)
+                useAudioManagerLevel()
             }
 
             override fun onDone(utteranceId: String?) {
@@ -312,17 +316,19 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
                 }
             }
 
-                override fun onError(utteranceId: String?) {
+            override fun onError(utteranceId: String?) {
                 Log.w(TAG, "❌ TTS erro: $utteranceId")
                 
                 // Cancelar validação em andamento
                 speechEndValidationJob?.cancel()
                 
-                // Parar monitoramento de áudio
-                stopAudioMonitoring()
+                // Parar animação
+                audioMonitorJob?.cancel()
+                audioMonitorJob = null
                 
                 // Forçar parada imediata em caso de erro
                 isSpeaking.set(false)
+                lastTtsEndedAt.set(System.currentTimeMillis())
                 estimatedSpeechEndTime.set(0)
                 silenceStartTime.set(0)
                 
@@ -379,11 +385,13 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         // Cancelar validação em andamento
         speechEndValidationJob?.cancel()
         
-        // Parar monitoramento de áudio
-        stopAudioMonitoring()
+        // Parar animação
+        audioMonitorJob?.cancel()
+        audioMonitorJob = null
         
         // Forçar parada imediata
         isSpeaking.set(false)
+        lastTtsEndedAt.set(System.currentTimeMillis())
         estimatedSpeechEndTime.set(0)
         silenceStartTime.set(0)
         
@@ -402,111 +410,9 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         }
     }
 
-    // Monitorar áudio do sistema em tempo real enquanto TTS está falando
-    @SuppressLint("MissingPermission")
-    private fun startAudioMonitoring() {
-        stopAudioMonitoring() // Garantir que não há monitoramento anterior
-        
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) 
-            != PackageManager.PERMISSION_GRANTED) {
-            Log.w(TAG, "Sem permissão RECORD_AUDIO para monitorar áudio")
-            return
-        }
-
-        audioMonitorJob = commandScope.launch(Dispatchers.IO) {
-            try {
-                // Usar AudioRecord para monitorar o áudio do sistema
-                val sampleRate = 44100
-                val channelConfig = android.media.AudioFormat.CHANNEL_IN_MONO
-                val audioFormat = android.media.AudioFormat.ENCODING_PCM_16BIT
-                val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
-                
-                if (bufferSize == AudioRecord.ERROR_BAD_VALUE || bufferSize == AudioRecord.ERROR) {
-                    Log.e(TAG, "Erro ao obter buffer size para monitoramento de áudio")
-                    // Fallback: usar AudioManager para estimativa
-                    useAudioManagerLevel()
-                    return@launch
-                }
-
-                // Tentar REMOTE_SUBMIX primeiro (captura áudio do sistema), senão VOICE_RECOGNITION
-                val audioSource = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    try {
-                        MediaRecorder.AudioSource.REMOTE_SUBMIX
-                    } catch (e: Exception) {
-                        MediaRecorder.AudioSource.VOICE_RECOGNITION
-                    }
-                } else {
-                    MediaRecorder.AudioSource.VOICE_RECOGNITION
-                }
-                
-                val recorder = AudioRecord(
-                    audioSource,
-                    sampleRate,
-                    channelConfig,
-                    audioFormat,
-                    bufferSize * 2
-                )
-
-                if (recorder.state != AudioRecord.STATE_INITIALIZED) {
-                    Log.e(TAG, "AudioRecord não inicializado")
-                    useAudioManagerLevel()
-                    return@launch
-                }
-
-                audioRecord = recorder
-                recorder.startRecording()
-                
-                val buffer = ShortArray(bufferSize)
-                
-                while (coroutineContext.isActive && isSpeaking.get()) {
-                    val read = recorder.read(buffer, 0, buffer.size)
-                    if (read > 0) {
-                        // Calcular RMS (Root Mean Square) do áudio com melhor precisão
-                        var sum = 0.0
-                        var maxSample = 0.0
-                        for (i in 0 until read) {
-                            val sample = abs(buffer[i].toDouble())
-                            sum += sample * sample
-                            if (sample > maxSample) maxSample = sample
-                        }
-                        val rms = sqrt(sum / read)
-                        
-                        // Usar tanto RMS quanto peak para melhor detecção
-                        val peakLevel = (maxSample / Short.MAX_VALUE) * 100
-                        val rmsLevel = (rms / Short.MAX_VALUE) * 100
-                        
-                        // Combinar RMS e peak com peso maior no peak para resposta mais rápida
-                        val normalizedLevel = ((rmsLevel * 0.4 + peakLevel * 0.6) * 1.5).toInt().coerceIn(0, 100)
-                        
-                        // Garantir nível mínimo quando há áudio
-                        val finalLevel = if (normalizedLevel < 10 && rms > 100) 15 else normalizedLevel
-                        
-                        // Log periódico para debug (a cada 1 segundo)
-                        if (System.currentTimeMillis() % 1000 < 30) {
-                            Log.d(TAG, "🎵 Áudio detectado - RMS: $rms, Peak: $maxSample, Nível: $finalLevel")
-                        }
-                        
-                        currentAudioLevel.set(finalLevel.toLong())
-                        
-                        // Broadcast do nível de áudio com maior frequência
-                        val intent = Intent(BROADCAST_TTS_AUDIO_LEVEL).apply {
-                            putExtra(EXTRA_AUDIO_LEVEL, finalLevel)
-                        }
-                        LocalBroadcastManager.getInstance(this@FullDuplexAssistantAdvancedService)
-                            .sendBroadcast(intent)
-                    }
-                    delay(30) // ~33 atualizações por segundo para resposta mais rápida
-                }
-                
-                recorder.stop()
-                recorder.release()
-                audioRecord = null
-            } catch (e: Exception) {
-                Log.e(TAG, "Erro ao monitorar áudio: ${e.message}")
-                useAudioManagerLevel()
-            }
-        }
-    }
+    // Monitoramento físico removido para evitar conflitos de microfone
+    // private fun startAudioMonitoring() { ... }
+    
 
     // Fallback: usar AudioManager quando AudioRecord não está disponível
     private fun useAudioManagerLevel() {
@@ -549,11 +455,13 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
      */
     private suspend fun forceStopSpeakingImmediate() {
         withContext(Dispatchers.Main) {
-            // Parar monitoramento de áudio
-            stopAudioMonitoring()
+            // Parar animação
+            audioMonitorJob?.cancel()
+            audioMonitorJob = null
             
             // Marcar como não falando IMEDIATAMENTE
             isSpeaking.set(false)
+            lastTtsEndedAt.set(System.currentTimeMillis())
             
             // Resetar contadores
             estimatedSpeechEndTime.set(0)
@@ -611,7 +519,7 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
 
                 override fun onError(error: Int) {
                     val now = System.currentTimeMillis()
-                    if (now - lastSrErrorTime.get() < 500) return // ignora se <500ms desde último erro
+                    if (now - lastSrErrorTime.get() < 200) return // ignora se <200ms desde último erro
                     lastSrErrorTime.set(now)
 
                     Log.w(TAG, "❌ Google SR erro: $error")
@@ -620,7 +528,7 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
                     // Reiniciar reconhecimento rapidamente (reconhecimento contínuo)
                     // Não verificar isSpeaking aqui - deixar sempre ativo
                     commandScope.launch {
-                        delay(300)
+                        delay(50) // Reduzido drasticamente para evitar perda de comando
                         if (!forceStopped.get()) tryStartListeningSafe("SR.onError")
                     }
                 }
@@ -632,7 +540,11 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
                     
                     // Reiniciar reconhecimento imediatamente para reconhecimento contínuo
                     isListeningGoogle.set(false)
-                    tryStartListeningSafe("SR.onResults")
+                    // Pequeno delay (20ms) para não travar a thread da UI e limpar o SR
+                    commandScope.launch {
+                        delay(20) 
+                        tryStartListeningSafe("SR.onResults")
+                    }
                 }
 
                 override fun onPartialResults(partialResults: Bundle) {
@@ -665,9 +577,9 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
 
             // ⬇️ Delays de silêncio otimizados para reconhecimento contínuo e responsivo
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 700L) // Silêncio mínimo para considerar fim
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 600L) // Possível fim mais cedo
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 300L) // Duração mínima da fala (mais rápido)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 500L) // Silêncio mínimo para considerar fim (Reduzido)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 400L) // Possível fim mais cedo (Reduzido)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 200L) // Duração mínima da fala (mais rápido)
         }
     }
 
@@ -748,7 +660,6 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
             .replace(Regex("[^a-z0-9\\s]"), "") // Remove pontuação
             .trim()
         
-        // Lista expandida de comandos de parar
         val stopCommands = listOf(
             "para de falar", "parar de falar", "pare de falar",
             "cala a boca", "cale a boca", "calar a boca",
@@ -758,15 +669,12 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
             "fica calado", "fique calado", "ficar calado",
             "silencio", "silêncio",
             "para com isso", "pare com isso", "parar com isso",
-            "chega de falar", "basta de falar",
-            "calece", "cala se", "cale se"
+            "chega de falar", "basta de falar", "silêncio agora"
         )
         
-        // Verificar correspondência exata ou parcial
-        val hasExactMatch = stopCommands.any { normalized.contains(it) }
+        val hasExactMatch = stopCommands.any { normalized.contains(it) || it.contains(normalized) && normalized.length > 5 }
         
-        // Verificar combinações de palavras (mais permissivo)
-        val hasParaFalar = (normalized.contains("para") || normalized.contains("pare") || normalized.contains("parar")) &&
+        val hasParaFalar = (normalized.contains("para") || normalized.contains("pare")) &&
                           (normalized.contains("falar") || normalized.contains("falando"))
         
         val hasCalaBoca = (normalized.contains("cala") || normalized.contains("cale") || normalized.contains("calar")) &&
@@ -858,21 +766,27 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         lastSpeak = ultimaFalaAssistente.lowercase().trim()
         
         if (lastSpeak.isNotEmpty()) {
-            // Se for exatamente igual, ignorar
-            if (cleanText == lastSpeak) {
-                Log.d(TAG, "🚫 Ignorando comando idêntico à última fala do assistente")
-                return
-            }
+            val agora = System.currentTimeMillis()
+            val withinEchoWindow = (agora - lastTtsEndedAt.get()) in 0..4000 // Aumentado janela para 4s para garantir
             
-            // Calcular similaridade (threshold mais baixo para ser mais permissivo)
-            val similarity = calculateSimilarity(cleanText, lastSpeak)
-            
-            // Se similaridade for muito alta (>80%), provavelmente é o próprio TTS
-            if (similarity > 0.8) {
-                Log.d(TAG, "🚫 Ignorando comando muito similar à última fala - Similaridade: ${(similarity * 100).toInt()}%")
-                Log.d(TAG, "   Última fala: '$lastSpeak'")
-                Log.d(TAG, "   Comando: '$cleanText'")
-                return
+            if (withinEchoWindow) {
+                if (cleanText == lastSpeak) {
+                    Log.d(TAG, "🚫 Ignorando comando idêntico à última fala do assistente")
+                    return
+                }
+                
+                // NOVO: Verificar se o comando é o final da frase dita pelo assistente (ex: "... Bom dia!" -> "bom dia")
+                if (lastSpeak.endsWith(cleanText) && cleanText.length > 4) { // >4 para evitar falsos positivos com "oi", "sim"
+                    Log.d(TAG, "🚫 Ignorando comando que é sufixo da última fala (eco): '$cleanText'")
+                    return
+                }
+                
+                val similarity = calculateSimilarity(cleanText, lastSpeak)
+                
+                if (similarity > 0.88) { 
+                    Log.d(TAG, "🚫 Ignorando comando muito similar à última fala - Similaridade: ${(similarity * 100).toInt()}%")
+                    return
+                }
             }
         }
 

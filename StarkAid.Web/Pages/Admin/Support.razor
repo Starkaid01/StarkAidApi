@@ -1,0 +1,644 @@
+@page "/admin/suporte"
+@using StarkAid.Web.Services
+@using StarkAid.Web.DTOs
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrador")]
+@inject AdminService AdminService
+@inject IAuthService AuthService
+@inject IJSRuntime JS
+@inject ToastService ToastService
+@inject ConfirmService ConfirmService
+
+<PageTitle>Suporte e Manutenção - StarkAid</PageTitle>
+
+<div class="admin-support">
+    <div class="header-section">
+        <h1>Suporte e Manutenção</h1>
+        <p class="subtitle">Gerenciamento remoto de usuários e dispositivos</p>
+    </div>
+
+    <!-- User Selection -->
+    <div class="user-selection-card">
+        <label>Selecione o Usuário:</label>
+        <div class="search-box">
+             <input list="usersList" @bind="selectedUserId" @bind:after="OnUserSelected" placeholder="Digite o nome ou email..." class="form-control" />
+             <datalist id="usersList">
+                 @foreach (var user in allUsers)
+                 {
+                     <option value="@user.Id">@user.Name (@user.Email)</option>
+                 }
+             </datalist>
+        </div>
+    </div>
+
+    @if (selectedUser != null)
+    {
+        <div class="dashboard-grid">
+            <!-- User Info & Status -->
+            <div class="card user-profile">
+                <div class="card-header">
+                    <h3>Perfil do Usuário</h3>
+                    @if (userDashboard?.UsuarioOnline == true)
+                    {
+                        <span class="badge badge-success">Online</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-secondary">Offline</span>
+                    }
+                </div>
+                <div class="card-body">
+                    <p><strong>Nome:</strong> @selectedUser.Name</p>
+                    <p><strong>Email:</strong> @selectedUser.Email</p>
+                    <p><strong>Role:</strong> @selectedUser.Role</p>
+                    <p><strong>StarkCoins:</strong> @selectedUser.StarkCoins</p>
+                    <hr />
+                    <p><strong>Última Atividade:</strong> @(userDashboard?.UltimaActivityAcessada?.ToString("g") ?? "N/A")</p>
+                    <p><strong>Local:</strong> @userDashboard?.UltimoFormAcessado</p>
+                </div>
+            </div>
+
+            <!-- Main Actions Grid -->
+            <div class="card actions-container full-width">
+               <div class="actions-header">
+                   <h3>Ações e Comandos Remotos</h3>
+               </div>
+               
+               <div class="actions-split">
+                   <!-- Software (Windows) Actions -->
+                   <div class="action-panel">
+                       <div class="panel-header soft-header">
+                           <i class="fab fa-windows"></i> Software Windows
+                       </div>
+                       <div class="panel-content">
+                           <div class="status-info">
+                               <p><small>Último Cmd:</small> @(userDashboard?.ActivitySoft?.UltimoComandoEsp ?? userDashboard?.ActivitySoft?.UltimoComandoEwelink ?? userDashboard?.ActivitySoft?.UltimoComandoStarkSwitch ?? userDashboard?.ActivitySoft?.UltimoComandoSocial ?? userDashboard?.ActivitySoft?.UltimoComandoIA ?? "N/A")</p>
+                               <p><small>Resposta:</small> @(userDashboard?.ActivitySoft?.UltimaRespostaSocial ?? userDashboard?.ActivitySoft?.UltimaRespostaIA ?? "N/A")</p>
+                               <p><small>Disp. Acionado:</small> @(userDashboard?.ActivitySoft?.UltimoDispositivoAcionado ?? "N/A")</p>
+                               <p><small>Local Acessado:</small> @(userDashboard?.ActivitySoft?.UltimaUiAcessada ?? "N/A")</p>
+                           </div>
+                           <div class="btn-grid">
+                               <button class="btn btn-warning btn-block" @onclick="() => IniciarManutencaoSoft()">Iniciar Suporte</button>
+                               <button class="btn btn-outline-danger btn-block" @onclick="() => LimparCacheSoft()">Limpar Cache</button>
+                               <button class="btn btn-outline-danger btn-block" @onclick="() => LimparDadosSoft()">Limpar Dados</button>
+                               <button class="btn btn-danger btn-block" @onclick="() => LogoutSoft()">Deslogar</button>
+                               <button class="btn btn-info btn-block" @onclick="() => VerLogsSoft()">Ver Logs Soft</button>
+                           </div>
+                       </div>
+                   </div>
+
+                   <!-- App (Android) Actions -->
+                   <div class="action-panel">
+                       <div class="panel-header app-header">
+                           <i class="fab fa-android"></i> App Android
+                       </div>
+                       <div class="panel-content">
+                           <div class="status-info">
+                               <p><small>Último Cmd:</small> @(userDashboard?.ActivityApp?.UltimoComandoEsp ?? userDashboard?.ActivityApp?.UltimoComandoEwelink ?? userDashboard?.ActivityApp?.UltimoComandoStarkSwitch ?? userDashboard?.ActivityApp?.UltimoComandoSocial ?? userDashboard?.ActivityApp?.UltimoComandoIA ?? "N/A")</p>
+                               <p><small>Resposta:</small> @(userDashboard?.ActivityApp?.UltimaRespostaSocial ?? userDashboard?.ActivityApp?.UltimaRespostaIA ?? "N/A")</p>
+                               <p><small>Disp. Acionado:</small> @(userDashboard?.ActivityApp?.UltimoDispositivoAcionado ?? "N/A")</p>
+                               <p><small>Local Acessado:</small> @(userDashboard?.ActivityApp?.UltimaUiAcessada ?? "N/A")</p>
+                           </div>
+                           <div class="btn-grid">
+                               <button class="btn btn-outline-danger btn-block" @onclick="() => LimparCacheApp()">Limpar Cache</button>
+                               <button class="btn btn-outline-danger btn-block" @onclick="() => LimparDadosApp()">Limpar Dados</button>
+                               <button class="btn btn-danger btn-block" @onclick="() => LogoutApp()">Deslogar</button>
+                               <button class="btn btn-info btn-block" @onclick="() => VerLogsApp()">Ver Logs App</button>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+            </div>
+
+            <!-- Social Commands -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <h3>Comandos Sociais</h3>
+                    <button class="btn btn-sm btn-primary" @onclick="OpenNewCommandModal">Novo Comando</button>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Comando</th>
+                                <th>Resposta</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var cmd in socialCommands)
+                            {
+                                <tr>
+                                    <td>@cmd.Comando</td>
+                                    <td>@cmd.Resposta</td>
+                                    <td>
+                                        <button class="btn btn-icon" title="Editar" @onclick="() => EditCommand(cmd)"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-icon delete" title="Excluir" @onclick="() => DeleteCommand(cmd)"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                            @if (!socialCommands.Any())
+                            {
+                                <tr><td colspan="3" class="text-center">Nenhum comando social encontrado.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Devices (UDP & StarkSwitch) -->
+             <div class="card full-width">
+                <div class="card-header">
+                    <h3>Dispositivos (UDP / StarkSwitch)</h3>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Tipo</th>
+                                <th>Comando</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                         <tbody>
+                            @foreach (var dev in devices)
+                            {
+                                <tr>
+                                    <td>@dev.Nome</td>
+                                    <td>UDP (ESP)</td>
+                                    <td>@dev.Comando</td>
+                                    <td>@dev.Status</td>
+                                     <td>
+                                        <button class="btn btn-icon" title="Ping" @onclick="() => PingDevice(dev)"><i class="fas fa-network-wired"></i></button>
+                                        <button class="btn btn-icon" title="Editar" @onclick="() => EditUdpDevice(dev)"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-icon delete" title="Excluir" @onclick="() => DeleteUdpDevice(dev)"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var dev in starkSwitchDevices)
+                            {
+                                <tr>
+                                    <td>@dev.Name</td>
+                                    <td>StarkSwitch (MQTT)</td>
+                                    <td>@dev.Comando</td>
+                                    <td>@(dev.Online ? "Online" : "Offline")</td>
+                                     <td>
+                                        <button class="btn btn-icon" title="Editar" @onclick="() => EditStarkSwitch(dev)"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-icon delete" title="Excluir" @onclick="() => DeleteStarkSwitch(dev)"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                            @if (!devices.Any() && !starkSwitchDevices.Any())
+                            {
+                                <tr><td colspan="5" class="text-center">Nenhum dispositivo encontrado.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    }
+    else
+    {
+        <div class="placeholder-state">
+            <p>Selecione um usuário acima para iniciar o gerenciamento.</p>
+        </div>
+    }
+</div>
+
+@if (showCommandModal)
+{
+    <div class="modal-overlay">
+        <div class="modal-content">
+            <h3>@(editingCommand?.Id == Guid.Empty ? "Novo Comando" : "Editar Comando")</h3>
+            <div class="form-group">
+                <label>Comando:</label>
+                <input class="form-control" @bind="editingCommand.Comando" />
+            </div>
+            <div class="form-group">
+                <label>Resposta:</label>
+                <input class="form-control" @bind="editingCommand.Resposta" />
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" @onclick="() => showCommandModal = false">Cancelar</button>
+                <button class="btn btn-primary" @onclick="SaveCommand">Salvar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showDeviceModal)
+{
+    <div class="modal-overlay">
+        <div class="modal-content">
+            <h3>Editar Dispositivo UDP</h3>
+            <div class="form-group">
+                <label>Nome:</label>
+                <input class="form-control" @bind="editingDevice.Nome" />
+            </div>
+            <div class="form-group">
+                <label>IP:</label>
+                <input class="form-control" @bind="editingDevice.Ip" />
+            </div>
+            <div class="form-group">
+                <label>Comando:</label>
+                <input class="form-control" @bind="editingDevice.Comando" />
+            </div>
+             <div class="form-group">
+                <label>Status:</label>
+                <input class="form-control" @bind="editingDevice.Status" />
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" @onclick="() => showDeviceModal = false">Cancelar</button>
+                <button class="btn btn-primary" @onclick="SaveDevice">Salvar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showStarkSwitchModal)
+{
+    <div class="modal-overlay">
+        <div class="modal-content">
+            <h3>Editar StarkSwitch</h3>
+            <div class="form-group">
+                <label>Nome:</label>
+                <input class="form-control" @bind="editingStarkSwitch.Name" />
+            </div>
+            <div class="form-group">
+                <label>Comando:</label>
+                <input class="form-control" @bind="editingStarkSwitch.Comando" />
+            </div>
+            <div class="form-group">
+                <label>Mqtt Topic:</label>
+                <input class="form-control" @bind="editingStarkSwitch.MqttTopic" readonly />
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" @onclick="() => showStarkSwitchModal = false">Cancelar</button>
+                <button class="btn btn-primary" @onclick="SaveStarkSwitch">Salvar</button>
+            </div>
+        </div>
+    </div>
+}
+@if (showLogsModal)
+{
+    <div class="modal-overlay">
+        <div class="modal-content wide-modal">
+            <h3>Logs de Erros - @logType</h3>
+            <div class="logs-container">
+                @if (currentLogs != null && currentLogs.Any())
+                {
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Mensagem</th>
+                                <th>Stack Trace</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(var log in currentLogs)
+                            {
+                                <tr>
+                                    <td>@log.CreatedAt.ToString("g")</td>
+                                    <td>@log.Message</td>
+                                    <td class="small-text">@log.StackTrace?.Substring(0, Math.Min(50, log.StackTrace?.Length ?? 0))...</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p>Nenhum log encontrado.</p>
+                }
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" @onclick="() => showLogsModal = false">Fechar</button>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .admin-support { padding: 2rem; color: var(--text-primary); }
+    .header-section { margin-bottom: 2rem; }
+    .user-selection-card { background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.05); }
+    .search-box input { width: 100%; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; margin-top: 0.5rem; }
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; }
+    .card { background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; overflow: hidden; margin-bottom: 1rem; }
+    .full-width { grid-column: 1 / -1; }
+    .card-header { padding: 1rem 1.5rem; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+    .card-body { padding: 1.5rem; }
+    .actions-split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1rem; }
+    .action-panel { background: rgba(0,0,0,0.2); border-radius: 8px; overflow: hidden; }
+    .panel-header { padding: 0.75rem; font-weight: bold; text-align: center; }
+    .soft-header { background: #0078d4; color: white; }
+    .app-header { background: #3ddc84; color: black; }
+    .panel-content { padding: 1rem; }
+    .status-info p { margin-bottom: 0.25rem; font-size: 0.9rem; color: #cbd5e1; }
+    .status-info small { color: #64748b; font-weight: bold; }
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 1rem; }
+    .btn-block { width: 100%; }
+    .table td, .table th { padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-secondary); }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: #1e293b; padding: 2rem; border-radius: 12px; width: 400px; max-width: 90%; color: white; }
+    .wide-modal { width: 800px; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; }
+    .small-text { font-size: 0.8rem; color: #94a3b8; }
+    .logs-container { max-height: 400px; overflow-y: auto; }
+</style>
+
+@code {
+    private List<AdminUserListDto> allUsers = new();
+    private string selectedUserId;
+    private AdminUserListDto selectedUser;
+    private UserDashboardDto userDashboard;
+    private List<DispositivoEspDto> devices = new();
+    private List<DeviceDto> starkSwitchDevices = new();
+    private List<ComandoSocialDto> socialCommands = new();
+    
+    private string token;
+    private string apiKey;
+
+    // Modals state
+    private bool showCommandModal = false;
+    private ComandoSocialDto editingCommand;
+    
+    private bool showDeviceModal = false;
+    private DispositivoEspDto editingDevice;
+
+    private bool showLogsModal = false;
+    private List<ErrorLogDto> currentLogs;
+    private string logType;
+
+    private bool showStarkSwitchModal = false;
+    private DeviceDto editingStarkSwitch;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try 
+        {
+            token = await AuthService.GetAccessTokenAsync();
+            apiKey = await AuthService.GetApiKeyAsync();
+            
+            if (!string.IsNullOrEmpty(token))
+            {
+                allUsers = await AdminService.GetAllUsersAsync(token, apiKey);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro init: {ex.Message}");
+        }
+    }
+
+    private async Task OnUserSelected()
+    {
+        if (Guid.TryParse(selectedUserId, out Guid userId))
+        {
+            selectedUser = allUsers.FirstOrDefault(u => u.Id == userId);
+            if (selectedUser != null)
+            {
+                await LoadUserDetails(userId);
+            }
+        }
+    }
+
+    private async Task LoadUserDetails(Guid userId)
+    {
+        try
+        {
+            userDashboard = await AdminService.GetUserDashboardAsync(userId, token, apiKey);
+            devices = await AdminService.GetDispositivosManutencaoAsync(userId, token, apiKey);
+            starkSwitchDevices = await AdminService.GetStarkSwitchDevicesAsync(userId, token, apiKey);
+            socialCommands = await AdminService.GetComandosSociaisManutencaoAsync(userId, token, apiKey);
+            StateHasChanged();
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine($"Erro loading user details: {ex.Message}");
+        }
+    }
+
+    // --- Command Actions ---
+    private void OpenNewCommandModal()
+    {
+        editingCommand = new ComandoSocialDto { UserId = selectedUser.Id }; // Ensure UserId is set for new commands
+        showCommandModal = true;
+    }
+
+    private void EditCommand(ComandoSocialDto cmd)
+    {
+        // Clone to avoid editing directly in list before save
+        editingCommand = new ComandoSocialDto 
+        { 
+            Id = cmd.Id, 
+            Comando = cmd.Comando, 
+            Resposta = cmd.Resposta,
+            UserId = cmd.UserId,
+            RespostasAleatorias = cmd.RespostasAleatorias,
+            Estilo = cmd.Estilo
+        };
+        showCommandModal = true;
+    }
+
+    private async Task SaveCommand()
+    {
+        if (editingCommand.Id == Guid.Empty)
+        {
+            await ExecuteAction(AdminService.CreateComandoSocialAsync(editingCommand, token, apiKey));
+        }
+        else
+        {
+            await ExecuteAction(AdminService.UpdateComandoSocialAsync(editingCommand, token, apiKey));
+        }
+        showCommandModal = false;
+        await LoadUserDetails(selectedUser.Id); // Reload
+    }
+
+    private async Task DeleteCommand(ComandoSocialDto cmd)
+    {
+        if (await ConfirmService.ConfirmAsync("Excluir Comando", $"Tem certeza que deseja excluir o comando '{cmd.Comando}'?"))
+        {
+             await ExecuteAction(AdminService.DeleteComandoSocialAsync(cmd.Id, token, apiKey));
+             await LoadUserDetails(selectedUser.Id);
+        }
+    }
+
+    // --- Device Actions ---
+    private void EditUdpDevice(DispositivoEspDto dev)
+    {
+         // Clone
+         editingDevice = new DispositivoEspDto
+         {
+             Id = dev.Id,
+             Nome = dev.Nome,
+             Ip = dev.Ip,
+             Comando = dev.Comando,
+             Status = dev.Status,
+             UserId = dev.UserId
+         };
+         showDeviceModal = true;
+    }
+
+    private async Task SaveDevice()
+    {
+        // Map Dto to Update Request Dto
+        var updateDto = new UpdateDispositivoEspDto 
+        {
+            Nome = editingDevice.Nome,
+            Ip = editingDevice.Ip,
+            Comando = editingDevice.Comando,
+            Status = editingDevice.Status
+        };
+
+        // Convert string Id to Guid if possible
+        if(Guid.TryParse(editingDevice.Id, out Guid devGuid))
+        {
+             await ExecuteAction(AdminService.UpdateDispositivoEspAsync(devGuid, updateDto, token, apiKey));
+             showDeviceModal = false;
+             await LoadUserDetails(selectedUser.Id);
+        }
+        else
+        {
+             ToastService.ShowError("ID inválido para atualização.");
+        }
+    }
+    
+    private async Task DeleteUdpDevice(DispositivoEspDto dev)
+    {
+        if (await ConfirmService.ConfirmAsync("Excluir Dispositivo", $"Tem certeza que deseja excluir o dispositivo '{dev.Nome}'?"))
+        {
+            if(Guid.TryParse(dev.Id, out Guid devGuid))
+            {
+                 await ExecuteAction(AdminService.DeleteDispositivoEspAsync(devGuid, token, apiKey));
+                 await LoadUserDetails(selectedUser.Id);
+            }
+        }
+    }
+
+    private async Task PingDevice(DispositivoEspDto dev)
+    {
+        if(Guid.TryParse(dev.Id, out Guid devGuid))
+        {
+             await ExecuteAction(AdminService.PingDeviceAsync(devGuid, token, apiKey));
+             await LoadUserDetails(selectedUser.Id);
+        }
+    }
+
+    private void EditStarkSwitch(DeviceDto dev)
+    {
+        editingStarkSwitch = new DeviceDto
+        {
+            Id = dev.Id,
+            Name = dev.Name,
+            Comando = dev.Comando,
+            MqttTopic = dev.MqttTopic,
+            ApiKey = dev.ApiKey,
+            UserId = dev.UserId
+        };
+        showStarkSwitchModal = true;
+    }
+
+    private async Task SaveStarkSwitch()
+    {
+        var updateRequest = new AdminUpdateDeviceRequest
+        {
+            Name = editingStarkSwitch.Name,
+            Comando = editingStarkSwitch.Comando
+        };
+
+        if(Guid.TryParse(editingStarkSwitch.Id, out Guid devGuid))
+        {
+            await ExecuteAction(AdminService.UpdateDeviceAsync(devGuid, updateRequest, token, apiKey));
+            showStarkSwitchModal = false;
+            await LoadUserDetails(selectedUser.Id);
+        }
+    }
+
+    private async Task DeleteStarkSwitch(DeviceDto dev)
+    {
+         if (await ConfirmService.ConfirmAsync("Excluir StarkSwitch", $"Tem certeza que deseja excluir o StarkSwitch '{dev.Name}'?"))
+        {
+            if(Guid.TryParse(dev.Id, out Guid devGuid))
+            {
+                 await ExecuteAction(AdminService.DeleteDeviceAsync(devGuid, token, apiKey));
+                 await LoadUserDetails(selectedUser.Id);
+            }
+        }
+    }
+    private async Task VerLogsSoft()
+    {
+        logType = "Software";
+        currentLogs = await AdminService.GetSoftLogsAsync(selectedUser.Id, token, apiKey);
+        showLogsModal = true;
+    }
+
+    private async Task VerLogsApp()
+    {
+        logType = "App Android";
+        currentLogs = await AdminService.GetAppLogsAsync(selectedUser.Id, token, apiKey);
+        showLogsModal = true;
+    }
+
+    // --- Maintenance Actions ---
+    private async Task IniciarManutencaoSoft()
+    {
+        if (selectedUser == null) return;
+        if (await AdminService.IniciarManutencaoSoftwareAsync(selectedUser.Id, token, apiKey))
+        {
+            ToastService.ShowSuccess("Modo manutenção iniciado com sucesso!");
+        }
+    }
+    private async Task LimparCacheSoft() 
+    {
+        if (await ConfirmService.ConfirmAsync("Limpar Cache", "Deseja realmente limpar o cache do Software?"))
+            await ExecuteAction(AdminService.ClearCacheSoftAsync(selectedUser.Id, token, apiKey));
+    }
+    private async Task LimparDadosSoft() 
+    {
+        if (await ConfirmService.ConfirmAsync("Limpar Dados", "Deseja realmente limpar os dados do Software? Esta ação é irreversível."))
+            await ExecuteAction(AdminService.ClearDataSoftAsync(selectedUser.Id, token, apiKey));
+    }
+    private async Task LogoutSoft() 
+    {
+        if (await ConfirmService.ConfirmAsync("Logout Remoto", "Deseja realmente deslogar o Software remotamente?"))
+            await ExecuteAction(AdminService.LogoutSoftAsync(selectedUser.Id, token, apiKey));
+    }
+
+    private async Task LimparCacheApp() 
+    {
+        if (await ConfirmService.ConfirmAsync("Limpar Cache", "Deseja realmente limpar o cache do App Android?"))
+            await ExecuteAction(AdminService.ClearCacheAppAsync(selectedUser.Id, token, apiKey));
+    }
+    private async Task LimparDadosApp() 
+    {
+        if (await ConfirmService.ConfirmAsync("Limpar Dados", "Deseja realmente limpar os dados do App Android? Esta ação é irreversível."))
+            await ExecuteAction(AdminService.ClearDataAppAsync(selectedUser.Id, token, apiKey));
+    }
+    private async Task LogoutApp() 
+    {
+        if (await ConfirmService.ConfirmAsync("Logout Remoto", "Deseja realmente deslogar o App Android remotamente?"))
+            await ExecuteAction(AdminService.LogoutAppAsync(selectedUser.Id, token, apiKey));
+    }
+
+    private async Task ExecuteAction(Task<bool> action)
+    {
+        if (selectedUser == null) return;
+        var result = await action;
+        if(result) 
+        {
+             ToastService.ShowSuccess("Ação executada com sucesso!");
+        }
+        else 
+        {
+             ToastService.ShowError("Erro ao executar ação.");
+        }
+    }
+}

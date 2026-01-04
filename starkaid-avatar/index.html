@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css">
+    
+</head>
+<body>
+    <button id="avatarCloseBtn" style="position:fixed;top:10px;left:10px;z-index:99999;background:#1a1a1f;color:#fff;border:1px solid #555;padding:8px 12px;border-radius:6px;cursor:pointer">X</button>
+    <canvas id="rain"></canvas>
+    <canvas id="scene"></canvas>
+    <script src="three.js"></script>
+    <script>
+        (function(){
+            var btn = document.getElementById('avatarCloseBtn');
+            if (btn) {
+                btn.addEventListener('click', function() {
+                    try {
+                        if (window.AndroidAvatar && typeof window.AndroidAvatar.closeAvatar === 'function') {
+                            window.AndroidAvatar.closeAvatar();
+                        }
+                    } catch(e) {}
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

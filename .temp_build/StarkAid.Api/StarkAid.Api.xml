@@ -1,0 +1,560 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>StarkAid.Api</name>
+    </assembly>
+    <members>
+        <member name="M:StarkAid.Api.Controllers.V1.ConfigController.GetAppConfig">
+            <summary>
+            Retorna configurações públicas necessárias para os aplicativos cliente funcionarem.
+            Não requer autenticação, mas está protegido por rate limiting (90 req/min por IP).
+            Respostas são cacheadas por 5 minutos para melhor performance.
+            </summary>
+        </member>
+        <member name="M:StarkAid.Api.Features.TuyaAdmin.Controllers.TuyaAdminController.GetUserByEmail(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Buscar usuário Tuya por email (consulta no Tuya Cloud)
+            GET /admin/tuya/list-users?email=...
+            </summary>
+        </member>
+        <member name="M:StarkAid.Api.Features.TuyaAdmin.Controllers.TuyaAdminController.DeleteUser(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Deletar usuário Tuya pelo UID
+            DELETE /admin/tuya/delete-user/{uid}
+            </summary>
+        </member>
+        <member name="M:StarkAid.Api.Features.TuyaAdmin.Controllers.TuyaAdminController.CleanDuplicates(StarkAid.Api.Features.TuyaAdmin.Models.CleanDuplicatesRequestDto,System.Threading.CancellationToken)">
+            <summary>
+            Deletar vários usuários passando lista de emails.
+            DELETE /admin/tuya/clean-duplicates
+            Body: { "emails": ["a@b.com", "x@y.com"] }
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Features.TuyaAdmin.Extensions.TuyaAdminExtensions">
+            <summary>
+            Registra os serviços da integração Tuya Admin.
+            </summary>
+        </member>
+        <member name="M:StarkAid.Api.Features.TuyaAdmin.Services.TuyaSignHelper.BuildSign(System.String,System.String,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Build sign para requisições que exigem body (POST) ou sem body (GET).
+            Usa: clientId + accessToken + t + stringToSign
+            stringToSign = METHOD + "\n" + contentSHA256 + "\n\n" + pathAndQuery
+            Retorna HMAC_SHA256(finalString, secret) em UPPERCASE no seu uso original,
+            mas aqui retornamos lowercase para consistência interna — caller pode ToUpper() se quiser.
+            </summary>
+        </member>
+        <member name="M:StarkAid.Api.Features.TuyaAdmin.Services.TuyaSignHelper.BuildTokenRequestSign(System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Build sign específico para a requisição de token (GET /v1.0/token?grant_type=1).
+            A assinatura do token NÃO inclui accessToken no finalString.
+            finalString = clientId + timestamp + stringToSign
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Hubs.DeviceHub">
+            <summary>
+            Hub para receber status de dispositivos e enviar comandos em tempo real.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Hubs.DispositivoEspHub">
+            <summary>
+            Hub para comunicação entre API, Software Windows Forms, App Android e Dispositivos ESP
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Middlewares.CommandRateLimiterMiddleware">
+            <summary>
+            Limita a quantidade de comandos MQTT por usuário (ex.: 5 comandos a cada 10 s).
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Middlewares.DeviceApiKeyMiddleware">
+            <summary>
+            Valida a API‑Key enviada nos headers para rotas de dispositivos.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddSimuladoQuestao">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddSimuladoQuestao.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddSimuladoQuestao.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddSuporteEntities">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddSuporteEntities.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddSuporteEntities.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.InitialCreate">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.InitialCreate.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.InitialCreate.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.InitialCreate.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddStripeAssinaturaIntegration">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddStripeAssinaturaIntegration.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddStripeAssinaturaIntegration.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddStripeAssinaturaIntegration.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddSpotifyFieldsToUser">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddSpotifyFieldsToUser.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddSpotifyFieldsToUser.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddSpotifyFieldsToUser.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddMinutosReconhecidosToUser">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddMinutosReconhecidosToUser.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddMinutosReconhecidosToUser.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddMinutosReconhecidosToUser.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddOrigemToRefreshTokens">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddOrigemToRefreshTokens.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddOrigemToRefreshTokens.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddOrigemToRefreshTokens.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddIaHistorico">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddIaHistorico.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddIaHistorico.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddIaHistorico.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddRespostasAleatoriasToComandoSocial">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddRespostasAleatoriasToComandoSocial.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddRespostasAleatoriasToComandoSocial.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddRespostasAleatoriasToComandoSocial.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.ConfiguracoesSistema">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.ConfiguracoesSistema.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.ConfiguracoesSistema.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.ConfiguracoesSistema.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddUserSessions">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddUserSessions.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddUserSessions.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddUserSessions.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddDominioNlpToConfiguracaoSistema">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddDominioNlpToConfiguracaoSistema.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddDominioNlpToConfiguracaoSistema.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddDominioNlpToConfiguracaoSistema.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddStripePriceIdToAssinatura">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddStripePriceIdToAssinatura.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddStripePriceIdToAssinatura.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddStripePriceIdToAssinatura.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.PagamentosAvulsos">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.PagamentosAvulsos.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.PagamentosAvulsos.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.PagamentosAvulsos.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddLastUpdatedAtToUser">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddLastUpdatedAtToUser.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddLastUpdatedAtToUser.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddLastUpdatedAtToUser.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.RemovalAds">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.RemovalAds.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.RemovalAds.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.RemovalAds.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.TipoPlano">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.TipoPlano.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.TipoPlano.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.TipoPlano.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddConfiguracaoStarkNlp">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddConfiguracaoStarkNlp.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddConfiguracaoStarkNlp.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddConfiguracaoStarkNlp.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddComandoToDevice.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddDispositivoEsp">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddDispositivoEsp.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddDispositivoEsp.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddDispositivoEsp.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddLicenseTables">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddLicenseTables.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddLicenseTables.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddLicenseTables.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddComandToEspToDispositivoEsp">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddComandToEspToDispositivoEsp.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddComandToEspToDispositivoEsp.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddComandToEspToDispositivoEsp.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddTipoAgendamentoAndDispositivoEspIdToAgendamento">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddTipoAgendamentoAndDispositivoEspIdToAgendamento.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddTipoAgendamentoAndDispositivoEspIdToAgendamento.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddTipoAgendamentoAndDispositivoEspIdToAgendamento.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddTipoAgendamentoAndDispositivoEspIdToAgendamentoFixed">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddTipoAgendamentoAndDispositivoEspIdToAgendamentoFixed.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddTipoAgendamentoAndDispositivoEspIdToAgendamentoFixed.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddTipoAgendamentoAndDispositivoEspIdToAgendamentoFixed.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.RemoveDeviceId1ShadowProperty">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.RemoveDeviceId1ShadowProperty.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.RemoveDeviceId1ShadowProperty.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.RemoveDeviceId1ShadowProperty.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddEwelinkEntities">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddEwelinkEntities.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddEwelinkEntities.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddEwelinkEntities.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddEwelinkDeviceIdToAgendamento">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddEwelinkDeviceIdToAgendamento.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddEwelinkDeviceIdToAgendamento.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddEwelinkDeviceIdToAgendamento.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddEstadoCidadeBairroToUser">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddEstadoCidadeBairroToUser.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddEstadoCidadeBairroToUser.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddOrigemAndLastActivityToUserSession">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddOrigemAndLastActivityToUserSession.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddOrigemAndLastActivityToUserSession.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddOrigemAndLastActivityToUserSession.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddErrorLogsSoft">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddErrorLogsSoft.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddErrorLogsSoft.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddErrorLogsSoft.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddErrorLogsAppAndErrorCodeDescriptions">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddErrorLogsAppAndErrorCodeDescriptions.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddErrorLogsAppAndErrorCodeDescriptions.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddErrorLogsAppAndErrorCodeDescriptions.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddSolucoesToErrorCodeDescription">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddSolucoesToErrorCodeDescription.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddSolucoesToErrorCodeDescription.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddSolucoesToErrorCodeDescription.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddUserActivityTable">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddUserActivityTable.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddUserActivityTable.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddUserActivityTable.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.AddLogsFalhasSoftTable">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddLogsFalhasSoftTable.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddLogsFalhasSoftTable.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.AddLogsFalhasSoftTable.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Migrations.EnsureEconomyColumns">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.EnsureEconomyColumns.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.EnsureEconomyColumns.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:StarkAid.Api.Migrations.EnsureEconomyColumns.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:StarkAid.Api.Options.JwtSettings">
+            <summary>
+            Configurações do JWT lidas de appsettings.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Options.NlpConnectOptions">
+            <summary>
+            Opções de integração ao NLP.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Options.StripeSettings">
+            <summary>
+            Configurações do Stripe (chave, preços, URLs etc.).
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Options.TuyaConfig">
+            <summary>
+            Configurações da API Tuya.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Options.WppConnectOptions">
+            <summary>
+            Opções de integração ao WhatsApp Cloud (WPPConnect).
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Services.V1.Devices.IMqttClientService">
+            <summary>
+            Interface responsável pela comunicação MQTT.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Services.V1.Devices.MqttClientService">
+            <summary>
+            Cliente MQTT singleton que gerencia publicação/subscrição e integração com SignalR.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Services.V1.Devices.MqttHostedService">
+            <summary>
+            Serviço hospedado que inicia o cliente MQTT quando a aplicação sobe.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Services.V1.Payment.Stripe.SubscriptionCancelResult">
+            <summary>
+            Resultado da operação de cancelamento de assinatura.
+            </summary>
+        </member>
+        <member name="M:StarkAid.Api.Services.V1.Payment.Stripe.SubscriptionCancelResult.#ctor(System.Guid,System.String,System.String)">
+            <summary>
+            Resultado da operação de cancelamento de assinatura.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Services.V1.WPPconnect.IWppConnectService">
+            <summary>
+            Interface mínima para o WPPConnect. Por enquanto contém apenas um método de “ping”.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Services.V1.WPPconnect.WppConnectService">
+            <summary>
+            Implementação “stub” do serviço de integração ao WPPConnect.
+            Basta manter o contrato da interface para que o código compile.
+            No futuro você pode preencher os métodos com chamadas reais ao WPPConnect.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Services.PlanoLimitesService">
+            <summary>
+            Centraliza as regras de planos Free/Premium para limites e cobranças.
+            </summary>
+        </member>
+        <member name="M:StarkAid.Api.Services.PlanoLimitesService.CalcularTokensParaCobrar(StarkAid.Api.Entities.User,System.Int32)">
+            <summary>
+            Calcula quantos tokens dessa operação devem ser cobrados em StarkCoins,
+            considerando o consumo acumulado do usuário.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Services.TokenUsageService">
+            <summary>
+            Aplica as regras de limite semanal e consumo de StarkCoins para excedentes.
+            </summary>
+        </member>
+        <member name="T:StarkAid.Api.Services.WeeklyTokensResetService">
+            <summary>
+            Reseta o consumo semanal de tokens toda segunda-feira às 00:00 (UTC).
+            </summary>
+        </member>
+    </members>
+</doc>

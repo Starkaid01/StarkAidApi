@@ -1,0 +1,804 @@
+@page "/assistente-voz"
+@using StarkAid.Web.Services
+@using StarkAid.Web.DTOs
+@using System.Text.RegularExpressions
+@using Blazored.LocalStorage
+@inject ApiService Api
+@inject IJSRuntime JS
+@inject ISyncLocalStorageService LocalStorage
+
+<div class="voice-assistant-container">
+
+    <canvas id="rain" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></canvas>
+
+    <div class="avatar-display">
+        <canvas id="scene"></canvas>
+    </div>
+
+    <div class="hamburger-menu">
+        <button class="menu-toggle" @onclick="ToggleMenu">
+            @if (_isMenuOpen)
+            {
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            }
+            else
+            {
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            }
+        </button>
+    </div>
+
+    <div class="controls-section @(_isMenuOpen ? "open" : "")">
+        <div class="control-group">
+            <label class="switch">
+                <input type="checkbox" @bind="_isAiActive">
+                <span class="slider round"></span>
+            </label>
+            <span class="control-label">Ativar Inteligência Artificial (Super IA)</span>
+        </div>
+
+        <div class="actions">
+            @if (!_isRecognizing)
+            {
+                <button class="btn btn-primary start-btn" @onclick="StartAssistant">
+                    <i class="bi bi-mic-fill"></i> Iniciar
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-danger stop-btn" @onclick="StopAssistant">
+                    <i class="bi bi-stop-fill"></i> Parar
+                </button>
+            }
+        </div>
+
+        <div class="transcript-box" id="transcript-scroll">
+            <div class="transcript-content">
+                @foreach (var line in _transcript.TakeLast(10))
+                {
+                    <div class="transcript-line @(line.IsUser ? "user" : "ai")">
+                        <span class="speaker">@(line.IsUser ? "Você:" : "StarkAid:")</span>
+                        <span class="msg">@line.Text</span>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_interimText))
+                {
+                    <div class="transcript-line user interim">
+                        <span class="speaker">Você:</span>
+                        <span class="msg">@_interimText...</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .voice-assistant-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        
+        /* Ajuste para respeitar o layout principal (sidebar) */
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 60px); /* Ajuste de altura para caber sem scroll */
+        
+        background: radial-gradient(circle at 50% 30%, #1c1c3c 0%, #0a0a14 100%);
+        color: white;
+        overflow: hidden;
+    }
+
+    /* Hamburger Menu Button */
+    .hamburger-menu {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 200;
+    }
+
+    .menu-toggle {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #57f7ff;
+        font-size: 1.5rem;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(5px);
+    }
+
+    .menu-toggle:hover {
+        background: rgba(87, 247, 255, 0.2);
+        transform: scale(1.1);
+    }
+
+    /* Controls Section as Collapsible Menu */
+    .controls-section {
+        position: absolute;
+        top: 80px; /* Abaixo do botão hamburger */
+        right: 20px;
+        background: rgba(10, 10, 20, 0.95);
+        backdrop-filter: blur(15px);
+        padding: 1.5rem;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        width: 350px; /* Um pouco mais largo para caber o chat melhor */
+        z-index: 100;
+        max-height: 80vh; /* Limite de altura */
+        
+        /* Animation properties */
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-20px) scale(0.95);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+
+    .controls-section.open {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0) scale(1);
+    }
+
+    /* Ajuste para telas menores */
+    @@media (max-width: 768px) {
+        .controls-section {
+            width: 90%;
+            left: 5%;
+            right: 5%;
+        }
+    }
+
+    .premium-title {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 800;
+        background: linear-gradient(135deg, #fff 0%, #57f7ff 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: -1px;
+    }
+
+    .header-section {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .subtitle {
+        color: #8892b0;
+        font-size: 1.1rem;
+    }
+
+    .avatar-display {
+        position: relative;
+        margin-bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 5;
+        /* Ensure scene has enough space */
+        min-height: 400px; 
+        min-width: 400px;
+        justify-content: center;
+    }
+
+    .status-indicator {
+        margin-top: 1rem;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .status-text {
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.9rem;
+    }
+
+    .listening { 
+        color: #57f7ff; 
+        text-shadow: 0 0 15px rgba(87, 247, 255, 0.6); 
+    }
+    .idle { color: rgba(255,255,255,0.2); }
+
+    .transcript-box {
+        width: 100%;
+        /* max-width removido para ocupar container pai */
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 1rem;
+        /* margin-bottom movido para controle de layout flex pai se necessário */
+        height: 250px; /* Altura fixa para scroll */
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column-reverse;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        font-size: 0.9rem; /* Texto levemente menor no menu lateral */
+        
+        /* Hide Scrollbar */
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none;  /* IE and Edge */
+    }
+
+    .transcript-box::-webkit-scrollbar {
+        display: none;
+    }
+
+    .transcript-line {
+        margin-bottom: 0.8rem;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        padding: 0.4rem 0.6rem;
+        border-radius: 8px;
+    }
+
+    .transcript-line.user { 
+        color: #e6f1ff; 
+        background: rgba(255,255,255,0.03);
+        align-self: flex-start;
+        border-left: 3px solid #ccd6f6;
+    }
+    .transcript-line.ai { 
+        color: #57f7ff; 
+        background: rgba(87, 247, 255, 0.03);
+        align-self: flex-end;
+        border-right: 3px solid #57f7ff;
+    }
+    .transcript-line.interim { opacity: 0.5; font-style: italic; }
+
+    .speaker {
+        font-weight: 800;
+        margin-right: 0.8rem;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        opacity: 0.7;
+    }
+
+    .control-group {
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        background: rgba(255,255,255,0.05); /* Ligeiramente mais sutil dentro do menu */
+        padding: 0.8rem 1.5rem;
+        border-radius: 40px;
+        border: 1px solid rgba(255,255,255,0.1);
+        width: 100%; /* Ocupar largura do menu */
+        justify-content: center;
+    }
+
+    .control-label {
+        font-size: 0.95rem;
+        color: #ccd6f6;
+        font-weight: 500;
+    }
+
+    /* Switch Style */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 46px;
+        height: 24px;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #233554;
+        transition: .4s;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px; width: 18px;
+        left: 3px; bottom: 3px;
+        background-color: white;
+        transition: .4s;
+    }
+    input:checked + .slider { background-color: #57f7ff; }
+    input:checked + .slider:before { transform: translateX(22px); }
+    .slider.round { border-radius: 34px; }
+    .slider.round:before { border-radius: 50%; }
+
+    .btn {
+        padding: 1rem 2.8rem;
+        border-radius: 40px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        font-size: 1rem;
+        width: 100%; /* Botão largura total no menu */
+        justify-content: center;
+    }
+
+    .btn-primary { 
+        background: linear-gradient(135deg, #57f7ff 0%, #20b2aa 100%); 
+        color: #0a0a14; 
+        box-shadow: 0 10px 25px rgba(87, 247, 255, 0.4); 
+    }
+    .btn-primary:hover { 
+        transform: translateY(-5px) scale(1.05); 
+        box-shadow: 0 15px 35px rgba(87, 247, 255, 0.6); 
+    }
+
+    .btn-danger { 
+        background: linear-gradient(135deg, #ff4d4d 0%, #b81616 100%); 
+        color: white; 
+        box-shadow: 0 10px 25px rgba(255, 77, 77, 0.3); 
+    }
+    .btn-danger:hover { 
+        transform: translateY(-5px) scale(1.05); 
+        box-shadow: 0 15px 35px rgba(255, 77, 77, 0.5); 
+    }
+
+    .pulse-ring {
+        border: 2px solid #57f7ff;
+        border-radius: 50%;
+        position: absolute;
+        top: -10px; left: -10px; right: -10px; bottom: -10px;
+        opacity: 0;
+    }
+
+    .anim-pulse {
+        animation: pulse-ring-anim 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+    }
+
+    @@keyframes pulse-ring-anim {
+        0% { transform: scale(0.95); opacity: 0.7; }
+        100% { transform: scale(1.4); opacity: 0; }
+    }
+</style>
+
+@code {
+    private bool _isRecognizing = false;
+    private bool _isSpeaking = false;
+    private bool _isAiActive = true;
+    private bool _isMenuOpen = false; // Menu começa fechado
+    private string _interimText = "";
+    private List<TranscriptLine> _transcript = new();
+    private DotNetObjectReference<AssistenteVoz>? _objRef;
+    
+    private List<ComandoSocialDto> _socialCommands = new();
+    private List<DeviceDto> _starkSwitchDevices = new();
+    private List<DeviceDto> _ewelinkDevices = new();
+    private List<DispositivoEspDto> _espDevices = new();
+    
+    private string _token = "";
+    private string _apiKey = "6c82306c-8472-4cf0-8805-728b9d997232";
+    private string _lastUserContext = "";
+    private string _lastAiContext = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Corrigido: usando a chave "token" (conforme Login.razor)
+        _token = LocalStorage.GetItem<string>("token") ?? "";
+        
+        var stApiKey = LocalStorage.GetItem<string>("apiKey");
+        if (!string.IsNullOrEmpty(stApiKey)) _apiKey = stApiKey;
+        
+        if (!string.IsNullOrEmpty(_token))
+        {
+            try {
+                _socialCommands = await Api.GetComandosSociaisAsync(_token, _apiKey);
+                _starkSwitchDevices = await Api.GetStarkSwitchAsync(_token, _apiKey);
+                _ewelinkDevices = await Api.GetEwelinkDispositivosAsync(_token, _apiKey);
+                _espDevices = await Api.GetUdpDispositivosAsync(_token, _apiKey);
+                
+                Console.WriteLine($"Assistente: Dados carregados - Social({_socialCommands.Count}), " +
+                                  $"StarkSwitch({_starkSwitchDevices.Count}), eWeLink({_ewelinkDevices.Count}), " +
+                                  $"ESP({_espDevices.Count})");
+            } catch (Exception ex) {
+                Console.WriteLine($"Erro ao carregar dados do assistente: {ex.Message}");
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _objRef = DotNetObjectReference.Create(this);
+            await JS.InvokeAsync<bool>("StarkSpeech.init", _objRef);
+
+            // Init Particle Avatar
+            try {
+                await JS.InvokeVoidAsync("StarkaidAvatar.init");
+            } catch (Exception ex) {
+                 Console.WriteLine($"[Assistente] Falha ao iniciar avatar: {ex.Message}");
+            }
+
+            // Auto-iniciar assistente (pode requerer interação em alguns navegadores)
+            try 
+            {
+                await Task.Delay(500); // Pequeno delay para garantir carregamento JS
+                await StartAssistant();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Assistente] Falha ao auto-iniciar: {ex.Message}");
+            }
+        }
+    }
+
+    private void ToggleMenu()
+    {
+        _isMenuOpen = !_isMenuOpen;
+    }
+
+    private async Task StartAssistant()
+    {
+        if (string.IsNullOrEmpty(_token)) {
+            await Respond("Por favor, faça login para usar o assistente.");
+            return;
+        }
+        _isRecognizing = true;
+        await JS.InvokeVoidAsync("StarkSpeech.start");
+        await Respond("Estou pronto para ouvir.");
+    }
+
+    private async Task StopAssistant()
+    {
+        _isRecognizing = false;
+        await JS.InvokeVoidAsync("StarkSpeech.stop");
+        await JS.InvokeVoidAsync("StarkSpeech.cancelSpeak");
+    }
+
+    [JSInvokable]
+    public async Task OnTtsStart()
+    {
+        _isSpeaking = true;
+        await JS.InvokeVoidAsync("StarkaidAvatar.setSpeaking", true);
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public async Task OnTtsEnd()
+    {
+        _isSpeaking = false;
+        await JS.InvokeVoidAsync("StarkaidAvatar.setSpeaking", false);
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public async Task OnSpeechResult(string text, bool isInterim)
+    {
+        if (isInterim)
+        {
+            _interimText = text;
+            StateHasChanged();
+            return;
+        }
+
+        _interimText = "";
+        _transcript.Add(new TranscriptLine { Text = text, IsUser = true });
+        StateHasChanged();
+
+        await ProcessCommandWithPriority(text);
+    }
+
+    private string NormalizeText(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return "";
+        // Remove acentos e converte para minúsculo
+        string output = text.ToLower();
+        output = Regex.Replace(output, "[áàâã]", "a");
+        output = Regex.Replace(output, "[éèê]", "e");
+        output = Regex.Replace(output, "[íìî]", "i");
+        output = Regex.Replace(output, "[óòôõ]", "o");
+        output = Regex.Replace(output, "[úùû]", "u");
+        output = Regex.Replace(output, "ç", "c");
+        // Remove pontuação
+        output = Regex.Replace(output, @"[^\w\s]", "");
+        return output.Trim();
+    }
+
+    private async Task ProcessCommandWithPriority(string text)
+    {
+        var cleanText = NormalizeText(text);
+        Console.WriteLine($"Voz Normalizada: '{cleanText}'");
+
+        if (string.IsNullOrEmpty(cleanText)) return;
+
+        // PRIORIDADE 0: Comandos de Parar (Funcionam mesmo enquanto fala)
+        if (cleanText.Contains("cala a boca") || cleanText.Contains("pare de falar") || 
+            cleanText.Contains("para de falar") || cleanText.Contains("parar de falar"))
+        {
+             Console.WriteLine("[Assistente] Comando de parar recebido. Interrompendo fala.");
+             await JS.InvokeVoidAsync("StarkSpeech.cancelSpeak");
+             return;
+        }
+
+        // Se estiver falando, ignorar outros comandos para evitar "auto-escuta" ou interrupção indesejada
+        if (_isSpeaking)
+        {
+             Console.WriteLine($"[Assistente] Ignorando comando pois TTS está falando: '{cleanText}'");
+             return;
+        }
+
+        // 1. Saudações (com correção inteligente)
+        if (cleanText.Contains("bom dia"))
+        {
+            var now = DateTime.Now;
+            var hora = now.Hour;
+
+            if (hora >= 12 && hora < 18)
+                await Respond("Na verdade, já é tarde. Boa tarde!");
+            else if (hora >= 18)
+                await Respond("Na verdade, já é noite. Boa noite!");
+            else if (hora < 5)
+                // Se o usuário diz "Bom dia" na madrugada, ele está certo. Resposta amigável.
+                await Respond("Bom dia! Madrugada produtiva. Como posso ajudar?");
+            else
+                await Respond("Bom dia! Como posso ajudar?");
+            return;
+        }
+
+        if (cleanText.Contains("boa tarde"))
+        {
+            var now = DateTime.Now;
+            var hora = now.Hour;
+
+            if (hora >= 5 && hora < 12)
+                await Respond("Na verdade, ainda é manhã. Bom dia!");
+            else if (hora >= 18)
+                await Respond("Na verdade, já é noite. Boa noite!");
+            else if (hora < 5)
+                // Se diz "Boa tarde" na madrugada, corrigimos para o contexto de madrugada/dia.
+                await Respond($"Agora é madrugada, já são {now:HH:mm}. Bom dia!");
+            else
+                await Respond("Boa tarde! Como posso ajudar?");
+            return;
+        }
+
+        if (cleanText.Contains("boa noite"))
+        {
+            var now = DateTime.Now;
+            var hora = now.Hour;
+
+            if (hora >= 5 && hora < 12)
+                await Respond("Na verdade, ainda é manhã. Bom dia!");
+            else if (hora >= 12 && hora < 18)
+                await Respond("Na verdade, ainda é tarde. Boa tarde!");
+            else if (hora < 5)
+                 // "Boa noite" de madrugada é aceitável (despedida), mas mantendo a lógica de validação:
+                 await Respond("Boa noite... ou Bom dia? Já é madrugada. Durma bem ou bom trabalho!");
+            else
+                await Respond("Boa noite! Como posso ajudar?");
+            return;
+        }
+
+        // 2. Predefinidos: Hora e Data (Subimos prioridade)
+        if (cleanText.Contains("que horas") || cleanText.Contains("que dia") || cleanText.Contains("horas sao"))
+        {
+            var now = DateTime.Now;
+            var resp = cleanText.Contains("dia") 
+                ? $"Hoje é dia {now:dd/MM/yyyy}. Agora são {now:HH:mm}." 
+                : $"Agora são exatamente {now:HH:mm}.";
+            await Respond(resp);
+            return;
+        }
+
+        // 2. Predefinidos: Clima
+        if (cleanText.Contains("previsao do tempo") || cleanText.Contains("como esta o tempo") || cleanText.Contains("clima"))
+        {
+            var weather = await Api.GetWeatherForecastAsync(_token, _apiKey);
+            if (weather != null && weather.Current != null)
+            {
+                var cidade = weather.Current.Location ?? "sua região";
+                var resp = $"Em {cidade}, o tempo está {weather.Current.WeatherDescription} com temperatura de {weather.Current.Temperature}°C.";
+                await Respond(resp);
+            }
+            else
+            {
+                await Respond("Desculpe, não consegui obter a previsão meteorológica agora.");
+            }
+            return;
+        }
+
+        // 3. Comandos Sociais
+        // Ordenados por tamanho descrescente para priorizar frases mais complexas
+        var sortedCommands = _socialCommands.OrderByDescending(c => c.Comando.Length).ToList();
+        
+        foreach (var c in sortedCommands)
+        {
+            var keyword = NormalizeText(c.Comando);
+            if (string.IsNullOrEmpty(keyword)) continue;
+
+            bool isMatch = false;
+
+            // Match Exato
+            if (cleanText == keyword)
+            {
+                isMatch = true;
+            }
+            // Contém (Word Boundary)
+            else if (cleanText.Contains(keyword))
+            {
+                // Verifica se é palavra inteira
+                var pattern = $@"\b{Regex.Escape(keyword)}\b";
+                if (Regex.IsMatch(cleanText, pattern))
+                {
+                    // Heurística: Evitar que palavras muito curtas (ex: "quem") capturem frases longas (ex: "quem descobriu a américa")
+                    // Se o comando for curto (< 5 chars) e a frase for muito maior (> comando + 10 chars), ignoramos o comando social
+                    // para deixar a IA responder.
+                    if (keyword.Length < 5 && cleanText.Length > (keyword.Length + 10))
+                    {
+                        isMatch = false;
+                        Console.WriteLine($"[Assistente] Ignorando comando social curto '{keyword}' para frase longa '{cleanText}'");
+                    }
+                    else
+                    {
+                        isMatch = true;
+                    }
+                }
+            }
+
+            if (isMatch)
+            {
+                Console.WriteLine($"[Assistente] Comando Social Encontrado: '{c.Comando}' -> '{c.Resposta}'");
+                await Respond(c.Resposta);
+                return;
+            }
+        }
+
+        // 4. Automação: eWeLink (Toggle)
+        foreach (var d in _ewelinkDevices)
+        {
+            var keyword = NormalizeText(d.Name);
+            if (!string.IsNullOrEmpty(keyword) && cleanText.Contains(keyword))
+            {
+                bool turnOff = cleanText.Contains("desliga") || cleanText.Contains("apaga") || cleanText.Contains("fecha") || cleanText.Contains("parar");
+                bool turnOn = !turnOff;
+                var success = await Api.ToggleEwelinkDeviceAsync(d.DeviceId, turnOn, _token, _apiKey);
+                if (success) {
+                    await Respond($"Ok, {(turnOn ? "ligando" : "desligando")} {d.Name}.");
+                } else {
+                    await Respond($"Ocorreu um erro ao tentar controlar {d.Name}.");
+                }
+                return;
+            }
+        }
+
+        // 5. Automação: StarkSwitch (MQTT)
+        foreach (var d in _starkSwitchDevices)
+        {
+            var cmdKeyword = NormalizeText(d.Comando);
+            var nameKeyword = NormalizeText(d.Name);
+            
+            if ((!string.IsNullOrEmpty(cmdKeyword) && cleanText.Contains(cmdKeyword)) ||
+                (!string.IsNullOrEmpty(nameKeyword) && cleanText.Contains(nameKeyword)))
+            {
+                var cmd = (cleanText.Contains("desliga") || cleanText.Contains("apaga")) ? "off" : "on";
+                var success = await Api.PublishGenericCommandAsync(d.Id.ToString(), cmd, null, _token, _apiKey);
+                if (success) {
+                    await Respond($"Comando enviado para {d.Name}.");
+                } else {
+                    await Respond($"Não consegui enviar o comando MQTT para {d.Name}.");
+                }
+                return;
+            }
+        }
+
+        // 6. Automação: ESP Devices (UDP)
+        foreach (var d in _espDevices)
+        {
+            var cmdKeyword = NormalizeText(d.Comando);
+            var nameKeyword = NormalizeText(d.Nome);
+
+            if ((!string.IsNullOrEmpty(cmdKeyword) && cleanText.Contains(cmdKeyword)) ||
+                (!string.IsNullOrEmpty(nameKeyword) && cleanText.Contains(nameKeyword)))
+            {
+                var success = await Api.AcionarUdpAsync(d.Comando, _token, _apiKey);
+                if (success) {
+                    await Respond($"Acionando {d.Nome} via rede local.");
+                } else {
+                    await Respond($"Erro na comunicação UDP com {d.Nome}.");
+                }
+                return;
+            }
+        }
+
+        // 7. Super IA Fallback
+        if (_isAiActive)
+        {
+            Console.WriteLine($"[Assistente] Chamando Super IA para: '{text}'");
+            var iaReq = new IaRequest
+            {
+                Pergunta = text,
+                Personalidade = "descolado, amigável",
+                UltimoContextoUser = _lastUserContext,
+                UltimoContextoIA = _lastAiContext,
+                UsarStarkCoins = false 
+            };
+
+            try 
+            {
+                var iaResp = await Api.ChamarSuperIAAsync(iaReq, _token, _apiKey);
+                
+                if (iaResp?.Resultado != null && !string.IsNullOrEmpty(iaResp.Resultado.Texto))
+                {
+                    Console.WriteLine($"[Assistente] Resposta IA: {iaResp.Resultado.Texto.Substring(0, Math.Min(50, iaResp.Resultado.Texto.Length))}...");
+                    _lastUserContext = text;
+                    _lastAiContext = iaResp.Resultado.Texto;
+                    await Respond(iaResp.Resultado.Texto);
+                }
+                else
+                {
+                    Console.WriteLine("[Assistente] IA retornou resposta nula ou vazia.");
+                    await Respond("Hum, não entendi muito bem. Pode repetir?");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Assistente] Erro ao chamar Super IA: {ex.Message}");
+                await Respond("Desculpe, tive um problema ao conectar com minha inteligência.");
+            }
+        }
+        else
+        {
+             Console.WriteLine("[Assistente] Super IA está desativada.");
+             //await Respond("Desculpe, não entendi o comando e a IA está desativada.");
+        }
+    }
+
+    private async Task Respond(string text)
+    {
+        _transcript.Add(new TranscriptLine { Text = text, IsUser = false });
+        StateHasChanged();
+        try 
+        {
+            await JS.InvokeVoidAsync("StarkSpeech.speak", text);
+        }
+        catch (JSException ex)
+        {
+            // Se o erro for devido ao cancelamento da fala (interrupção), apenas ignoramos.
+            Console.WriteLine($"[Assistente] Erro ao falar (provavelmente cancelado): {ex.Message}");
+        }
+    }
+
+    private class TranscriptLine
+    {
+        public string Text { get; set; } = "";
+        public bool IsUser { get; set; }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _objRef?.Dispose();
+        try {
+            await JS.InvokeVoidAsync("StarkSpeech.stop");
+        } catch {}
+    }
+}

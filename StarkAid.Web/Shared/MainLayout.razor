@@ -1,11 +1,20 @@
 ﻿@inherits LayoutComponentBase
 @inject IJSRuntime JS
+@using StarkAid.Web.Services
+@using StarkAid.Web.DTOs
+@inject AdminService AdminService
+@inject IAuthService AuthService
+@implements IDisposable
 
 <head>
     <link href="css/member.css" rel="stylesheet" />
 </head>
 
+@inject ToastService ToastService
+
 <div class="app-container">
+    <ToastContainer />
+    <ConfirmDialog />
     <header class="mobile-only header-hamburger">
         <button class="hamburger-btn" @onclick="ToggleMobileMenu">
             <span></span><span></span><span></span>
@@ -16,6 +25,51 @@
     <NavMenu IsMobileMenuOpen="mobileMenuOpen" OnCloseMenu="CloseMobileMenu" />
 
     <div class="main-content">
+        <header class="top-bar">
+             <div class="mobile-only header-hamburger">
+                <button class="hamburger-btn" @onclick="ToggleMobileMenu">
+                    <span></span><span></span><span></span>
+                </button>
+                <span class="header-title">StarkAid</span>
+            </div>
+            
+            <AuthorizeView Roles="Administrador">
+                <Authorized>
+                    <div class="admin-notifications">
+                        <div class="notification-icon" @onclick="ToggleNotifications">
+                            <i class="fas fa-bell"></i>
+                            @if (newPlansCount > 0)
+                            {
+                                <span class="badge">@newPlansCount</span>
+                            }
+                        </div>
+                        @if (showNotifications)
+                        {
+                            <div class="notifications-dropdown">
+                                <h4>Notificações Admin</h4>
+                                @if (recentPlans.Any())
+                                {
+                                    <ul>
+                                        @foreach (var plan in recentPlans)
+                                        {
+                                            <li>
+                                                <span class="highlight">@plan.Name</span> adquiriu <span class="plan-name">@plan.Plano</span>
+                                                <small>@plan.DataCriacao.ToString("g")</small>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <p class="empty">Nenhuma nova notificação</p>
+                                }
+                            </div>
+                        }
+                    </div>
+                </Authorized>
+            </AuthorizeView>
+        </header>
+
         <div class="content">
             <ErrorBoundary>
                 <ChildContent>
@@ -41,8 +95,155 @@
     </div>
 </div>
 
+<style>
+    .top-bar {
+        display: flex;
+        justify-content: flex-end; /* Align notifications to right */
+        padding: 1rem 2rem;
+        background: transparent;
+        position: relative;
+        z-index: 100;
+        pointer-events: none; /* Let clicks pass through if empty space */
+    }
+    
+    .top-bar > * { pointer-events: auto; }
+
+    .header-hamburger {
+        display: none; /* Default hidden on desktop */
+        margin-right: auto;
+    }
+
+    @@media (max-width: 768px) {
+        .header-hamburger { display: flex; align-items: center; gap: 1rem; }
+        .top-bar { justify-content: space-between; padding: 1rem; }
+    }
+
+    .admin-notifications {
+        position: relative;
+        color: white;
+    }
+
+    .notification-icon {
+        position: relative;
+        cursor: pointer;
+        font-size: 1.25rem;
+        padding: 0.5rem;
+        transition: color 0.2s;
+    }
+
+    .notification-icon:hover { color: #a5b4fc; }
+
+    .notification-icon .badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: #ef4444;
+        color: white;
+        font-size: 0.7rem;
+        padding: 0.1rem 0.3rem;
+        border-radius: 50%;
+    }
+
+    .notifications-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        width: 300px;
+        background: #1e293b;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    
+    .notifications-dropdown h4 { font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+    .notifications-dropdown ul { list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; }
+    .notifications-dropdown li { padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; color: #cbd5e1; }
+    .notifications-dropdown li:last-child { border-bottom: none; }
+    .notifications-dropdown small { display: block; color: #64748b; font-size: 0.75rem; margin-top: 0.2rem; }
+    .plan-name { color: #818cf8; font-weight: 500; }
+    .highlight { color: white; font-weight: 500; }
+    .empty { font-size: 0.8rem; color: #64748b; text-align: center; padding: 1rem 0; }
+
+</style>
+
+
 @code {
     private bool mobileMenuOpen = false;
+    private bool showNotifications = false;
+    private int newPlansCount = 0;
+    private List<UserWithPlanDto> recentPlans = new();
+    private System.Threading.Timer? notificationTimer;
+    private string token;
+    private string apiKey;
+
+    protected override async Task OnInitializedAsync()
+    {
+         // Wait for auth header setup if needed or just start check
+         // We can't easily check Claims here without AuthenticationStateProvider, 
+         // but AuthorizeView handles the UI. For the Logic, let's just try to fetch if we have a token.
+         
+         try 
+         {
+             token = await AuthService.GetAccessTokenAsync();
+             apiKey = await AuthService.GetApiKeyAsync();
+
+             if (!string.IsNullOrEmpty(token))
+             {
+                 // Start timer to check every 60 seconds
+                 notificationTimer = new System.Threading.Timer(async _ => await CheckNotifications(), null, 0, 60000);
+             }
+         }
+         catch
+         {
+             // Ignore errors in layout init
+         }
+    }
+
+    private async Task CheckNotifications()
+    {
+        try
+        {
+            // Re-fetch token if expired? usually handled by services but we need latest
+             token = await AuthService.GetAccessTokenAsync();
+             if (string.IsNullOrEmpty(token)) return;
+
+             // Only Fetch if Admin (we can't easily check role in code without StateProvider, but API will block if not admin)
+             // We'll trust the API call. If it fails (403), we stop? Or just ignore.
+             
+             var allPlans = await AdminService.GetUsersWithPlansAsync(token, apiKey);
+             if (allPlans != null && allPlans.Any())
+             {
+                 // Filter for plans created in the last 24 hours or since last check?
+                 // Let's show last 5 plans created in last 24h
+                 var recent = allPlans
+                    .Where(p => p.DataCriacao > DateTimeOffset.UtcNow.AddHours(-24))
+                    .OrderByDescending(p => p.DataCriacao)
+                    .Take(5)
+                    .ToList();
+                 
+                 // If we want to show a "New" badge, we need to track what user saw.
+                 // For now, let's just show count of recent plans (last 24h)
+                 
+                 var count = recent.Count;
+                 if (count != newPlansCount || !recentPlans.SequenceEqual(recent))
+                 {
+                     newPlansCount = count;
+                     recentPlans = recent;
+                     await InvokeAsync(StateHasChanged);
+                 }
+             }
+        }
+        catch
+        {
+            // Ignore (maybe unauthorized)
+        }
+    }
+
+    private void ToggleNotifications()
+    {
+        showNotifications = !showNotifications;
+    }
 
     private void ToggleMobileMenu() => mobileMenuOpen = !mobileMenuOpen;
     private void CloseMobileMenu() => mobileMenuOpen = false;
@@ -50,5 +251,10 @@
     private async Task ReloadPage()
     {
         await JS.InvokeVoidAsync("eval", "location.reload()");
+    }
+
+    public void Dispose()
+    {
+        notificationTimer?.Dispose();
     }
 }

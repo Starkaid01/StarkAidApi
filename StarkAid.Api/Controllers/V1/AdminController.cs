@@ -6,7 +6,16 @@ using StarkAid.Api.Data;
 using StarkAid.Api.Entities;
 using StarkAid.Api.Services.V1.Devices;
 using StarkAid.Api.DTOs.V1.Admin;
+using System;
 using System.Security.Claims;
+using System.Text;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using System.Linq;
+using StarkAid.Api.Helpers;
+using StarkAid.Api.Options;
+using StarkAid.Api.Services.V1.SuperIA;
+using Microsoft.Extensions.Options;
 
 namespace StarkAid.Api.Controllers.V1
 {
@@ -19,11 +28,15 @@ namespace StarkAid.Api.Controllers.V1
     {
         private readonly AppDbContext _context;
         private readonly IMqttClientService _mqttService;
+        private readonly Options.AiTelemetryOptions _telemetryOptions;
+        private readonly Services.V1.SuperIA.IaService _iaService;
 
-        public AdminController(AppDbContext context, IMqttClientService mqttService)
+        public AdminController(AppDbContext context, IMqttClientService mqttService, IOptions<AiTelemetryOptions> telemetryOptions, Services.V1.SuperIA.IaService iaService)
         {
             _context = context;
             _mqttService = mqttService;
+            _telemetryOptions = telemetryOptions.Value;
+            _iaService = iaService;
         }
         
         [HttpGet("admin-only")]
@@ -99,7 +112,7 @@ namespace StarkAid.Api.Controllers.V1
         }
 
         [HttpPut("users/{id}")]
-        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] AdminUpdateUserRequest request)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null)
@@ -300,13 +313,48 @@ namespace StarkAid.Api.Controllers.V1
                     s.LastActivityAt.HasValue && 
                     s.LastActivityAt.Value > DateTime.UtcNow.AddMinutes(-5));
 
-            // Buscar última sessão ativa para obter último form/activity
-            var ultimaSessao = await _context.UserSessions
-                .Where(s => s.UserId == id && s.IsActive)
+            // Buscar última sessão ativa para obter último form/activity por origem
+            var ultimaSessaoSoft = await _context.UserSessions
+                .Where(s => s.UserId == id && s.Origem == "soft")
                 .OrderByDescending(s => s.LastActivityAt)
                 .FirstOrDefaultAsync();
 
-            // Combinar dados de soft e app (priorizar o mais recente baseado em LastUpdatedAt)
+            var ultimaSessaoApp = await _context.UserSessions
+                .Where(s => s.UserId == id && s.Origem == "app")
+                .OrderByDescending(s => s.LastActivityAt)
+                .FirstOrDefaultAsync();
+            
+            // Helper local function to map
+            UserActivityDto MapActivity(UserActivity? act, UserSession? session) {
+                if(act == null && session == null) return null;
+                return new UserActivityDto {
+                    UltimoComandoEsp = act?.UltimoComandoEsp,
+                    UltimoComandoEwelink = act?.UltimoComandoEwelink,
+                    UltimoComandoStarkSwitch = act?.UltimoComandoStarkSwitch,
+                    UltimoComandoSocial = act?.UltimoComandoSocial,
+                    UltimaRespostaSocial = act?.UltimaRespostaSocial,
+                    UltimoComandoIA = act?.UltimoComandoIA,
+                    UltimaRespostaIA = act?.UltimaRespostaIA,
+                    LastUpdatedAt = act?.LastUpdatedAt ?? session?.LastActivityAt,
+                    UltimaUiAcessada = session?.SessionName,
+                    // Infer device logic: prioritizing latest populated field or just leaving null if not explicit
+                    UltimoDispositivoAcionado = !string.IsNullOrEmpty(act?.UltimoComandoEsp) ? "Esp Device" : 
+                                                !string.IsNullOrEmpty(act?.UltimoComandoEwelink) ? "EweLink Device" :
+                                                !string.IsNullOrEmpty(act?.UltimoComandoStarkSwitch) ? "StarkSwitch" : null 
+                };
+            }
+
+            var combinedLastActivity = (ultimaSessaoSoft?.LastActivityAt > ultimaSessaoApp?.LastActivityAt) 
+                                        ? ultimaSessaoSoft?.LastActivityAt 
+                                        : ultimaSessaoApp?.LastActivityAt;
+
+            // Para social e IA, usar do histórico se não tiver na activity (mantendo lógica anterior para campos combinados)
+            var ultimoComandoSocial = activitySoft?.UltimoComandoSocial ?? activityApp?.UltimoComandoSocial ?? ultimoComandoSocialHistorico?.Comando;
+            var ultimaRespostaSocial = activitySoft?.UltimaRespostaSocial ?? activityApp?.UltimaRespostaSocial ?? ultimoComandoSocialHistorico?.Resposta;
+            var ultimoComandoIA = activitySoft?.UltimoComandoIA ?? activityApp?.UltimoComandoIA ?? ultimoComandoIAHistorico?.TextoUsuario;
+            var ultimaRespostaIA = activitySoft?.UltimaRespostaIA ?? activityApp?.UltimaRespostaIA ?? ultimoComandoIAHistorico?.TextoIa;
+
+            // COMBINED logic (legacy/top level)
             var ultimoComandoEsp = (activitySoft?.LastUpdatedAt ?? DateTimeOffset.MinValue) >= (activityApp?.LastUpdatedAt ?? DateTimeOffset.MinValue)
                 ? activitySoft?.UltimoComandoEsp ?? activityApp?.UltimoComandoEsp
                 : activityApp?.UltimoComandoEsp ?? activitySoft?.UltimoComandoEsp;
@@ -318,12 +366,7 @@ namespace StarkAid.Api.Controllers.V1
             var ultimoComandoStarkSwitch = (activitySoft?.LastUpdatedAt ?? DateTimeOffset.MinValue) >= (activityApp?.LastUpdatedAt ?? DateTimeOffset.MinValue)
                 ? activitySoft?.UltimoComandoStarkSwitch ?? activityApp?.UltimoComandoStarkSwitch
                 : activityApp?.UltimoComandoStarkSwitch ?? activitySoft?.UltimoComandoStarkSwitch;
-            
-            // Para social e IA, usar do histórico se não tiver na activity
-            var ultimoComandoSocial = activitySoft?.UltimoComandoSocial ?? activityApp?.UltimoComandoSocial ?? ultimoComandoSocialHistorico?.Comando;
-            var ultimaRespostaSocial = activitySoft?.UltimaRespostaSocial ?? activityApp?.UltimaRespostaSocial ?? ultimoComandoSocialHistorico?.Resposta;
-            var ultimoComandoIA = activitySoft?.UltimoComandoIA ?? activityApp?.UltimoComandoIA ?? ultimoComandoIAHistorico?.TextoUsuario;
-            var ultimaRespostaIA = activitySoft?.UltimaRespostaIA ?? activityApp?.UltimaRespostaIA ?? ultimoComandoIAHistorico?.TextoIa;
+
 
             var dashboard = new UserDashboardResponse
             {
@@ -340,8 +383,11 @@ namespace StarkAid.Api.Controllers.V1
                 UltimoComandoIA = ultimoComandoIA ?? "Nenhum comando",
                 UltimaRespostaIA = ultimaRespostaIA ?? "Nenhuma resposta",
                 UsuarioOnline = usuarioOnline,
-                UltimoFormAcessado = ultimaSessao?.SessionName ?? "Nenhum form acessado",
-                UltimaActivityAcessada = ultimaSessao?.LastActivityAt
+                UltimoFormAcessado = (ultimaSessaoSoft?.LastActivityAt > ultimaSessaoApp?.LastActivityAt) ? ultimaSessaoSoft?.SessionName : ultimaSessaoApp?.SessionName ?? "Nenhum form acessado",
+                UltimaActivityAcessada = combinedLastActivity,
+                
+                ActivitySoft = MapActivity(activitySoft, ultimaSessaoSoft),
+                ActivityApp = MapActivity(activityApp, ultimaSessaoApp)
             };
 
             return Ok(dashboard);
@@ -378,6 +424,23 @@ namespace StarkAid.Api.Controllers.V1
         }
 
         // ========== ADMIN SOCIAL COMMAND MANAGEMENT ==========
+        [HttpPost("comandos-sociais")]
+        public async Task<IActionResult> CreateComandoSocial([FromBody] AdminCreateComandoSocialRequest request)
+        {
+            var comando = new ComandoSocial
+            {
+                Id = Guid.NewGuid(),
+                UserId = request.UserId,
+                Comando = request.Comando,
+                Resposta = request.Resposta,
+                RespostasAleatorias = request.RespostasAleatorias
+            };
+
+            _context.ComandosSociais.Add(comando);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Comando social criado com sucesso.", id = comando.Id });
+        }
+
         [HttpPut("comandos-sociais/{comandoId}")]
         public async Task<IActionResult> UpdateComandoSocial(Guid comandoId, [FromBody] AdminUpdateComandoSocialRequest request)
         {
@@ -718,9 +781,359 @@ namespace StarkAid.Api.Controllers.V1
 
             return Ok(new { message = "Log deletado com sucesso." });
         }
+
+        // ========== ADMIN APRENDIZADO IA MANAGEMENT ==========
+        [HttpGet("aprendizados")]
+        public async Task<IActionResult> GetAprendizados()
+        {
+            var aprendizados = await _context.Aprendizados
+                .Include(a => a.Respostas)
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
+            return Ok(aprendizados);
+        }
+
+        [HttpGet("aprendizados/stats")]
+        public async Task<IActionResult> GetAprendizadoStats()
+        {
+            var totalHitCount = await _context.Aprendizados.SumAsync(a => a.HitCount);
+            
+            // Estimativa de economia: cada HitCount economiza em média o que foi configurado
+            var tokensEconomizados = totalHitCount * _telemetryOptions.DefaultTokensPerInteraction; 
+
+            var stats = new
+            {
+                TotalItens = await _context.Aprendizados.CountAsync(),
+                TotalGlobal = await _context.Aprendizados.CountAsync(a => a.Tipo == "Global"),
+                TotalUsuario = await _context.Aprendizados.CountAsync(a => a.Tipo == "Usuario"),
+                TotalContextual = await _context.Aprendizados.CountAsync(a => a.Tipo == "Contextual"),
+                TotalQuarentena = await _context.Aprendizados.CountAsync(a => a.EmQuarentena),
+                TotalInativos = await _context.Aprendizados.CountAsync(a => !a.Ativo),
+                TotalHits = totalHitCount,
+                TokensEconomizados = tokensEconomizados,
+                EconomiaEstimadaDolar = (decimal)(tokensEconomizados / 1000.0) * _telemetryOptions.CostPer1KTokens
+            };
+
+            return Ok(stats);
+        }
+
+        [HttpGet("ia/telemetry/overview")]
+        public async Task<IActionResult> GetTelemetryOverview()
+        {
+            var totalInteracoes = await _context.AiInteractionEvents.CountAsync();
+            var totalHits = totalInteracoes > 0 
+                ? await _context.AiInteractionEvents.CountAsync(x => x.Resultado != "CacheMiss")
+                : 0;
+
+            var stats = new
+            {
+                TotalInteracoes = totalInteracoes,
+                CacheHitRate = totalInteracoes > 0 ? (double)totalHits / totalInteracoes * 100 : 0,
+                CacheMissRate = totalInteracoes > 0 ? (double)(totalInteracoes - totalHits) / totalInteracoes * 100 : 0,
+                TokensEconomizados = totalInteracoes > 0 ? await _context.AiInteractionEvents.SumAsync(x => x.TokensEstimadosEvitados) : 0,
+                EconomiaUSD = totalInteracoes > 0 ? await _context.AiInteractionEvents.SumAsync(x => x.EconomiaUSD) : 0,
+                LatenciaMediaMs = totalInteracoes > 0 ? await _context.AiInteractionEvents.AverageAsync(x => x.LatenciaMs) : 0
+            };
+
+            return Ok(stats);
+        }
+
+        [HttpGet("ia/telemetry/quality")]
+        public async Task<IActionResult> GetTelemetryQuality()
+        {
+            var distribution = await _context.AiInteractionEvents
+                .GroupBy(x => x.Resultado)
+                .Select(g => new { Resultado = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            return Ok(distribution);
+        }
+
+        [HttpGet("ia/telemetry/top-misses")]
+        public async Task<IActionResult> GetTopMisses([FromQuery] int limit = 10)
+        {
+            var misses = await _context.AiInteractionEvents
+                .Where(x => x.Resultado == "CacheMiss")
+                .GroupBy(x => x.TextoNormalizado)
+                .Select(g => new { Texto = g.Key, Ocorrencias = g.Count() })
+                .OrderByDescending(x => x.Ocorrencias)
+                .Take(limit)
+                .ToListAsync();
+
+            return Ok(misses);
+        }
+
+        [HttpGet("ia/telemetry/fuzzy-analytics")]
+        public async Task<IActionResult> GetFuzzyAnalytics()
+        {
+            var stats = await _context.AiInteractionEvents
+                .Where(x => x.SimilarityScore.HasValue)
+                .GroupBy(x => x.Resultado)
+                .Select(g => new { 
+                    Resultado = g.Key, 
+                    AverageScore = g.Average(x => x.SimilarityScore),
+                    MinScore = g.Min(x => x.SimilarityScore),
+                    MaxScore = g.Max(x => x.SimilarityScore)
+                })
+                .ToListAsync();
+
+            return Ok(stats);
+        }
+
+        [HttpGet("ia/telemetry/roi-history")]
+        public async Task<IActionResult> GetRoiHistory([FromQuery] int days = 7)
+        {
+            var startDate = DateTimeOffset.UtcNow.AddDays(-days);
+
+            var roi = await _context.AiInteractionEvents
+                .Where(x => x.CreatedAt >= startDate)
+                .GroupBy(x => x.CreatedAt.Date)
+                .Select(g => new { 
+                    Date = g.Key, 
+                    Economia = g.Sum(x => x.EconomiaUSD),
+                    Hits = g.Count(x => x.Resultado != "CacheMiss")
+                })
+                .OrderBy(x => x.Date)
+                .ToListAsync();
+
+            var byOrigin = await _context.AiInteractionEvents
+                .Where(x => x.CreatedAt >= startDate)
+                .GroupBy(x => x.Origem)
+                .Select(g => new { 
+                    Origem = g.Key, 
+                    Economia = g.Sum(x => x.EconomiaUSD),
+                    Interactions = g.Count()
+                })
+                .ToListAsync();
+
+            return Ok(new { roi, byOrigin });
+        }
+
+        [HttpPost("aprendizados/{id}/promover")]
+        public async Task<IActionResult> PromoverAprendizado(Guid id)
+        {
+            var item = await _context.Aprendizados.FindAsync(id);
+            if (item == null) return NotFound();
+
+            item.Tipo = "Global";
+            item.UserId = null; // Desvincula para ser público
+            item.Resposta = TextHelper.LimparGirias(item.Resposta);
+            item.ConfidenceScore = Math.Max(item.ConfidenceScore, 80);
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Aprendizado promovido a Global com sucesso." });
+        }
+
+        [HttpPost("aprendizados/{id}/rebaixar")]
+        public async Task<IActionResult> RebaixarAprendizado(Guid id)
+        {
+            var item = await _context.Aprendizados.FindAsync(id);
+            if (item == null) return NotFound();
+
+            item.Tipo = "Usuario";
+            // Se o admin rebaixa, ele assume a "paternidade" se não houver dono, ou apenas muda o tipo
+            if (item.UserId == null)
+            {
+                item.UserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Aprendizado rebaixado a Privado (Usuário)." });
+        }
+
+        [HttpPost("aprendizados/{id}/quarentena")]
+        public async Task<IActionResult> ToggleQuarentena(Guid id)
+        {
+            var item = await _context.Aprendizados.FindAsync(id);
+            if (item == null) return NotFound();
+
+            item.EmQuarentena = !item.EmQuarentena;
+            if (item.EmQuarentena)
+            {
+                item.QuarentenaDesde = DateTimeOffset.UtcNow;
+                item.ConfidenceScore = Math.Min(item.ConfidenceScore, 20);
+            }
+            else
+            {
+                item.QuarentenaDesde = null;
+                item.ConfidenceScore = Math.Max(item.ConfidenceScore, 50);
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = item.EmQuarentena ? "Item movido para quarentena." : "Item removido da quarentena.", emQuarentena = item.EmQuarentena });
+        }
+
+        [HttpPost("aprendizados")]
+        public async Task<IActionResult> CreateAprendizado([FromBody] AdminUpdateAprendizadoRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Texto) || string.IsNullOrWhiteSpace(request.Resposta))
+                return BadRequest("Texto e Resposta são obrigatórios.");
+
+            var textoNormalizado = TextHelper.NormalizarTexto(request.Texto);
+
+            // Evitar duplicatas manuais
+            if (await _context.Aprendizados.AnyAsync(a => a.Texto == textoNormalizado))
+                return BadRequest("Este comando já existe na base de aprendizado.");
+
+            var tipo = string.IsNullOrWhiteSpace(request.Tipo) ? "Global" : request.Tipo;
+
+            var novo = new Aprendizado
+            {
+                Id = Guid.NewGuid(),
+                Texto = textoNormalizado,
+                Resposta = request.Resposta,
+                Tipo = tipo,
+                Contexto = request.Contexto,
+                UserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)),
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            // Se for Global, gerar variações
+            if (tipo == "Global")
+            {
+                var variacoes = await _iaService.GerarVariacoesParaGlobal(request.Texto, request.Resposta);
+                foreach (var v in variacoes)
+                {
+                    novo.Respostas.Add(new AprendizadoResposta
+                    {
+                        Id = Guid.NewGuid(),
+                        Texto = v,
+                        CreatedAt = DateTimeOffset.UtcNow
+                    });
+                }
+                
+                // Adiciona também a original como uma das variações para entrar no sorteio/rodízio
+                novo.Respostas.Add(new AprendizadoResposta
+                {
+                    Id = Guid.NewGuid(),
+                    Texto = request.Resposta,
+                    CreatedAt = DateTimeOffset.UtcNow
+                });
+            }
+
+            _context.Aprendizados.Add(novo);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Aprendizado criado com sucesso.", id = novo.Id, variacoesGeradas = novo.Respostas.Count });
+        }
+
+        [HttpPut("aprendizados/{id}")]
+        public async Task<IActionResult> UpdateAprendizado(Guid id, [FromBody] AdminUpdateAprendizadoRequest request)
+        {
+            var aprendizado = await _context.Aprendizados.FindAsync(id);
+            if (aprendizado == null)
+                return NotFound();
+
+            if (!string.IsNullOrWhiteSpace(request.Texto))
+                aprendizado.Texto = TextHelper.NormalizarTexto(request.Texto);
+
+            if (!string.IsNullOrWhiteSpace(request.Resposta))
+                aprendizado.Resposta = request.Resposta;
+
+            if (!string.IsNullOrWhiteSpace(request.Tipo))
+                aprendizado.Tipo = request.Tipo;
+
+            if (request.Ativo.HasValue)
+                aprendizado.Ativo = request.Ativo.Value;
+            
+            if (request.EmQuarentena.HasValue)
+            {
+                aprendizado.EmQuarentena = request.EmQuarentena.Value;
+                if (aprendizado.EmQuarentena && aprendizado.QuarentenaDesde == null)
+                    aprendizado.QuarentenaDesde = DateTimeOffset.UtcNow;
+                else if (!aprendizado.EmQuarentena)
+                    aprendizado.QuarentenaDesde = null;
+            }
+
+            aprendizado.Contexto = request.Contexto;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Aprendizado atualizado com sucesso." });
+        }
+
+        [HttpDelete("aprendizados/{id}")]
+        public async Task<IActionResult> DeleteAprendizado(Guid id)
+        {
+            var aprendizado = await _context.Aprendizados.FindAsync(id);
+            if (aprendizado == null)
+                return NotFound();
+
+            _context.Aprendizados.Remove(aprendizado);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Aprendizado deletado com sucesso." });
+        }
+
+        [HttpPost("aprendizados/{id}/respostas")]
+        public async Task<IActionResult> AddResposta(Guid id, [FromBody] AdminUpdateAprendizadoRespostaRequest request)
+        {
+            var aprendizado = await _context.Aprendizados.FindAsync(id);
+            if (aprendizado == null) return NotFound();
+
+            if (string.IsNullOrWhiteSpace(request.Texto))
+                return BadRequest("O texto da variação é obrigatório.");
+
+            var novaResposta = new AprendizadoResposta
+            {
+                Id = Guid.NewGuid(),
+                AprendizadoId = id,
+                Texto = request.Texto,
+                UsoCount = 0, // Reset usage for new variation
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            _context.AprendizadoRespostas.Add(novaResposta);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Variação adicionada com sucesso.", id = novaResposta.Id });
+        }
+
+        [HttpPut("aprendizados/respostas/{respostaId}")]
+        public async Task<IActionResult> UpdateResposta(Guid respostaId, [FromBody] AdminUpdateAprendizadoRespostaRequest request)
+        {
+            var resposta = await _context.AprendizadoRespostas.FindAsync(respostaId);
+            if (resposta == null) return NotFound();
+
+            if (!string.IsNullOrWhiteSpace(request.Texto))
+                resposta.Texto = request.Texto;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Variação atualizada com sucesso." });
+        }
+
+        [HttpDelete("aprendizados/respostas/{respostaId}")]
+        public async Task<IActionResult> DeleteResposta(Guid respostaId)
+        {
+            var resposta = await _context.AprendizadoRespostas.FindAsync(respostaId);
+            if (resposta == null) return NotFound();
+
+            // Garantir que não deletamos a única resposta se for Global (opcional, mas boa prática)
+            // Varificar se pertencente a um aprendizado Global que deve ter pelo menos 1? 
+            // Para simplificar, permitimos deletar, mas o sistema pode ficar sem variações se deletar todas.
+            
+            _context.AprendizadoRespostas.Remove(resposta);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Variação deletada com sucesso." });
+        }
     }
 
-    public class UpdateUserRequest
+    public class AdminUpdateAprendizadoRequest
+    {
+        public string? Texto { get; set; }
+        public string? Resposta { get; set; }
+        public string? Tipo { get; set; }
+        public string? Contexto { get; set; }
+        public bool? Ativo { get; set; }
+        public bool? EmQuarentena { get; set; }
+    }
+
+    public class AdminCreateComandoSocialRequest
+    {
+        public Guid UserId { get; set; }
+        public string Comando { get; set; } = string.Empty;
+        public string Resposta { get; set; } = string.Empty;
+        public string? RespostasAleatorias { get; set; }
+    }
+
+    public class AdminUpdateUserRequest
     {
         public string? Name { get; set; }
         public string? Email { get; set; }
@@ -752,5 +1165,10 @@ namespace StarkAid.Api.Controllers.V1
         public string? Comando { get; set; }
         public string? Recorrencia { get; set; }
         public bool? Executado { get; set; }
+    }
+
+    public class AdminUpdateAprendizadoRespostaRequest
+    {
+        public string Texto { get; set; } = string.Empty;
     }
 }

@@ -1,0 +1,167 @@
+@using StarkAid.Web.Services
+@inject ToastService ToastService
+@implements IDisposable
+
+<div class="toast-container">
+    @foreach (var toast in toasts)
+    {
+        <div class="toast-item @toast.Type.ToString().ToLower() @(toast.IsClosing ? "closing" : "")" @key="toast.Id">
+            <div class="toast-icon">
+                @if (toast.Type == ToastType.Success) { <i class="fas fa-check-circle"></i> }
+                else if (toast.Type == ToastType.Error) { <i class="fas fa-exclamation-circle"></i> }
+                else if (toast.Type == ToastType.Warning) { <i class="fas fa-exclamation-triangle"></i> }
+                else { <i class="fas fa-info-circle"></i> }
+            </div>
+            <div class="toast-message">@toast.Message</div>
+            <button class="toast-close" @onclick="() => RemoveToast(toast.Id)">&times;</button>
+            <div class="toast-progress">
+                <div class="progress-bar" style="animation-duration: @(duration)ms"></div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .toast-container {
+        position: fixed;
+        top: 1.5rem;
+        right: 1.5rem;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        pointer-events: none;
+    }
+
+    .toast-item {
+        pointer-events: auto;
+        min-width: 300px;
+        max-width: 400px;
+        background: rgba(30, 41, 59, 0.9);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        animation: toast-in 0.3s ease-out forwards;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .toast-item.closing {
+        animation: toast-out 0.3s ease-in forwards;
+    }
+
+    @@keyframes toast-in {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    @@keyframes toast-out {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+
+    .toast-icon { font-size: 1.25rem; }
+    .toast-item.success .toast-icon { color: #10b981; }
+    .toast-item.error .toast-icon { color: #ef4444; }
+    .toast-item.warning .toast-icon { color: #f59e0b; }
+    .toast-item.info .toast-icon { color: #3b82f6; }
+
+    .toast-message { flex: 1; color: white; font-size: 0.9rem; font-weight: 500; }
+
+    .toast-close {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 1.25rem;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+        transition: color 0.2s;
+    }
+
+    .toast-close:hover { color: white; }
+
+    .toast-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: currentColor;
+        width: 100%;
+        animation: progress-drain linear forwards;
+    }
+
+    .toast-item.success .progress-bar { background: #10b981; }
+    .toast-item.error .progress-bar { background: #ef4444; }
+    .toast-item.warning .progress-bar { background: #f59e0b; }
+    .toast-item.info .progress-bar { background: #3b82f6; }
+
+    @@keyframes progress-drain {
+        from { width: 100%; }
+        to { width: 0%; }
+    }
+</style>
+
+@code {
+    private List<ToastModel> toasts = new();
+    private int duration = 5000;
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnShow += HandleShow;
+    }
+
+    private async void HandleShow(string message, ToastType type)
+    {
+        var toast = new ToastModel
+        {
+            Id = Guid.NewGuid(),
+            Message = message,
+            Type = type
+        };
+
+        toasts.Add(toast);
+        await InvokeAsync(StateHasChanged);
+
+        // Auto remove after duration
+        _ = Task.Delay(duration).ContinueWith(_ => RemoveToast(toast.Id));
+    }
+
+    private async void RemoveToast(Guid id)
+    {
+        var toast = toasts.FirstOrDefault(t => t.Id == id);
+        if (toast != null && !toast.IsClosing)
+        {
+            toast.IsClosing = true;
+            await InvokeAsync(StateHasChanged);
+            
+            await Task.Delay(300); // Animation time
+            toasts.Remove(toast);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        ToastService.OnShow -= HandleShow;
+    }
+
+    public class ToastModel
+    {
+        public Guid Id { get; set; }
+        public string Message { get; set; }
+        public ToastType Type { get; set; }
+        public bool IsClosing { get; set; }
+    }
+}

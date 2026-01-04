@@ -1,0 +1,347 @@
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="stark-avatar-box @(FullScreen ? "fullscreen" : "") @(IsSpeaking ? "speaking" : "idle")" style="--size: @(Size)px;">
+    @if (Realistic)
+    {
+        <canvas id="@_canvasId" class="stark-avatar-canvas"></canvas>
+    }
+
+    @if (!Realistic || !_has3d)
+    {
+    <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="stark-avatar-svg">
+        <defs>
+            <linearGradient id="metal-red" x1="10%" y1="0%" x2="90%" y2="100%">
+                <stop offset="0%" style="stop-color:#ff4d4d;" />
+                <stop offset="18%" style="stop-color:#b81616;" />
+                <stop offset="55%" style="stop-color:#6f0f0f;" />
+                <stop offset="78%" style="stop-color:#b81616;" />
+                <stop offset="100%" style="stop-color:#3b0707;" />
+            </linearGradient>
+            <linearGradient id="metal-red-edge" x1="0%" y1="20%" x2="100%" y2="80%">
+                <stop offset="0%" style="stop-color:#ff8a8a; stop-opacity:0.9;" />
+                <stop offset="20%" style="stop-color:#a31414; stop-opacity:0.95;" />
+                <stop offset="60%" style="stop-color:#560b0b; stop-opacity:1;" />
+                <stop offset="100%" style="stop-color:#1d0303; stop-opacity:1;" />
+            </linearGradient>
+            <linearGradient id="metal-bronze" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#f2d09a;" />
+                <stop offset="35%" style="stop-color:#b7893b;" />
+                <stop offset="65%" style="stop-color:#7d5b22;" />
+                <stop offset="100%" style="stop-color:#4a330f;" />
+            </linearGradient>
+            <linearGradient id="metal-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#4b4b4b;" />
+                <stop offset="45%" style="stop-color:#1b1b1b;" />
+                <stop offset="100%" style="stop-color:#0a0a0a;" />
+            </linearGradient>
+            <linearGradient id="specular" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#ffffff; stop-opacity:0;" />
+                <stop offset="35%" style="stop-color:#ffffff; stop-opacity:0.12;" />
+                <stop offset="55%" style="stop-color:#ffffff; stop-opacity:0.22;" />
+                <stop offset="75%" style="stop-color:#ffffff; stop-opacity:0.08;" />
+                <stop offset="100%" style="stop-color:#ffffff; stop-opacity:0;" />
+            </linearGradient>
+            <radialGradient id="cyan-core" cx="45%" cy="40%" r="65%">
+                <stop offset="0%" style="stop-color:#e8ffff; stop-opacity:0.9;" />
+                <stop offset="40%" style="stop-color:#57f7ff; stop-opacity:0.6;" />
+                <stop offset="100%" style="stop-color:#57f7ff; stop-opacity:0;" />
+            </radialGradient>
+            <filter id="glow">
+                <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+            <filter id="metal-grain" x="-20%" y="-20%" width="140%" height="140%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3" result="noise" />
+                <feColorMatrix in="noise" type="matrix" values="
+                    0 0 0 0 0.5
+                    0 0 0 0 0.5
+                    0 0 0 0 0.5
+                    0 0 0 0.12 0" result="grain"/>
+                <feComposite in="grain" in2="SourceGraphic" operator="in" result="grainMask"/>
+                <feBlend in="SourceGraphic" in2="grainMask" mode="multiply"/>
+            </filter>
+            <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity="0.45" />
+            </filter>
+        </defs>
+
+        <!-- Main Body Group (Bobbing) -->
+        <g class="avatar-main">
+            <g class="avatar-torso" filter="url(#soft-shadow)">
+                <path d="M22,178 Q28,154 58,148 L72,145 Q86,143 100,143 Q114,143 128,145 L142,148 Q172,154 178,178 L188,226 Q190,242 176,252 Q156,264 100,264 Q44,264 24,252 Q10,242 12,226 Z" fill="url(#metal-red-edge)" opacity="0.98"/>
+                <path d="M34,182 Q40,162 62,158 L78,155 Q88,153 100,153 Q112,153 122,155 L138,158 Q160,162 166,182 L174,222 Q176,236 164,244 Q146,254 100,254 Q54,254 36,244 Q24,236 26,222 Z" fill="url(#metal-red)" filter="url(#metal-grain)"/>
+                <path d="M64,170 Q78,162 100,162 Q122,162 136,170 L142,214 Q140,232 128,240 Q116,246 100,246 Q84,246 72,240 Q60,232 58,214 Z" fill="url(#metal-bronze)" opacity="0.96"/>
+                <path d="M58,186 Q78,176 100,176 Q122,176 142,186" fill="none" stroke="#1a0101" stroke-width="2.2" opacity="0.22" stroke-linecap="round"/>
+                <path d="M70,152 Q82,140 100,140 Q118,140 130,152 L124,166 Q114,162 100,162 Q86,162 76,166 Z" fill="url(#metal-dark)" filter="url(#metal-grain)" opacity="0.92"/>
+                <path d="M40,186 Q50,172 66,170 M160,186 Q150,172 134,170" fill="none" stroke="#0b0b0b" stroke-width="2" opacity="0.18" stroke-linecap="round"/>
+                <path d="M44,200 Q52,194 62,194 M156,200 Q148,194 138,194" fill="none" stroke="#ffffff" stroke-width="1.3" opacity="0.06" stroke-linecap="round"/>
+                <path d="M30,185 L170,185" stroke="url(#specular)" stroke-width="10" opacity="0.35"/>
+                <g class="avatar-core">
+                    <circle cx="100" cy="208" r="22" fill="#060606" stroke="#1c1c1c" stroke-width="1.4" opacity="0.95"/>
+                    <circle cx="100" cy="208" r="18" fill="none" stroke="#2a2a2a" stroke-width="2.4" opacity="0.9"/>
+                    <circle cx="100" cy="208" r="14" fill="none" stroke="#57f7ff" stroke-width="1.6" opacity="0.6"/>
+                    <circle cx="100" cy="208" r="22" fill="url(#cyan-core)" filter="url(#glow)" opacity="0.85"/>
+                    <path d="M100,194 A14,14 0 0 1 114,202" fill="none" stroke="#e8ffff" stroke-width="2" stroke-linecap="round" opacity="0.65">
+                        <animate attributeName="opacity" values="0.35;0.7;0.35" dur="2.2s" repeatCount="indefinite" />
+                    </path>
+                    <path d="M86,215 A14,14 0 0 1 100,222" fill="none" stroke="#e8ffff" stroke-width="2" stroke-linecap="round" opacity="0.55">
+                        <animate attributeName="opacity" values="0.25;0.6;0.25" dur="2.6s" repeatCount="indefinite" />
+                    </path>
+                    <g class="core-ring">
+                        <circle cx="100" cy="208" r="10" fill="none" stroke="#57f7ff" stroke-width="1.4" opacity="0.35"/>
+                        <circle cx="100" cy="208" r="6" fill="none" stroke="#57f7ff" stroke-width="1.1" opacity="0.28"/>
+                    </g>
+                </g>
+                <path d="M48,230 Q66,236 100,236 Q134,236 152,230" fill="none" stroke="#000" stroke-width="2.2" opacity="0.18" stroke-linecap="round"/>
+            </g>
+
+            <!-- Back of Head (Helmet Base) -->
+            <path d="M45,50 Q45,15 100,15 Q155,15 155,50 L155,140 Q155,175 100,175 Q45,175 45,140 Z" fill="url(#metal-red)" filter="url(#metal-grain)" opacity="0.98"/>
+            <path d="M55,58 Q55,26 100,26 Q145,26 145,58 L145,132 Q145,160 100,160 Q55,160 55,132 Z" fill="url(#specular)" opacity="0.22"/>
+            
+            <!-- Side Ear Plates -->
+            <circle cx="45" cy="100" r="12" fill="url(#metal-dark)" opacity="0.9" />
+            <circle cx="155" cy="100" r="12" fill="url(#metal-dark)" opacity="0.9" />
+            
+            <!-- Faceplate (Upper Part) -->
+            <g class="face-upper">
+                <path d="M58,55 Q100,40 142,55 L142,105 L125,120 L75,120 L58,105 Z" fill="url(#metal-bronze)" filter="url(#metal-grain)" opacity="0.98"/>
+                <path d="M62,60 Q100,48 138,60 L138,98 Q124,110 100,112 Q76,110 62,98 Z" fill="url(#specular)" opacity="0.22"/>
+                <path d="M72,64 Q100,52 128,64" fill="none" stroke="#0b0b0b" stroke-width="2.2" opacity="0.22" stroke-linecap="round"/>
+                <!-- Eye Slots -->
+                <path d="M68,78 L92,86 L92,92 L68,88 Z" fill="#000" opacity="0.6"/>
+                <path d="M132,78 L108,86 L108,92 L132,88 Z" fill="#000" opacity="0.6"/>
+                <!-- Glowing Eyes -->
+                <g filter="url(#glow)">
+                    <path d="M70,80 L90,87 L90,90 L70,86 Z" fill="#7cecff" class="eye" opacity="0.75">
+                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" />
+                    </path>
+                    <path d="M130,80 L110,87 L110,90 L130,86 Z" fill="#7cecff" class="eye" opacity="0.75">
+                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" />
+                    </path>
+                </g>
+                <!-- Detail Lines -->
+                <path d="M100,45 L100,60 M85,55 L85,65 M115,55 L115,65" stroke="#862121" stroke-width="0.5" opacity="0.4"/>
+            </g>
+
+            <!-- Moving Jaw Group -->
+            <g class="avatar-jaw">
+                <!-- Outer Jaw (Red) -->
+                <path d="M55,115 L145,115 L135,160 Q100,175 65,160 Z" fill="url(#metal-red)" filter="url(#metal-grain)" opacity="0.98"/>
+                <!-- Inner Jaw (Gold Chin) -->
+                <path d="M75,120 L125,120 L115,155 Q100,165 85,155 Z" fill="url(#metal-bronze)" opacity="0.96"/>
+                <path d="M78,126 L122,126 L114,150 Q100,158 86,150 Z" fill="url(#specular)" opacity="0.14"/>
+                <!-- Mouth Vent Details -->
+                <path d="M90,135 H110 M92,142 H108" stroke="#000" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+            </g>
+        </g>
+    </svg>
+    }
+    <div class="avatar-glow-ring"></div>
+</div>
+
+<style>
+    .stark-avatar-box {
+        position: relative;
+        width: var(--size);
+        height: calc(var(--size) * 1.25);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .stark-avatar-box.fullscreen {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    .stark-avatar-svg {
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+    }
+
+    .stark-avatar-canvas {
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+        outline: none;
+    }
+
+    .stark-avatar-box.fullscreen .stark-avatar-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .stark-avatar-box.fullscreen .avatar-glow-ring {
+        display: none;
+    }
+
+    /* Idle Animations - Multi-layered for "randomness" */
+    .avatar-main {
+        transform-origin: center;
+        animation: 
+            float 4s ease-in-out infinite,
+            tilt 7s ease-in-out infinite,
+            drift 11s ease-in-out infinite;
+    }
+
+    .idle .avatar-torso {
+        transform-origin: 100px 220px;
+        animation: breath 4.4s ease-in-out infinite;
+    }
+
+    .speaking .avatar-torso {
+        transform-origin: 100px 220px;
+        animation: breath 2.2s ease-in-out infinite;
+    }
+
+    .core-ring {
+        transform-origin: 100px 207px;
+        animation: core-spin 6s linear infinite;
+    }
+
+    @@keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+
+    @@keyframes tilt {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(1.5deg); }
+        75% { transform: rotate(-1.5deg); }
+    }
+
+    @@keyframes drift {
+        0%, 100% { transform: translateX(0); }
+        33% { transform: translateX(3px); }
+        66% { transform: translateX(-3px); }
+    }
+
+    @@keyframes breath {
+        0%, 100% { transform: scaleY(1) translateY(0); }
+        50% { transform: scaleY(1.02) translateY(-1px); }
+    }
+
+    @@keyframes core-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* Jaw Speaking Animation */
+    .avatar-jaw {
+        transform-origin: 100px 100px;
+        transition: transform 0.1s ease-out;
+    }
+
+    .speaking .avatar-jaw {
+        animation: jaw-move 0.18s ease-in-out infinite alternate;
+    }
+
+    @@keyframes jaw-move {
+        from { transform: translateY(0) rotateX(0deg); }
+        to { transform: translateY(12px) rotateX(20deg); }
+    }
+
+    /* Glowing Ring Effect on Background */
+    .avatar-glow-ring {
+        position: absolute;
+        top: 6%;
+        left: 50%;
+        width: 82%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(87, 247, 255, 0.15) 0%, transparent 70%);
+        transform: translateX(-50%);
+        z-index: 1;
+        animation: pulse-ring 3s infinite;
+    }
+
+    @@keyframes pulse-ring {
+        0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.3; }
+        50% { transform: translateX(-50%) scale(1.1); opacity: 0.6; }
+    }
+
+    /* Tech Pulse on Eyes when speaking */
+    .speaking .eye {
+        filter: brightness(1.35) drop-shadow(0 0 4px rgba(124, 236, 255, 0.65));
+        animation: eye-speak 0.1s infinite alternate;
+    }
+
+    @@keyframes eye-speak {
+        from { opacity: 0.6; }
+        to { opacity: 1; }
+    }
+</style>
+
+@code {
+    [Parameter] public int Size { get; set; } = 300;
+    [Parameter] public bool IsSpeaking { get; set; } = false;
+    [Parameter] public bool Realistic { get; set; } = true;
+    [Parameter] public bool FullScreen { get; set; } = false;
+
+    private readonly string _canvasId = $"stark-avatar-canvas-{Guid.NewGuid():N}";
+    private string? _instanceId;
+    private bool _lastSpeaking;
+    private bool _has3d;
+
+    public void StartSpeaking() => IsSpeaking = true;
+    public void StopSpeaking() => IsSpeaking = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!Realistic)
+        {
+            return;
+        }
+
+        if (firstRender)
+        {
+            _instanceId = await JS.InvokeAsync<string>("StarkAvatar3D.create", _canvasId, Size, IsSpeaking);
+            _has3d = !string.IsNullOrWhiteSpace(_instanceId);
+            _lastSpeaking = IsSpeaking;
+            StateHasChanged();
+            return;
+        }
+
+        if (!_has3d || _instanceId is null)
+        {
+            return;
+        }
+
+        if (_lastSpeaking != IsSpeaking)
+        {
+            _lastSpeaking = IsSpeaking;
+            await JS.InvokeVoidAsync("StarkAvatar3D.setSpeaking", _instanceId, IsSpeaking);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (!_has3d || _instanceId is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("StarkAvatar3D.dispose", _instanceId);
+        }
+        catch
+        {
+        }
+    }
+}

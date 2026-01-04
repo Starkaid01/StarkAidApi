@@ -56,6 +56,7 @@ fun ComandosSociaisScreen(
     val comandos by viewModel.comandos.observeAsState(emptyList())
     val isLoading by viewModel.isLoading.observeAsState(false)
     val errorMessage by viewModel.errorMessage.observeAsState()
+    val starkCoins by viewModel.starkCoins.observeAsState(0)
 
 
 
@@ -81,6 +82,12 @@ fun ComandosSociaisScreen(
                     }
                 },
                 actions = {
+                    Text(
+                        text = "$starkCoins SC",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
                     IconButton(onClick = { viewModel.carregarComandos() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Sincronizar")
                     }
@@ -226,10 +233,10 @@ fun ComandosSociaisScreen(
 @Composable
 fun ComandoItem(comando: ComandoSocial, onItemClick: () -> Unit) {
     Card(
+        onClick = onItemClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .clickable(onClick = onItemClick),
+            .padding(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

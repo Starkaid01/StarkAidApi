@@ -1,5 +1,6 @@
 package com.starkaid.starkaidapp.services
 
+import com.google.gson.annotations.SerializedName
 import com.starkaid.starkaidapp.models.EconomicPayload
 import retrofit2.Response
 import retrofit2.http.*
@@ -41,18 +42,18 @@ interface UsersApi {
 }
 
 data class CurrentUserResponse(
-    val id: String,
-    val name: String,
-    val email: String,
-    val role: String,
-    val apiKey: String,
-    val removalAds: String?,
-    val estado: String?,
-    val cidade: String?,
-    val bairro: String?,
-    val isActive: Boolean,
-    val createdAt: String?,
-    val economy: EconomicPayload? = null
+    @SerializedName("id") val id: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("email") val email: String,
+    @SerializedName("role") val role: String,
+    @SerializedName("apiKey") val apiKey: String,
+    @SerializedName("removalAds") val removalAds: String?,
+    @SerializedName("estado") val estado: String?,
+    @SerializedName("cidade") val cidade: String?,
+    @SerializedName("bairro") val bairro: String?,
+    @SerializedName("isActive") val isActive: Boolean,
+    @SerializedName("createdAt") val createdAt: String?,
+    @SerializedName("economy") val economy: EconomicPayload? = null
 )
 
 data class DeleteAccountResponse(val message: String)

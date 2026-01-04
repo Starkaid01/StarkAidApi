@@ -35,7 +35,9 @@ import android.text.method.ScrollingMovementMethod
 import android.transition.AutoTransition
 import android.transition.TransitionManager
 import android.util.Log
+import android.view.GestureDetector
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
@@ -47,6 +49,13 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.appcompat.widget.SwitchCompat
 import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
@@ -179,6 +188,11 @@ import java.text.Normalizer
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.jvm.java
 import com.unity3d.ads.BuildConfig
+import com.starkaid.starkaidapp.services.pipeline.*
+import com.starkaid.starkaidapp.models.AnaliseTexto
+import com.starkaid.starkaidapp.models.MusicResolveRequest
+import com.starkaid.starkaidapp.services.MusicApi
+import com.starkaid.starkaidapp.services.RadioPlayerService
 
 class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubListener {
 
@@ -274,6 +288,9 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     private var isSpeechReceiverRegistered = false
 
     private lateinit var usuarioApi: UsuarioApi
+    private lateinit var musicApi: MusicApi
+    private lateinit var youtubePlayerView: YouTubePlayerView
+    private var youtubePlayer: YouTubePlayer? = null
 
     // Adicione esta constante
     private companion object {
@@ -285,6 +302,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     private var ultimoContextoIA: String = ""
 
     private lateinit var spotifyService: SpotifyService
+    private var currentSource = "radio" // "radio" or "youtube"
 
     private lateinit var tvStarkcoins: TextView
     private lateinit var recogActive: TextView //recognition_active
@@ -308,6 +326,62 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
     // ---------------- Análise de texto ----------------
     private lateinit var analizaTexto: AnalizaTexto
+    
+    // ---------------- Pipeline de Comandos ----------------
+    private lateinit var commandPipeline: PipelineEngine
+    private lateinit var pipelineActions: AssistantActions
+
+    private fun setupMiniPlayer() {
+        miniPlayerContainer = findViewById(R.id.miniPlayerContainer)
+        tvMiniPlayerStation = findViewById(R.id.tvMiniPlayerStation)
+        btnMiniPlayerPlayPause = findViewById(R.id.btnMiniPlayerPlayPause)
+        btnMiniPlayerStop = findViewById(R.id.btnMiniPlayerStop)
+        youtubePlayerView = findViewById(R.id.youtubePlayerView)
+        
+        // Lifecycle aware initialization
+        lifecycle.addObserver(youtubePlayerView)
+        
+        youtubePlayerView.addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
+            override fun onReady(youTubePlayer: YouTubePlayer) {
+                youtubePlayer = youTubePlayer
+                Log.d("YouTube", "Player pronto.")
+            }
+        })
+
+        btnMiniPlayerPlayPause.setOnClickListener {
+            lifecycleScope.launch {
+                if (currentSource == "youtube") {
+                    // Toggle YouTube
+                    // We don't have a reliable isPlaying for YT here without more listeners, 
+                    // but we can assume toggle for now or use pipelineActions
+                    pipelineActions.resumeMusic() 
+                } else if (RadioPlayerService.isRunning()) {
+                    val action = if (RadioPlayerService.isPlaying()) RadioPlayerService.ACTION_PAUSE else RadioPlayerService.ACTION_PLAY
+                    startService(Intent(this@MainActivity, RadioPlayerService::class.java).apply { this.action = action })
+                }
+            }
+        }
+
+        btnMiniPlayerStop.setOnClickListener {
+            pipelineActions.stopMusic()
+        }
+    }
+
+    private fun updateMiniPlayer(stationName: String?, isVisible: Boolean, sourceType: String = "RADIO") {
+        runOnUiThread {
+            if (isVisible && stationName != null) {
+                val prefix = if (sourceType == "YOUTUBE") "📺 " else "📻 "
+                tvMiniPlayerStation.text = prefix + stationName
+                miniPlayerContainer.visibility = View.VISIBLE
+            } else {
+                miniPlayerContainer.visibility = View.GONE
+            }
+        }
+    }
+
+    
+
+
 
     private var contatosCache: List<ContatoEntity> = emptyList()
 
@@ -316,6 +390,12 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     private lateinit var nomeAssistent: String
 
     private lateinit var personalidade: String
+
+    // Mini Player
+    private lateinit var miniPlayerContainer: CardView
+    private lateinit var tvMiniPlayerStation: TextView
+    private lateinit var btnMiniPlayerPlayPause: ImageButton
+    private lateinit var btnMiniPlayerStop: ImageButton
 
     // Variáveis para eWeLink
     private lateinit var tvExpandEwelink: TextView
@@ -350,6 +430,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         try {
 
             setContentView(R.layout.activity_main)
+            setupMiniPlayer()
             logNetworkEnvironment()
 
 
@@ -487,6 +568,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
             analizaTexto = AnalizaTexto()
             tryStartAssistantService()
+            initializePipeline()
 
             val assistentName = sessionManager.fetchAssistantName()
             val defaltResponse = sessionManager.fetchDefaultResponse()
@@ -588,6 +670,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
             val retrofit = ApiClient.getClient(this)
             usuarioApi = retrofit.create(UsuarioApi::class.java)
+            musicApi = retrofit.create(MusicApi::class.java)
 
             // Verificar se está em processo de resolução de suporte
             lifecycleScope.launch(Dispatchers.IO) {
@@ -651,6 +734,11 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                 prefs.edit().putBoolean("spotify_enabled", isChecked).apply()
                 if (isChecked) {
                     Toast.makeText(this, "Em manutenção!", Toast.LENGTH_SHORT).show()
+
+                    runOnUiThread {
+                        speakTextFromService("Em manutençao! mas se quizer ouvir alguma musica especifica é só dizer: toque. mais o nome da musica que deseja!")
+                    }
+                    switchSpotify.isChecked = false
 //                    val token = prefs.getString("spotify_access_token", null)
 //                    if (token.isNullOrEmpty()) {
 //                        startSpotifyLogin()
@@ -794,6 +882,48 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
             adsGet()
 
+            // Registrar receptor para "Próxima Música" vindo do rádio
+            LocalBroadcastManager.getInstance(this).registerReceiver(object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    lifecycleScope.launch {
+                        pipelineActions.resolveAndPlayMusic("próxima rádio")
+                    }
+                }
+            }, IntentFilter("com.starkaid.MUSIC_NEXT"))
+
+            LocalBroadcastManager.getInstance(this).registerReceiver(object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    val isPlaying = intent?.getBooleanExtra("isPlaying", false) ?: false
+                    runOnUiThread {
+                        btnMiniPlayerPlayPause.setImageResource(
+                            if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+                        )
+                    }
+                }
+            }, IntentFilter("com.starkaid.MUSIC_STATE_CHANGED"))
+
+            // Sincronização YouTube vindo da Notificação/Service
+            LocalBroadcastManager.getInstance(this).registerReceiver(object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    if (currentSource == "youtube") resumeYouTube()
+                }
+            }, IntentFilter("com.starkaid.MUSIC_PLAY"))
+
+            LocalBroadcastManager.getInstance(this).registerReceiver(object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    if (currentSource == "youtube") pauseYouTube()
+                }
+            }, IntentFilter("com.starkaid.MUSIC_PAUSE"))
+
+            LocalBroadcastManager.getInstance(this).registerReceiver(object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    if (currentSource == "youtube") {
+                        stopYouTube()
+                        updateMiniPlayer(null, false)
+                    }
+                }
+            }, IntentFilter("com.starkaid.MUSIC_STOP"))
+
             setupUnityAdsFullScreen()
 
             btnAddStarkcoins = findViewById<Button>(R.id.btnRemoveAds)
@@ -806,6 +936,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             verificarPlanosAtivosParaAds()
 
             escutando.set(true)
+            updateAvatarSleepingState()
             iaativa.set(true)
             // Só iniciar timer se o reconhecimento estiver ativo
             if (isListening) {
@@ -954,6 +1085,178 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         // Inicialize os contadores
         deviceCountView.text = "0"
         commandCountView.text = commandCounter.toString()
+
+        switchAvatar = findViewById(R.id.switchAvatar)
+        avatarOverlayContainer = findViewById(R.id.avatarOverlayContainer)
+
+        switchAvatar.setOnCheckedChangeListener { _, isChecked ->
+            if (isUpdatingAvatarSwitch) return@setOnCheckedChangeListener
+            setAvatarEnabled(isChecked)
+        }
+    }
+
+    private fun setAvatarEnabled(enabled: Boolean) {
+        avatarEnabled = enabled
+        avatarAutoOpenJob?.cancel()
+        avatarAutoOpenJob = null
+        if (enabled) {
+            showAvatarOverlay()
+        } else {
+            hideAvatarOverlay()
+            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+            sendAvatarSpeaking(false)
+            sendAvatarAudioLevel(0)
+        }
+    }
+
+    private fun scheduleAvatarAutoOpen(delayMs: Long) {
+        avatarAutoOpenJob?.cancel()
+        avatarAutoOpenJob = lifecycleScope.launch {
+            delay(delayMs)
+            if (avatarEnabled) {
+                showAvatarOverlay()
+            }
+        }
+    }
+
+    private fun showAvatarOverlay() {
+        if (!avatarEnabled) return
+        drawerLayout.closeDrawer(GravityCompat.START, false)
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
+        ensureAvatarWebView()
+        avatarOverlayContainer.visibility = View.VISIBLE
+        sendAvatarSpeaking(isTtsSpeaking)
+        updateAvatarSleepingState()
+        sendAvatarRestartReconstruction()
+    }
+
+    private fun hideAvatarOverlay() {
+        avatarOverlayContainer.visibility = View.GONE
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun ensureAvatarWebView() {
+        if (avatarWebView != null) return
+
+        val webView = WebView(this)
+        webView.layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        )
+        webView.setBackgroundColor(Color.BLACK)
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                if (!avatarEnabled) return
+                sendAvatarSpeaking(isTtsSpeaking)
+                updateAvatarSleepingState()
+                sendAvatarRestartReconstruction()
+            }
+        }
+        webView.webChromeClient = WebChromeClient()
+        webView.settings.javaScriptEnabled = true
+        webView.settings.domStorageEnabled = true
+        webView.settings.allowFileAccess = true
+        webView.settings.allowContentAccess = true
+        webView.addJavascriptInterface(object {
+            @JavascriptInterface
+            fun closeAvatar() {
+                runOnUiThread { closeAvatarFromOverlay() }
+            }
+        }, "AndroidAvatar")
+
+        val gestureDetector = GestureDetector(
+            this,
+            object : GestureDetector.SimpleOnGestureListener() {
+                override fun onDoubleTap(e: MotionEvent): Boolean {
+                    closeAvatarFromOverlay()
+                    return true
+                }
+            }
+        )
+        avatarGestureDetector = gestureDetector
+        webView.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            false
+        }
+
+        avatarOverlayContainer.removeAllViews()
+        avatarOverlayContainer.addView(webView)
+        avatarWebView = webView
+
+        webView.loadUrl("file:///android_asset/index.html")
+    }
+
+    private fun closeAvatarFromOverlay() {
+        if (!avatarEnabled) return
+        hideAvatarOverlay()
+        scheduleAvatarAutoOpen(2 * 60 * 1000L)
+    }
+
+    private fun runOnMainThread(action: () -> Unit) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            action()
+        } else {
+            Handler(Looper.getMainLooper()).post { action() }
+        }
+    }
+
+    private fun sendAvatarSpeaking(speaking: Boolean) {
+        val js = "window.StarkaidAvatar && StarkaidAvatar.setSpeaking(${if (speaking) "true" else "false"})"
+        runOnMainThread {
+            val webView = avatarWebView ?: return@runOnMainThread
+            webView.evaluateJavascript(js, null)
+        }
+    }
+
+    private fun sendAvatarAudioLevel(level: Int) {
+        val bounded = level.coerceIn(0, 100)
+        val js = "window.StarkaidAvatar && StarkaidAvatar.setAudioLevel($bounded)"
+        runOnMainThread {
+            val webView = avatarWebView ?: return@runOnMainThread
+            webView.evaluateJavascript(js, null)
+        }
+    }
+
+    private fun sendAvatarBeat() {
+        val js = "window.StarkaidAvatar && StarkaidAvatar.beat()"
+        runOnMainThread {
+            val webView = avatarWebView ?: return@runOnMainThread
+            webView.evaluateJavascript(js, null)
+        }
+    }
+
+    private fun sendAvatarRestartReconstruction() {
+        val js = "window.StarkaidAvatar && StarkaidAvatar.restartReconstruction()"
+        runOnMainThread {
+            val webView = avatarWebView ?: return@runOnMainThread
+            webView.evaluateJavascript(js, null)
+        }
+    }
+
+    private fun sendAvatarSleeping(sleeping: Boolean) {
+        val js = "window.StarkaidAvatar && StarkaidAvatar.setSleeping(${if (sleeping) "true" else "false"})"
+        runOnMainThread {
+            val webView = avatarWebView ?: return@runOnMainThread
+            webView.evaluateJavascript(js, null)
+        }
+    }
+
+    private fun sendAvatarMatrixStatus(message: String?, ttlMs: Int = 1600) {
+        if (!avatarEnabled) return
+        val text = message?.trim().orEmpty()
+        val quoted = org.json.JSONObject.quote(text)
+        val boundedTtl = ttlMs.coerceIn(0, 15000)
+        val js = "window.StarkaidAvatar && StarkaidAvatar.setMatrixStatus($quoted, $boundedTtl)"
+        runOnMainThread {
+            val webView = avatarWebView ?: return@runOnMainThread
+            webView.evaluateJavascript(js, null)
+        }
+    }
+
+    private fun updateAvatarSleepingState() {
+        if (!avatarEnabled) return
+        sendAvatarSleeping(!escutando.get())
     }
 
     // NOVA FUNÇÃO: Configurar RecyclerView dos dispositivos eWeLink
@@ -2590,10 +2893,11 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     val economy = user.economy ?: EconomicPayload()
                     val saldo = economy.balance().toDouble()
                     starkCoins = saldo.toFloat()
+                    saldoStarkcoinsInt = economy.balance()
 
                     runOnUiThread {
                         tvStarkcoins.text = String.format("%.0f SC", saldo)
-                        Log.d("SaldoUI", "Saldo atualizado na UI: $saldo SC")
+                        Log.d("SaldoUI", "Saldo atualizado na UI: $saldo SC, saldoStarkcoinsInt: $saldoStarkcoinsInt")
                         updatePlanLimitsCard(economy)
                     }
                 } else {
@@ -2783,9 +3087,23 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     // Receiver para detectar quando TTS está falando
     private var isTtsSpeaking = false
     private var soundWaveView: SoundWaveView? = null
+    private lateinit var switchAvatar: SwitchCompat
+    private lateinit var avatarOverlayContainer: FrameLayout
+    private var avatarWebView: WebView? = null
+    private var avatarGestureDetector: GestureDetector? = null
+    private var isUpdatingAvatarSwitch = false
+    private var avatarEnabled = false
+    private var avatarAutoOpenJob: Job? = null
+
+    private var pendingMatrixToken = 0L
+    private var pendingMatrixReceivedAt = 0L
+    private var pendingMatrixAwaitUntil = 0L
+    private var pendingMatrixProcessingShown = false
+    private var pendingMatrixTtsStarted = false
+    private var pendingMatrixJob: Job? = null
 
     private var lastTtsEndTime = 0L
-    private val TTS_COOLDOWN_MS = 1200L // ajuste fino
+    private val TTS_COOLDOWN_MS = 600L // Reduzido de 1200ms para ser mais responsivo
 
 
     private val ttsReceiver = object : BroadcastReceiver() {
@@ -2799,6 +3117,22 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     isTtsSpeaking = true
                     runOnUiThread {
                         showSoundWaves()
+                        if (avatarEnabled) {
+                            sendAvatarSpeaking(true)
+                        }
+                    }
+
+                    val now = System.currentTimeMillis()
+                    if (avatarEnabled && pendingMatrixToken != 0L && now <= pendingMatrixAwaitUntil) {
+                        pendingMatrixTtsStarted = true
+                        if (pendingMatrixProcessingShown) {
+                            sendAvatarMatrixStatus("Comando processado.", 1400)
+                            pendingMatrixJob?.cancel()
+                            pendingMatrixJob = null
+                            pendingMatrixToken = 0L
+                            pendingMatrixProcessingShown = false
+                            pendingMatrixTtsStarted = false
+                        }
                     }
 
                     if (escutando.get() && isListening) {
@@ -2813,6 +3147,10 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
                     runOnUiThread {
                         hideSoundWaves()
+                        if (avatarEnabled) {
+                            sendAvatarSpeaking(false)
+                            sendAvatarAudioLevel(0)
+                        }
                     }
 
                     Log.d("MainActivity", "TTS marcado como parado (validação inteligente já feita no serviço)")
@@ -2826,6 +3164,9 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
                     runOnUiThread {
                         soundWaveView?.updateAudioLevel(audioLevel)
+                        if (avatarEnabled) {
+                            sendAvatarAudioLevel(audioLevel)
+                        }
                     }
 
                     // 🔒 Reforço de "falando", mas NÃO reabre após STOP
@@ -2841,296 +3182,23 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == FullDuplexAssistantAdvancedService.BROADCAST_SPEECH_RESULT) {
                 val text = intent.getStringExtra(FullDuplexAssistantAdvancedService.EXTRA_RECOGNIZED_TEXT)
-                text?.let {
-                    // IMPORTANTE: Se o comando tem prefixo "speaking:", verificar APENAS comandos de parar
-                    // Todos os outros comandos com "speaking:" devem ser ignorados
-                    val textToCheck = it.lowercase().trim()
-                    val hasSpeakingPrefix = it.lowercase().contains("speaking:")
-                    
-                    if (hasSpeakingPrefix) {
-                        // Se tem "speaking:", só processar se for comando de parar
-                        if (isStopTalkingCommand(textToCheck)) {
-                            Log.d("MainActivity", "🛑 Comando de parar detectado durante TTS: '$it' - enviando para serviço")
-                            val stopIntent = Intent(this@MainActivity, FullDuplexAssistantAdvancedService::class.java).apply {
-                                action = FullDuplexAssistantAdvancedService.ACTION_STOP_SPEAKING
-                            }
-                            startService(stopIntent)
-                            isTtsSpeaking = false
-                            runOnUiThread {
-                                hideSoundWaves()
-                            }
-                            return
-                        } else {
-                            // Ignorar qualquer outro comando que veio durante TTS
-                            Log.d("MainActivity", "🚫 Ignorando comando capturado durante TTS: '$it'")
-                            return
-                        }
-                    }
-                    
-                    Log.d("MainActivity", "Texto reconhecido: $it")
+                
+                if (text.isNullOrBlank()) return
 
-                    var resp = it
-                    if(it.contains("parcial:"))
-                        resp = it.replace("parcial:","")
-
-                    // Processar comandos de parar de falar (quando não tem "speaking:")
-                    if (isStopTalkingCommand(textToCheck)) {
-                        Log.d("MainActivity", "🛑 Comando de parar de falar detectado: '$it' - enviando para serviço")
-                        // Enviar intent para o serviço parar o TTS imediatamente
-                        val stopIntent = Intent(this@MainActivity, FullDuplexAssistantAdvancedService::class.java).apply {
-                            action = FullDuplexAssistantAdvancedService.ACTION_STOP_SPEAKING
-                        }
-                        startService(stopIntent)
-                        // Também marcar como não falando imediatamente
-                        isTtsSpeaking = false
-                        runOnUiThread {
-                            hideSoundWaves()
-                        }
-                        // Não processar mais nada, apenas parar o TTS
-                        return
-                    }
-
-                    if(cleanText(it).contains("parar de ouvir")
-                        || cleanText(it).contains("pare de ouvir")
-                        || cleanText(it).contains("parar de escutar")
-                        || cleanText(it).contains("pare de escutar")
-                        || cleanText(it).contains("parar de responder")
-                        || cleanText(it).contains("pare de responder")
-
-                        || cleanText(it).contains("para de ouvir")
-                        || cleanText(it).contains("para de escutar")
-                        || cleanText(it).contains("para de responder")
-                        ){
-                        escutando.set(false)
-                        speakTextFromService("Ok, se precisar só chamar!")
-                        return
-                    }
-
-                    if (cleanText(it).contains("desativar whatsapp")
-                        ||cleanText(it).contains("desativar o whatsapp")
-                        ||cleanText(it).contains("desativa o whatsapp")
-                        ||cleanText(it).contains("desative whatsapp")
-                        ||cleanText(it).contains("desative o whatsapp")
-
-                        ||cleanText(it).contains("desligar whatsapp")
-                        ||cleanText(it).contains("desliga whatsapp")
-                        ||cleanText(it).contains("desligar o whatsapp")
-                        ||cleanText(it).contains("desliga o whatsapp")
-                        ||cleanText(it).contains("desligue whatsapp")
-                        ||cleanText(it).contains("desligue o whatsapp")
-                    ){
-                        switchWhatsapp.isChecked = false
-                        return
-                    }
-
-                    if (cleanText(it).contains("ativar whatsapp")
-                        ||cleanText(it).contains("ativar o whatsapp")
-                        ||cleanText(it).contains("ativa o whatsapp")
-                        ||cleanText(it).contains("ative whatsapp")
-                        ||cleanText(it).contains("ative o whatsapp")
-
-                        ||cleanText(it).contains("ligar whatsapp")
-                        ||cleanText(it).contains("liga whatsapp")
-                        ||cleanText(it).contains("ligar o whatsapp")
-                        ||cleanText(it).contains("liga o whatsapp")
-                        ||cleanText(it).contains("ligue whatsapp")
-                        ||cleanText(it).contains("ligue o whatsapp") && !cleanText(it).contains("des")
-                        ){
-                        switchWhatsapp.isChecked = true
-                        return
-                    }
-
-
-
-                    if(nomeAssistent.lowercase().toString() != "assistente"){
-
-                        if(cleanText(it).contains(nomeAssistent.lowercase().toString())){
-                            iaativa.set(true)
-                            escutando.set(true)
-                            // Só iniciar timer se o reconhecimento estiver ativo
-                            if (isListening) {
-                            iniciarTimerDesativacaoEscutando()
-                            }
-                            iniciarTimerIaDesativacao()
-
-                            if (cleanText(it) == nomeAssistent.lowercase().toString()){
-                                responseNameAssistent()
-                                return
-                            }
-                        }
-
-                        if(escutando.get()){
-                            // Atualizar UI com o texto reconhecido
-                            runOnUiThread {
-                                tvSpeechText.text = "Ouvindo..."
-                            }
-
-                            runOnUiThread {
-                                tvSpeechText.text = resp
-                            }
-
-                            if(!it.isNotEmpty())
-                                return
-
-                            Log.d("TestandoIA", "[speechReceiver] Texto recebido: '$it', aguardandoLiberarConsumoStarkcoins: $aguardandoLiberarConsumoStarkcoins")
-
-                            if (aguardandoLiberarConsumoStarkcoins) {
-                                // IMPORTANTE: Se tem prefixo "speaking:", IGNORAR completamente
-                                if (it.lowercase().contains("speaking:")) {
-                                    Log.d("MainActivity", "🚫 Ignorando comando parcial capturado durante TTS: '$it'")
-                                    return@let
-                                }
-                                
-                                // Remover prefixo "parcial:" antes de processar
-                                var textToProcess = it
-                                if (it.lowercase().contains("parcial:"))
-                                    textToProcess = it.replace("parcial:", "", ignoreCase = true)
-                                
-                                val normalized = cleanText(textToProcess)
-                                Log.d("TestandoIA", "[speechReceiver] Verificando resposta. Texto original: '$it', processado: '$textToProcess', normalizado: '$normalized'")
-                                Log.d("TestandoIA", "[speechReceiver] isPositiveAnswer: ${isPositiveAnswer(normalized)}, isNegativeAnswer: ${isNegativeAnswer(normalized)}")
-                                
-                                if (isPositiveAnswer(normalized)) {
-                                    Log.d("TestandoIA", "[speechReceiver] ✅ Resposta POSITIVA! Reativando IA.")
-                                    aguardandoLiberarConsumoStarkcoins = false
-                                    if (saldoStarkcoinsInt > 0) {
-                                        iaLimitReached = false
-                                        iaUsandoStarkCoins = true
-                                        runOnUiThread {
-                                            isSwitchIaChangingProgrammatically = true
-                                            switchIa.isChecked = true
-                                            prefs.edit().putBoolean("ia_enabled", true).apply()
-                                            isSwitchIaChangingProgrammatically = false
-                                        }
-                                        speakTextFromService("Ok, inteligência reativada usando StarkCoins.")
-                                    } else {
-                                        speakTextFromService("Saldo insuficiente. Adicione StarkCoins e tente novamente.")
-                                    }
-                                    return
-                                }
-                                if (isNegativeAnswer(normalized)) {
-                                    Log.d("TestandoIA", "[speechReceiver] ✅ Resposta NEGATIVA! Desativando IA.")
-                                    aguardandoLiberarConsumoStarkcoins = false
-                                    iaLimitReached = true
-                                    iaUsandoStarkCoins = false // Garantir que flag está false quando usuário recusa
-                                    runOnUiThread {
-                                        isSwitchIaChangingProgrammatically = true
-                                        switchIa.isChecked = false
-                                        prefs.edit().putBoolean("ia_enabled", false).apply()
-                                        isSwitchIaChangingProgrammatically = false
-                                    }
-                                    speakTextFromService("Ok, inteligência não será ativada.")
-                                    return
-                                } else {
-                                    Log.d("TestandoIA", "[speechReceiver] ⚠️ Resposta não reconhecida. Texto: '$normalized'")
-                                }
-                            }
-
-                            if(confirmContato.get()){
-                                if(cleanText(it).contains("sim")
-                                    || cleanText(it).contains("pode sim")
-                                    || cleanText(it).contains("pode mandar")
-                                    || cleanText(it).contains("pode manda")
-                                    || cleanText(it).contains("sim pode")
-                                    || cleanText(it).contains("isso mesmo")
-                                    || cleanText(it).contains("esta certo")
-                                    || cleanText(it).contains("exatamente")){
-                                    sendMessageWpp(contato, numero, messageenviar)
-                                    confirmContato.set(false)
-                                    contato = ""
-                                    numero = ""
-                                    messageenviar = ""
-                                    return
-                                }
-                                if(cleanText(it).contains("nao")
-                                    ||cleanText(it).contains("esta errado")
-                                    ||cleanText(it).contains("esta errado")
-                                    ||cleanText(it).contains("contato errado")
-                                    ||cleanText(it).contains("numero errado")
-                                    ||cleanText(it).contains("aborte")
-                                    ||cleanText(it).contains("abortar")
-                                    ||cleanText(it).contains("cancela")
-                                    ||cleanText(it).contains("cancelar")){
-                                    confirmContato.set(false)
-                                    contato = ""
-                                    numero = ""
-                                    messageenviar = ""
-                                    speakTextFromService("Ok, não vou enviar a mensagem.")
-                                    return
-                                }
-                            }
-
-                            // Chamar suspend function dentro de coroutine
-                            lifecycleScope.launch {
-                                Log.d("TestandoIA", "antes de processSpeechResult: $it")
-                                processSpeechResult(it)
-                            }
-                        }
-                        else{
-                            // Só mostrar "Dormindo" se o reconhecimento estiver ativo
-                            if (isListening) {
-                                runOnUiThread {
-                                    tvSpeechText.text = "Dormindo...(Chame pelo Assistente)"
-                                }
-                            } else {
-                                Unit
-                            }
-                        }
-
-                    }
-                    else{
-                        // Atualizar UI com o texto reconhecido
-                        runOnUiThread {
-                            tvSpeechText.text = resp
-
-                        }
-
-                        if(!it.isNotEmpty())
-                            return
-
-                        if(confirmContato.get()){
-                            if(cleanText(it).contains("sim")
-                                || cleanText(it).contains("pode sim")
-                                || cleanText(it).contains("pode mandar")
-                                || cleanText(it).contains("pode manda")
-                                || cleanText(it).contains("sim pode")
-                                || cleanText(it).contains("isso mesmo")
-                                || cleanText(it).contains("esta certo")
-                                || cleanText(it).contains("exatamente")){
-                                sendMessageWpp(contato, numero, messageenviar)
-                                confirmContato.set(false)
-                                contato = ""
-                                numero = ""
-                                messageenviar = ""
-                                return
-                            }
-                            if(cleanText(it).contains("nao")
-                                ||cleanText(it).contains("esta errado")
-                                ||cleanText(it).contains("esta errado")
-                                ||cleanText(it).contains("contato errado")
-                                ||cleanText(it).contains("numero errado")
-                                ||cleanText(it).contains("aborte")
-                                ||cleanText(it).contains("abortar")
-                                ||cleanText(it).contains("cancela")
-                                ||cleanText(it).contains("cancelar")){
-                                confirmContato.set(false)
-                                contato = ""
-                                numero = ""
-                                messageenviar = ""
-                                speakTextFromService("Ok, não vou enviar a mensagem.")
-                                return
-                            }
-                        }
-
-                        // Chamar suspend function dentro de coroutine
-                        lifecycleScope.launch {
-                            processSpeechResult(it)
-                        }
-                    }
+                // Visual Feedback Básico (mantendo atualização de UI)
+                val displayText = if(text.contains("parcial:")) text.replace("parcial:","") else text
+                if (displayText.isNotBlank() && !displayText.contains("speaking:")) {
+                    runOnUiThread { tvSpeechText.text = displayText }
                 }
+
+                 // Delega TODO o processamento para o Pipeline
+                 lifecycleScope.launch {
+                     processCommandViaPipeline(text)
+                 }
             }
         }
     }
+
 
 
     private fun responseNameAssistent(){
@@ -4222,6 +4290,56 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         return result
     }
 
+    private suspend fun processSpeechResultWithAvatarStages(result: String): Boolean {
+        val isPartial = result.lowercase().contains("parcial:")
+        val isSpeakingCaptured = result.lowercase().contains("speaking:")
+        val shouldShow = avatarEnabled && !isPartial && !isSpeakingCaptured
+        if (!shouldShow) return processSpeechResult(result)
+
+        val token = System.currentTimeMillis()
+        pendingMatrixToken = token
+        pendingMatrixReceivedAt = token
+        pendingMatrixAwaitUntil = token + 12000L
+        pendingMatrixProcessingShown = false
+        pendingMatrixTtsStarted = false
+
+        pendingMatrixJob?.cancel()
+        pendingMatrixJob = lifecycleScope.launch {
+            delay(1000)
+            if (pendingMatrixToken != token || !avatarEnabled) return@launch
+            pendingMatrixProcessingShown = true
+            sendAvatarMatrixStatus("Processando comando...", 6000)
+
+            if (pendingMatrixTtsStarted) {
+                delay(150)
+                if (pendingMatrixToken != token || !avatarEnabled) return@launch
+                sendAvatarMatrixStatus("Comando processado.", 1400)
+                pendingMatrixToken = 0L
+                pendingMatrixProcessingShown = false
+                pendingMatrixTtsStarted = false
+            }
+        }
+
+        sendAvatarMatrixStatus("Comando recebido...", 2000)
+
+        return try {
+            processSpeechResult(result)
+        } finally {
+            if (!pendingMatrixTtsStarted && pendingMatrixToken == token && avatarEnabled) {
+                lifecycleScope.launch {
+                    delay(1200)
+                    if (pendingMatrixToken == token && !pendingMatrixTtsStarted && avatarEnabled) {
+                        sendAvatarMatrixStatus("", 0)
+                        pendingMatrixJob?.cancel()
+                        pendingMatrixJob = null
+                        pendingMatrixToken = 0L
+                        pendingMatrixProcessingShown = false
+                    }
+                }
+            }
+        }
+    }
+
     private suspend fun processSpeechResult(result: String): Boolean {
         val userId = sessionManager.fetchUserId()
         val currentTime = System.currentTimeMillis()
@@ -4266,7 +4384,8 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     }
                     speakTextFromService("Ok, inteligência reativada usando StarkCoins.")
                 } else {
-                    speakTextFromService("Saldo insuficiente. Adicione StarkCoins e tente novamente.")
+                    Log.d("TestandoIA", "❌ Saldo insuficiente detectado em processSpeechResult: $saldoStarkcoinsInt SC")
+                    speakTextFromService("Saldo insuficiente. Você tem apenas $saldoStarkcoinsInt StarkCoins. Adicione mais e tente novamente.")
                 }
                 return true
             }
@@ -4331,7 +4450,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
 
     private var lastDirectCommandTime = 0L
-    private val DIRECT_COMMAND_COOLDOWN = 2300L
+    private val DIRECT_COMMAND_COOLDOWN = 5000L
 
     var passou = false
     private suspend fun processandoComandos(
@@ -4467,24 +4586,20 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     return false
                 }
             }
-            else{
+            else {
                 if(text.split(" ").size > 1) {
-                    return if(isPergunta(text)){
-                        Log.d("TestandoIA","entrou isPergunta: ${isPergunta(text)}")
-
-                        chamarIaSuper(text, true)
-                    } else{
-                        false
-                    }
-                }else {
-                    //
+                    // Se IA está no modo pergunta (iaativa=false), mas o usuário ligou o switch,
+                    // devemos ser mais permissivos. Se não foi comando de automação ou social (já verificado),
+                    // envia para IA se tiver um tamanho mínimo.
+                    Log.d("TestandoIA", "iaativa false, enviando para chamarIaSuper por ser switchIa.isChecked")
+                    chamarIaSuper(text, true)
+                    return true
+                } else {
                     Log.d("TestandoIA","texto muito pequeno")
                     return false
                 }
             }
-
-        }
-        else{
+        } else {
             Log.d("WhatsAppSession", "Ia desativada")
             return false
         }
@@ -4506,6 +4621,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             // Só desativar se ainda estiver escutando e reconhecimento estiver ativo
             if (escutando.get() && isListening) {
             escutando.set(false)
+            updateAvatarSleepingState()
             runOnUiThread {
                     // Só mostrar "Dormindo" se o reconhecimento estiver ativo
                     if (isListening) {
@@ -4521,16 +4637,16 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         // Cancela qualquer timer anterior (reinicia o contador)
         resetJob?.cancel()
 
-        // Cria um novo timer coroutine que desativa após 2 minutos
+        // Cria um novo timer coroutine que desativa após 4 minutos
         resetJob = lifecycleScope.launch(Dispatchers.Default) {
-            delay(2 * 60 * 1000L) // 2 minutos = 120.000 ms
+            delay(4 * 60 * 1000L) // 4 minutos = 240.000 ms
             iaativa.set(false)
             if (switchIa.isChecked){
                 runOnUiThread {
                     tvSpeechText.text = "IA modo pergunta, para modo completo->(Chame pelo Assistente)"
                 }
             }
-            println("⏱️ IA desativada automaticamente após 2 minutos.")
+            println("⏱️ IA desativada automaticamente após 4 minutos.")
         }
     }
 
@@ -5060,6 +5176,9 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
 
     fun speakTextFromService(text: String) {
+        if (avatarEnabled) {
+            sendAvatarBeat()
+        }
         val intent = Intent(this, FullDuplexAssistantAdvancedService::class.java)
         intent.action = "SPEAK_TEXT"
         intent.putExtra("text", text)
@@ -5738,6 +5857,10 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         pergunta: String,
         ePergunta: Boolean
     ): Boolean {
+        if (pergunta.isBlank()) {
+            Log.d("TestandoIA", "Comando vazio ou nulo recebido, ignorando chamada.")
+            return true // Continua o fluxo sem erro
+        }
         var naoPodeContinuar = false
         val defaltResponse = sessionManager.fetchDefaultResponse().toString()
         var defResp = ""
@@ -5756,36 +5879,37 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
 
         var worCount = 0
-        for (word in listWordPergunt) {
-            if (word != " " && !word.isEmpty() && listWordUltimaResp.contains(word)) {
-                worCount++
-                if (worCount >= 2) {
-                    naoPodeContinuar = true
-                    break
-                }
-            }
+        // Lista de palavras irrelevantes para verificação de loop (stopwords)
+        val stopWords = listOf("o", "a", "os", "as", "um", "uma", "de", "da", "do", "em", "na", "no", "por", "para", "com", "e", "que", "é", "eh", "do", "da", "dos", "das")
 
-            if(word != " " && !word.isEmpty() && listDefaultResp.contains(word)) {
+        for (word in listWordPergunt) {
+            val w = word.trim()
+            if (w.length > 2 && !stopWords.contains(w) && listWordUltimaResp.contains(w)) {
                 worCount++
-                if (worCount >= 2) {
-                    naoPodeContinuar = true
-                    break
-                }
             }
+            if (w.length > 2 && !stopWords.contains(w) && listDefaultResp.contains(w)) {
+                 worCount++
+            }
+        }
+        
+        // Aumentado threshold para 8 e usando apenas palavras significativas
+        if (worCount >= 8) {
+             Log.d("TestandoIA", "Loop detectado: $worCount palavras coincidentes (Threshold: 8). Bloqueando resposta.")
+             naoPodeContinuar = true
         }
 
         if (comand == " ")
             return false
 
+        // Lista reduzida de bloqueios diretos para evitar falsos positivos
         if (comand == "a noite"
             ||comand == "boa noite"
             ||comand == "a tarde"
             ||comand == "boa tarde"
             ||comand == "bom dia"
-            ||comand == "agora sao"
-            ||comand == "que horas sao"
-            ||comand == "quantas horas"
-            ||comand == "que dia e hoje"
+            // Mantendo verificação de hora, mas permitindo variações mais complexas passarem
+            ||(comand == "agora sao" && listWordPergunt.size < 3)
+            ||(comand == "que horas sao" && listWordPergunt.size < 4)
             )
             return false
 
@@ -5793,19 +5917,10 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         if(comand.contains("o tempo esta")
             ||comand.contains("abrindo ")
             ||comand.contains("fechando ")
-            ||comand.contains("a previsao ")
-            ||comand.contains("o tempo esta")
-            ||comand.contains("o tempo esta")
-            ||comand.contains("o tempo esta")
-            ||comand.contains("hoje e ")
-            ||comand.contains("estou aqui")
-            ||comand.contains("boa noite")
-            ||comand.contains("boa tarde")
-            ||comand.contains("bom dia")
-            ||comand.contains("agora sao")
-            ||comand.contains("que horas sao")
-            ||comand.contains(defResp)
-
+            // Removidos bloqueios genéricos demais
+            //||comand.contains("a previsao ") 
+            //||comand.contains("hoje e ")
+            ||(defResp.length > 5 && comand.contains(defResp)) // Só bloqueia se conter a resposta padrão E ela for significativa
             )
             return false
 
@@ -5819,6 +5934,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
 
         Log.d("TestandoIA","entrou chamarIaSuper: $pergunta")
+        val startTime = System.currentTimeMillis()
 
         // Verificar se personalidade está inicializada antes de usar
         if (this::personalidade.isInitialized && personalidade.isNotEmpty()){
@@ -5853,7 +5969,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                         prefs.edit().putBoolean("ia_enabled", false).apply()
                         isSwitchIaChangingProgrammatically = false
                     }
-                    speakTextFromService("Seu limite foi atingido para continuar usando a inteligência adicione fundos a sua conta.")
+                    speakTextFromService("Seus tokens e StarkCoins acabaram. Adicione fundos para continuar usando a IA.")
                     return false
                 }
 
@@ -5869,10 +5985,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     // Verificar novamente após atualizar UI
                     Log.d("TestandoIA", "🔴 [UI Thread] Flag aguardandoLiberarConsumoStarkcoins após UI update = $aguardandoLiberarConsumoStarkcoins")
                 }
-                val msg = if (requiredCoins != null && requiredCoins > 0)
-                    "Seu limite foi atingido. Precisamos de $requiredCoins StarkCoins para continuar. Deseja usar seu saldo?"
-                else
-                    "Seu limite foi atingido. Deseja usar seu saldo em StarkCoins para continuar usando a inteligência?"
+                val msg = "Os tokens limite acabaram, você precisa usar seus StarkCoins para continuar usando a IA. Deseja reativar a IA?"
                 speakTextFromService(msg)
                 // Verificar novamente após speakTextFromService
                 Log.d("TestandoIA", "🔴 [Após speakText] Flag aguardandoLiberarConsumoStarkcoins = $aguardandoLiberarConsumoStarkcoins")
@@ -5906,6 +6019,18 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                         iaLimitReached = false
                         Log.d("TestandoIA", "⚠️ Resposta IA bem-sucedida - resetando aguardandoLiberarConsumoStarkcoins")
                         aguardandoLiberarConsumoStarkcoins = false
+
+                        // TELEMETRIA: Enviar evento detalhado
+                        val duration = (System.currentTimeMillis() - startTime).toInt()
+                        pipelineActions.sendAiTelemetry(
+                            textoOriginal = pergunta,
+                            resultado = iaResponse.resultado?.hitResult ?: "UNKNOWN",
+                            latenciaMs = duration,
+                            chamouIaExterna = iaResponse.resultado?.modelo != "Aprendizado-Local",
+                            similarityScore = iaResponse.resultado?.similarityScore,
+                            aprendizadoTipo = iaResponse.resultado?.aprendizadoTipo,
+                            aprendizadoId = iaResponse.resultado?.aprendizadoId
+                        )
 
                         // Se o saldo zerou e estava usando StarkCoins, desativar
                         if (iaUsandoStarkCoins && saldoStarkcoinsInt <= 0) {
@@ -5961,6 +6086,16 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             } else {
                 val errorBody = response.errorBody()?.string()
                 Log.d("TestandoIA", "Erro HTTP: ${response.code()} - $errorBody")
+                
+                if (!errorBody.isNullOrEmpty()) {
+                    try {
+                        val obj = JSONObject(errorBody)
+                        if (obj.has("message")) {
+                            val msg = obj.getString("message")
+                            speakTextFromService(msg)
+                        }
+                    } catch (_: Exception) { }
+                }
                 false
             }
         } catch (e: Exception) {
@@ -6679,6 +6814,18 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         soundWaveView?.stopAnimation()
         soundWaveView = null
 
+        avatarWebView?.let { wv ->
+            try {
+                (wv.parent as? ViewGroup)?.removeView(wv)
+            } catch (_: Exception) {
+            }
+            try {
+                wv.destroy()
+            } catch (_: Exception) {
+            }
+        }
+        avatarWebView = null
+
         FullDuplexAssistantAdvancedService.stop(this)
         comandosFlowJob?.cancel()
         udpListenerJob?.cancel()
@@ -7341,6 +7488,290 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             socket.close()
             Log.d("UDP", "UDP listener encerrado")
         }
+    }
+
+
+    private fun playYouTubeVideo(videoId: String?, title: String?) {
+        if (videoId == null) return
+        
+        Log.d("YouTube", "Tentando tocar vídeo: $videoId - $title")
+        
+        runOnUiThread {
+            youtubePlayer?.let { player ->
+                Log.d("YouTube", "Player pronto, carregando vídeo...")
+                player.loadVideo(videoId, 0f)
+            } ?: run {
+                Log.w("YouTube", "Player ainda não está pronto. Aguardando inicialização...")
+            }
+        }
+    }
+
+    private fun stopYouTube() {
+        runOnUiThread { youtubePlayer?.pause() }
+    }
+
+    private fun pauseYouTube() {
+        runOnUiThread { youtubePlayer?.pause() }
+    }
+
+    private fun resumeYouTube() {
+        runOnUiThread { youtubePlayer?.play() }
+    }
+
+    // ---------------- PIPELINE INITIALIZATION & EXECUTION ----------------
+    private fun initializePipeline() {
+        pipelineActions = object : AssistantActions {
+            override fun speak(text: String) {
+                 speakTextFromService(text)
+            }
+            override fun stopSpeaking() {
+                 val stopIntent = Intent(this@MainActivity, FullDuplexAssistantAdvancedService::class.java).apply {
+                    action = FullDuplexAssistantAdvancedService.ACTION_STOP_SPEAKING
+                }
+                startService(stopIntent)
+            }
+            override fun updateAvatarSleepingState() {
+                 this@MainActivity.updateAvatarSleepingState()
+            }
+            override fun updateAvatarProcessingState(text: String, duration: Long) {
+                 sendAvatarMatrixStatus(text, duration.toInt())
+            }
+            override fun sendWhatsappMessage(name: String, number: String, message: String) {
+                 sendMessageWpp(name, number, message)
+            }
+            
+            override suspend fun processSocial(text: String): Boolean = comandosSocialGet(text)
+            override suspend fun processDirect(text: String): Boolean = processDirectCommands(text)
+            override suspend fun processAutomation(text: String): Boolean = execAutomacao(text)
+            
+            override suspend fun processDevices(text: String): Boolean {
+                 // Tenta controlar dispositivos (cópia da lógica de processandoComandos)
+                 if (controlarDispositivoEsp(text)) return true
+                 if (controlarDispositivoEwelink(text)) return true
+                 return false
+            }
+            
+            override suspend fun processIaFallback(text: String): Boolean = getIaResponse(text)
+            
+            override fun isStarkCoinsConfirmationPending() = aguardandoLiberarConsumoStarkcoins
+            override fun setStarkCoinsConfirmationPending(pending: Boolean) { 
+                aguardandoLiberarConsumoStarkcoins = pending 
+            }
+            
+            override fun handleStarkCoinsResponse(positive: Boolean) {
+                if (positive) {
+                    Log.d("Pipeline", "✅ Resposta POSITIVA StarkCoins detectada no pipeline")
+                    aguardandoLiberarConsumoStarkcoins = false
+                    if (saldoStarkcoinsInt > 0) {
+                        iaLimitReached = false
+                        iaUsandoStarkCoins = true
+                        runOnUiThread {
+                            isSwitchIaChangingProgrammatically = true
+                            switchIa.isChecked = true
+                            prefs.edit().putBoolean("ia_enabled", true).apply()
+                            isSwitchIaChangingProgrammatically = false
+                        }
+                        speakTextFromService("Ok, inteligência reativada usando StarkCoins.")
+                    } else {
+                        speakTextFromService("Saldo insuficiente. Você tem apenas $saldoStarkcoinsInt StarkCoins.")
+                    }
+                } else {
+                    Log.d("Pipeline", "✅ Resposta NEGATIVA StarkCoins detectada no pipeline")
+                    aguardandoLiberarConsumoStarkcoins = false
+                    iaLimitReached = true
+                    iaUsandoStarkCoins = false
+                    runOnUiThread {
+                        isSwitchIaChangingProgrammatically = true
+                        switchIa.isChecked = false
+                        prefs.edit().putBoolean("ia_enabled", false).apply()
+                        isSwitchIaChangingProgrammatically = false
+                    }
+                    speakTextFromService("Ok, inteligência não será ativada.")
+                }
+            }
+
+            override fun getAssistantName(): String = nomeAssistent
+
+            override fun onWakeWordDetected() {
+                escutando.set(true)
+                iaativa.set(true)
+                runOnUiThread {
+                    updateAvatarSleepingState()
+                    iniciarTimerDesativacaoEscutando()
+                    iniciarTimerIaDesativacao()
+                    responseNameAssistent()
+                }
+            }
+            
+            override fun sendTelemetry(evento: String, categoria: String, metadata: Map<String, Any>?) {
+                com.starkaid.starkaidapp.services.TelemetryClient.sendEvent(this@MainActivity, evento, categoria, metadata)
+            }
+
+            override fun sendAiTelemetry(
+                textoOriginal: String, 
+                resultado: String, 
+                latenciaMs: Int, 
+                chamouIaExterna: Boolean,
+                similarityScore: Double?,
+                aprendizadoTipo: String?,
+                aprendizadoId: String?
+            ) {
+                com.starkaid.starkaidapp.services.TelemetryClient.sendAiEvent(
+                    this@MainActivity,
+                    textoOriginal,
+                    resultado,
+                    latenciaMs,
+                    chamouIaExterna,
+                    similarityScore,
+                    aprendizadoTipo,
+                    aprendizadoId
+                )
+            }
+
+            override suspend fun resolveAndPlayMusic(text: String): Boolean {
+                return try {
+                    val response = musicApi.resolveMusic(MusicResolveRequest(text))
+                    if (response.isSuccessful && response.body() != null) {
+                        val body = response.body()!!
+                        speakTextFromService(body.tts)
+
+                        when (body.type) {
+                            "radio" -> {
+                                currentSource = "radio"
+                                stopYouTube() // Ensure YT is off
+                                val intent = Intent(this@MainActivity, RadioPlayerService::class.java).apply {
+                                    action = RadioPlayerService.ACTION_PLAY
+                                    putExtra(RadioPlayerService.EXTRA_STATION_NAME, body.station?.name)
+                                    putExtra(RadioPlayerService.EXTRA_STREAM_URL, body.station?.streamUrl)
+                                }
+                                startService(intent)
+                                updateMiniPlayer(body.station?.name ?: "Rádio", true, "RADIO")
+                                true
+                            }
+                            "youtube" -> {
+                                currentSource = "youtube"
+                                // stopMusic() // REMOVED: Kills service and causes loop
+                                
+                                // Notify service to pause Radio and update notification
+                                val intent = Intent(this@MainActivity, RadioPlayerService::class.java).apply {
+                                    action = RadioPlayerService.ACTION_UPDATE_METADATA
+                                    putExtra(RadioPlayerService.EXTRA_STATION_NAME, body.title)
+                                    putExtra(RadioPlayerService.EXTRA_SOURCE, "YOUTUBE")
+                                }
+                                startService(intent)
+                                
+                                playYouTubeVideo(body.youtubeVideoId, body.title)
+                                updateMiniPlayer(body.title ?: "YouTube", true, "YOUTUBE")
+                                true
+                            }
+                            "error" -> {
+                                true
+                            }
+                            else -> {
+                                // Control commands
+                                when (body.type) {
+                                    "stop" -> {
+                                        stopMusic()
+                                        stopYouTube()
+                                    }
+                                    "pause" -> {
+                                        if (currentSource == "youtube") pauseYouTube() else pauseMusic()
+                                    }
+                                    "resume" -> {
+                                        if (currentSource == "youtube") resumeYouTube() else resumeMusic()
+                                    }
+                                    "next" -> nextMusic()
+                                    "volume_up" -> setMusicVolume(true)
+                                    "volume_down" -> setMusicVolume(false)
+                                    "status" -> {
+                                        val playing = if (currentSource == "youtube") "YouTube" else tvMiniPlayerStation.text
+                                        speakTextFromService("Está tocando $playing.")
+                                    }
+                                }
+                                true
+                            }
+                        }
+                    } else {
+                        false
+                    }
+                } catch (e: Exception) {
+                    Log.e("Music", "Error resolving music", e)
+                    false
+                }
+            }
+
+
+
+            override fun stopMusic() {
+                val intent = Intent(this@MainActivity, RadioPlayerService::class.java).apply {
+                    action = RadioPlayerService.ACTION_STOP
+                }
+                startService(intent)
+                updateMiniPlayer(null, false)
+            }
+
+            override fun pauseMusic() {
+                val intent = Intent(this@MainActivity, RadioPlayerService::class.java).apply {
+                    action = RadioPlayerService.ACTION_PAUSE
+                }
+                startService(intent)
+            }
+
+            override fun resumeMusic() {
+                val intent = Intent(this@MainActivity, RadioPlayerService::class.java).apply {
+                    action = RadioPlayerService.ACTION_PLAY
+                }
+                startService(intent)
+            }
+
+            override fun nextMusic() {
+                val intent = Intent(this@MainActivity, RadioPlayerService::class.java).apply {
+                    action = RadioPlayerService.ACTION_NEXT
+                }
+                startService(intent)
+            }
+
+            override fun setMusicVolume(up: Boolean) {
+                val am = getSystemService(AUDIO_SERVICE) as AudioManager
+                val direction = if (up) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER
+                am.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, AudioManager.FLAG_SHOW_UI)
+            }
+        }
+        
+        val stages = listOf(
+            StopTalkingStage(),
+            StopListeningStage(),
+            StarkCoinsStage(), // Check before Sleep Mode (Priority)
+            AvatarStage(),
+            SleepModeStage(),
+            MusicStage(),
+            WhatsappConfirmationStage(), // Requires listening
+            AnalyzeTextStage(analizaTexto),
+            ProcessCommandStage(),
+            IaFallbackStage()
+        )
+        
+        commandPipeline = PipelineEngine(stages)
+        Log.d("Pipeline", "Pipeline inicializado com ${stages.size} stages.")
+    }
+
+    private suspend fun processCommandViaPipeline(text: String) {
+         if (!::commandPipeline.isInitialized) {
+            Log.e("Pipeline", "Pipeline não inicializado! Usando fallback.")
+            processSpeechResultWithAvatarStages(text)
+            return
+        }
+        
+        val ctx = CommandContext.from(
+            rawText = text,
+            escutando = escutando,
+            confirmContato = confirmContato,
+            isTtsSpeaking = isTtsSpeaking,
+            actions = pipelineActions
+        )
+        
+        // Executar pipeline
+        commandPipeline.execute(ctx)
     }
 
     private fun verificarDisparosPendentes() {

@@ -1,0 +1,301 @@
+@page "/admin/ia-telemetry"
+@using StarkAid.Web.Services
+@using System.Text.Json
+@inject ApiService ApiService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div class="header-left">
+        <h3>Telemetria de IA <small class="text-muted" style="font-size: 0.9rem;">(Real-time Insights)</small></h3>
+        <span class="badge bg-primary">Analytics Pipeline</span>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" @onclick="LoadData">
+            <i class="bi bi-arrow-clockwise"></i> Atualizar
+        </button>
+    </div>
+</div>
+
+@if (overview == null)
+{
+    <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Analisando dados de telemetria...</p>
+    </div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stats-card glass">
+                <div class="stats-icon bg-blue-soft"><i class="bi bi-chat-dots"></i></div>
+                <div class="stats-info">
+                    <span class="stats-label">Total Interações</span>
+                    <span class="stats-value">@overview.Value.GetProperty("totalInteracoes").GetInt32().ToString("N0")</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card glass">
+                <div class="stats-icon bg-green-soft"><i class="bi bi-check-circle-fill"></i></div>
+                <div class="stats-info">
+                    <span class="stats-label">Cache Hit Rate</span>
+                    <span class="stats-value text-success">@overview.Value.GetProperty("cacheHitRate").GetDouble().ToString("F1") %</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card glass">
+                <div class="stats-icon bg-purple-soft"><i class="bi bi-cpu"></i></div>
+                <div class="stats-info">
+                    <span class="stats-label">Tokens Evitados</span>
+                    <span class="stats-value">@overview.Value.GetProperty("tokensEconomizados").GetInt32().ToString("N0")</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card glass highlight-green">
+                <div class="stats-icon bg-yellow-soft"><i class="bi bi-currency-dollar"></i></div>
+                <div class="stats-info">
+                    <span class="stats-label">Economia Total</span>
+                    <span class="stats-value text-success">$ @overview.Value.GetProperty("economiaUSD").GetDecimal().ToString("F2")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Qualidade do Cache -->
+        <div class="col-md-6">
+            <div class="dashboard-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3 px-3">
+                    <h5 class="mb-0">Distribuição de Resultados</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-column gap-3">
+                        @{
+                            var totalInt = 0;
+                            if (overview.Value.TryGetProperty("totalInteracoes", out var totalProp))
+                                totalInt = totalProp.GetInt32();
+                        }
+                        @foreach (var item in qualityDistribution ?? new List<JsonElement>())
+                        {
+                            var count = item.GetProperty("count").GetInt32();
+                            var perc = totalInt > 0 ? (count * 100.0) / totalInt : 0;
+                            var label = item.GetProperty("resultado").GetString();
+                            var colorClass = label switch {
+                                "CacheHit_Exact" => "bg-success",
+                                "CacheHit_FuzzyStrong" => "bg-info",
+                                "CacheHit_FuzzyWeak" => "bg-warning",
+                                _ => "bg-secondary"
+                            };
+
+                            <div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="small fw-500">@label</span>
+                                    <span class="small text-muted">@count (@perc.ToString("F1")%)</span>
+                                </div>
+                                <div class="progress" style="height: 10px;">
+                                    <div class="progress-bar @colorClass" style="width: @perc%"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Latência e Performance -->
+        <div class="col-md-6">
+            <div class="dashboard-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3 px-3">
+                    <h5 class="mb-0">Efetividade Fuzzy (Similarity)</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Resultado</th>
+                                <th class="text-center">Média Score</th>
+                                <th class="text-center">Min / Max</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var f in fuzzyAnalytics ?? new List<JsonElement>())
+                            {
+                                <tr>
+                                    <td>@f.GetProperty("resultado").GetString()</td>
+                                    <td class="text-center fw-bold">@f.GetProperty("averageScore").GetDouble().ToString("P1")</td>
+                                    <td class="text-center text-muted small">
+                                        @f.GetProperty("minScore").GetDouble().ToString("F2") - @f.GetProperty("maxScore").GetDouble().ToString("F2")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div class="alert alert-light border mt-3 py-2 small">
+                        <i class="bi bi-info-circle me-1"></i> A latência média do pipeline é de <strong>@overview.Value.GetProperty("latenciaMediaMs").GetDouble().ToString("N0") ms</strong>.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Onde o Cache Falha (Oportunidades) -->
+        <div class="col-md-12">
+            <div class="dashboard-card">
+                <div class="card-header bg-transparent border-0 pt-3 px-3 d-flex justify-content-between">
+                    <h5 class="mb-0">Top Cache Misses (Oportunidades de Aprendizado)</h5>
+                    <span class="badge bg-warning text-dark">Treinamento Necessário</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr class="bg-light">
+                                    <th class="ps-3">Texto Normalizado</th>
+                                    <th class="text-center">Ocorrências</th>
+                                    <th class="text-end pe-3">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var miss in topMisses ?? new List<JsonElement>())
+                                {
+                                    <tr>
+                                        <td class="ps-3 fw-500">@miss.GetProperty("texto").GetString()</td>
+                                        <td class="text-center">
+                                            <span class="badge rounded-pill bg-light text-primary border">@miss.GetProperty("ocorrencias").GetInt32() x</span>
+                                        </td>
+                                        <td class="text-end pe-3">
+                                            <button class="btn btn-primary btn-sm py-0" @onclick='() => IrParaAprendizado(miss.GetProperty("texto").GetString()!)'>
+                                                Criar Global
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (roiHistory != null)
+    {
+        <div class="row g-4 mt-2">
+            <div class="col-md-12">
+                <div class="dashboard-card pt-3 px-3 pb-2">
+                    <h5 class="mb-3">Histórico de ROI (Últimos dias)</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th class="text-center">Cache Hits</th>
+                                    <th class="text-end">Economia USD</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var day in roiHistory.Value.GetProperty("roi").EnumerateArray())
+                                {
+                                    <tr>
+                                        <td>@day.GetProperty("date").GetDateTime().ToString("dd/MM/yyyy")</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark">@day.GetProperty("hits").GetInt32() hits</span>
+                                        </td>
+                                        <td class="text-end fw-bold text-success">$ @day.GetProperty("economia").GetDecimal().ToString("F2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private JsonElement? overview;
+    private List<JsonElement>? qualityDistribution;
+    private List<JsonElement>? topMisses;
+    private List<JsonElement>? fuzzyAnalytics;
+    private JsonElement? roiHistory;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
+        var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
+
+        var ovRaw = await ApiService.GetTelemetryOverviewAsync(token, apiKey);
+        if (ovRaw != null) overview = (JsonElement)ovRaw;
+
+        var qdRaw = await ApiService.GetTelemetryQualityAsync(token, apiKey);
+        if (qdRaw != null) qualityDistribution = ((JsonElement)qdRaw).EnumerateArray().ToList();
+
+        var tmRaw = await ApiService.GetTopMissesAsync(token, apiKey);
+        if (tmRaw != null) topMisses = ((JsonElement)tmRaw).EnumerateArray().ToList();
+
+        var faRaw = await ApiService.GetFuzzyAnalyticsAsync(token, apiKey);
+        if (faRaw != null) fuzzyAnalytics = ((JsonElement)faRaw).EnumerateArray().ToList();
+
+        var roiRaw = await ApiService.GetRoiHistoryAsync(token, apiKey);
+        if (roiRaw != null) roiHistory = (JsonElement)roiRaw;
+    }
+
+    private void IrParaAprendizado(string texto)
+    {
+        Navigation.NavigateTo($"/aprendizado-ia?prefill={Uri.EscapeDataString(texto)}");
+    }
+}
+
+<style>
+    .glass {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+    .dashboard-card {
+        background: #ffffff;
+        color: #1e293b;
+        border-radius: 12px;
+        border: 1px solid #edf2f7;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    .dashboard-card h5 {
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    .table {
+        color: #334155;
+    }
+
+    .table thead th {
+        color: #64748b;
+        background-color: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .highlight-green { border-left: 4px solid #10b981; }
+    
+    .stats-card { padding: 1.25rem; border-radius: 12px; display: flex; align-items: center; gap: 1rem; }
+    .stats-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+    
+    .bg-blue-soft { background: #eff6ff; color: #3b82f6; }
+    .bg-green-soft { background: #ecfdf5; color: #10b981; }
+    .bg-purple-soft { background: #faf5ff; color: #a855f7; }
+    .bg-yellow-soft { background: #fefce8; color: #eab308; }
+
+    .stats-label { display: block; font-size: 0.75rem; color: #475569 !important; font-weight: 500; }
+    .stats-value { display: block; font-size: 1.25rem; font-weight: 700; color: #0f172a !important; }
+    .fw-500 { font-weight: 500; color: #1e293b !important; }
+</style>

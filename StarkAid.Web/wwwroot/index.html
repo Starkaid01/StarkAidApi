@@ -28,6 +28,545 @@
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script>
+        window.StarkAvatar3D = (() => {
+            const instances = new Map();
+
+            const createId = () => {
+                if (window.crypto && typeof window.crypto.randomUUID === "function") {
+                    return window.crypto.randomUUID();
+                }
+                return `stark-${Math.random().toString(16).slice(2)}-${Date.now().toString(16)}`;
+            };
+
+            const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+            const create = (canvasId, size, speaking) => {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas || !window.BABYLON) {
+                    return "";
+                }
+
+                const id = createId();
+                const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: false, stencil: true, premultipliedAlpha: true, adaptToDeviceRatio: true });
+                const scene = new BABYLON.Scene(engine);
+                scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);
+
+                const applyDpr = () => {
+                    const dpr = window.devicePixelRatio || 1;
+                    engine.setHardwareScalingLevel(1 / dpr);
+                };
+                applyDpr();
+
+                const camera = new BABYLON.FreeCamera("cam", new BABYLON.Vector3(0, 0, -10), scene);
+                camera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
+                camera.setTarget(BABYLON.Vector3.Zero());
+                camera.minZ = 0.1;
+                camera.maxZ = 100;
+                camera.detachControl();
+
+                let viewHalfW = 1;
+                let viewHalfH = 1;
+                const updateCameraOrtho = () => {
+                    const w = canvas.clientWidth || canvas.width || 1;
+                    const h = canvas.clientHeight || canvas.height || 1;
+                    const aspect = w / h;
+                    const orthoHeight = 3.6;
+                    const halfH = orthoHeight / 2;
+                    const halfW = halfH * aspect;
+                    viewHalfW = halfW;
+                    viewHalfH = halfH;
+                    camera.orthoLeft = -halfW;
+                    camera.orthoRight = halfW;
+                    camera.orthoTop = halfH;
+                    camera.orthoBottom = -halfH;
+                };
+                updateCameraOrtho();
+
+                const glowLayer = new BABYLON.GlowLayer("glow", scene, { blurKernelSize: 24 });
+                glowLayer.intensity = 0.62;
+
+                const pipeline = new BABYLON.DefaultRenderingPipeline("pipeline", true, scene, [camera]);
+                pipeline.fxaaEnabled = true;
+                pipeline.bloomEnabled = true;
+                pipeline.bloomThreshold = 0.62;
+                pipeline.bloomWeight = 0.14;
+                pipeline.bloomKernel = 32;
+                pipeline.bloomScale = 0.55;
+
+                const root = new BABYLON.TransformNode("root", scene);
+                root.position.y = 0.05;
+
+                const rand = (min, max) => min + Math.random() * (max - min);
+                const smoothstep = (edge0, edge1, x) => {
+                    const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+                    return t * t * (3 - 2 * t);
+                };
+
+                const insideBust = (x, y) => {
+                    const inHead = ((x / 0.68) ** 2 + ((y - 1.55) / 0.86) ** 2) <= 1.0;
+                    const inShoulders = ((x / 1.75) ** 2 + ((y - 0.2) / 1.25) ** 2) <= 1.0;
+                    const inTorso = ((x / 1.25) ** 2 + ((y + 0.75) / 1.55) ** 2) <= 1.0;
+                    const inNeck = Math.abs(x) <= (0.26 + 0.18 * smoothstep(0.85, 1.2, y)) && y >= 0.8 && y <= 1.35;
+                    return inHead || (inShoulders && y <= 1.25) || (inTorso && y <= 1.05) || inNeck;
+                };
+
+                const sampleInBust = () => {
+                    for (let i = 0; i < 80; i++) {
+                        const x = rand(-1.85, 1.85);
+                        const y = rand(-1.25, 2.45);
+                        if (insideBust(x, y)) return { x, y };
+                    }
+                    return { x: 0, y: 0 };
+                };
+
+                const polylineLengths = (poly) => {
+                    const seg = [];
+                    let total = 0;
+                    for (let i = 1; i < poly.length; i++) {
+                        const dx = poly[i].x - poly[i - 1].x;
+                        const dy = poly[i].y - poly[i - 1].y;
+                        const len = Math.hypot(dx, dy);
+                        seg.push(len);
+                        total += len;
+                    }
+                    return { seg, total };
+                };
+
+                const samplePolyline = (poly, meta, t) => {
+                    const dist = t * meta.total;
+                    let acc = 0;
+                    for (let i = 0; i < meta.seg.length; i++) {
+                        const len = meta.seg[i];
+                        if (acc + len >= dist) {
+                            const u = (dist - acc) / (len || 1);
+                            const a = poly[i];
+                            const b = poly[i + 1];
+                            return { x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u };
+                        }
+                        acc += len;
+                    }
+                    return poly[poly.length - 1];
+                };
+
+                const createDots = (name, count, initParticle, material, parent) => {
+                    const dot = BABYLON.MeshBuilder.CreatePlane(`${name}-dot`, { size: 0.026 }, scene);
+                    dot.isVisible = false;
+                    const sps = new BABYLON.SolidParticleSystem(name, scene, { updatable: true });
+                    sps.addShape(dot, count);
+                    const mesh = sps.buildMesh();
+                    dot.dispose();
+                    mesh.parent = parent;
+                    mesh.material = material;
+                    mesh.isPickable = false;
+                    mesh.alwaysSelectAsActiveMesh = true;
+                    for (let i = 0; i < sps.nbParticles; i++) {
+                        initParticle(sps.particles[i], i);
+                    }
+                    sps.setParticles();
+                    return { sps, mesh };
+                };
+
+                const matBody = new BABYLON.StandardMaterial("matBody", scene);
+                matBody.disableLighting = true;
+                matBody.emissiveColor = new BABYLON.Color3(0.06, 0.07, 0.085);
+                matBody.alpha = 0.68;
+                matBody.alphaMode = BABYLON.Constants.ALPHA_COMBINE;
+
+                const matRed = new BABYLON.StandardMaterial("matRed", scene);
+                matRed.disableLighting = true;
+                matRed.emissiveColor = new BABYLON.Color3(1.0, 0.1, 0.1);
+                matRed.alpha = 0.85;
+                matRed.alphaMode = BABYLON.Constants.ALPHA_ADD;
+
+                const matGold = new BABYLON.StandardMaterial("matGold", scene);
+                matGold.disableLighting = true;
+                matGold.emissiveColor = new BABYLON.Color3(1.0, 0.72, 0.22);
+                matGold.alpha = 0.75;
+                matGold.alphaMode = BABYLON.Constants.ALPHA_ADD;
+
+                const matReactorCyan = new BABYLON.StandardMaterial("matReactorCyan", scene);
+                matReactorCyan.disableLighting = true;
+                matReactorCyan.emissiveColor = new BABYLON.Color3(0.25, 0.95, 1.0);
+                matReactorCyan.alpha = 0.9;
+                matReactorCyan.alphaMode = BABYLON.Constants.ALPHA_ADD;
+
+                const matDustCyan = new BABYLON.StandardMaterial("matDustCyan", scene);
+                matDustCyan.disableLighting = true;
+                matDustCyan.emissiveColor = new BABYLON.Color3(0.16, 0.55, 0.65);
+                matDustCyan.alpha = 0.16;
+                matDustCyan.alphaMode = BABYLON.Constants.ALPHA_ADD;
+
+                const matEyeWhite = new BABYLON.StandardMaterial("matEyeWhite", scene);
+                matEyeWhite.disableLighting = true;
+                matEyeWhite.emissiveColor = new BABYLON.Color3(0.95, 0.98, 1.0);
+                matEyeWhite.alpha = 0.95;
+                matEyeWhite.alphaMode = BABYLON.Constants.ALPHA_ADD;
+
+                const body = createDots(
+                    "body",
+                    2600,
+                    (p) => {
+                        const pt = sampleInBust();
+                        p.position.x = pt.x + rand(-0.02, 0.02);
+                        p.position.y = pt.y + rand(-0.02, 0.02);
+                        p.position.z = rand(-0.02, 0.02);
+                        const s = rand(0.55, 1.05);
+                        p.scaling.x = s;
+                        p.scaling.y = s * rand(0.9, 1.15);
+                        p.scaling.z = 1;
+                        p.rotation.z = rand(0, Math.PI * 2);
+                    },
+                    matBody,
+                    root
+                );
+
+                const outline = [
+                    { x: -1.05, y: -1.05 },
+                    { x: -1.45, y: -0.4 },
+                    { x: -1.65, y: 0.25 },
+                    { x: -1.25, y: 0.9 },
+                    { x: -0.7, y: 1.18 },
+                    { x: -0.5, y: 1.95 },
+                    { x: 0.0, y: 2.35 },
+                    { x: 0.5, y: 1.95 },
+                    { x: 0.7, y: 1.18 },
+                    { x: 1.25, y: 0.9 },
+                    { x: 1.65, y: 0.25 },
+                    { x: 1.45, y: -0.4 },
+                    { x: 1.05, y: -1.05 }
+                ];
+                const outlineMeta = polylineLengths(outline);
+
+                const redLines = createDots(
+                    "redLines",
+                    1300,
+                    (p, i) => {
+                        const t = (i + Math.random()) / 1300;
+                        const pt = samplePolyline(outline, outlineMeta, t);
+                        const jitter = rand(-0.03, 0.03);
+                        p.position.x = pt.x + jitter;
+                        p.position.y = pt.y + rand(-0.03, 0.03);
+                        p.position.z = rand(-0.02, 0.02);
+                        const s = rand(0.7, 1.25);
+                        p.scaling.x = s;
+                        p.scaling.y = s;
+                        p.scaling.z = 1;
+                        p.rotation.z = rand(0, Math.PI * 2);
+                    },
+                    matRed,
+                    root
+                );
+                glowLayer.addIncludedOnlyMesh(redLines.mesh);
+
+                const faceOutline = [
+                    { x: -0.55, y: 1.95 },
+                    { x: -0.42, y: 1.45 },
+                    { x: -0.3, y: 1.15 },
+                    { x: 0.0, y: 1.05 },
+                    { x: 0.3, y: 1.15 },
+                    { x: 0.42, y: 1.45 },
+                    { x: 0.55, y: 1.95 }
+                ];
+                const faceMeta = polylineLengths(faceOutline);
+
+                const goldLines = createDots(
+                    "goldLines",
+                    760,
+                    (p, i) => {
+                        const t = (i + Math.random()) / 760;
+                        const pt = samplePolyline(faceOutline, faceMeta, t);
+                        p.position.x = pt.x + rand(-0.02, 0.02);
+                        p.position.y = pt.y + rand(-0.02, 0.02);
+                        p.position.z = rand(-0.02, 0.02);
+                        const s = rand(0.75, 1.35);
+                        p.scaling.x = s;
+                        p.scaling.y = s;
+                        p.scaling.z = 1;
+                        p.rotation.z = rand(0, Math.PI * 2);
+                    },
+                    matGold,
+                    root
+                );
+                glowLayer.addIncludedOnlyMesh(goldLines.mesh);
+
+                const chestLines = [
+                    { x: -0.95, y: 0.35 },
+                    { x: -0.35, y: -0.25 },
+                    { x: 0.0, y: -0.55 },
+                    { x: 0.35, y: -0.25 },
+                    { x: 0.95, y: 0.35 }
+                ];
+                const chestMeta = polylineLengths(chestLines);
+                const chestNeon = createDots(
+                    "chestNeon",
+                    540,
+                    (p, i) => {
+                        const t = (i + Math.random()) / 540;
+                        const pt = samplePolyline(chestLines, chestMeta, t);
+                        p.position.x = pt.x + rand(-0.03, 0.03);
+                        p.position.y = pt.y + rand(-0.03, 0.03);
+                        p.position.z = rand(-0.02, 0.02);
+                        const s = rand(0.7, 1.2);
+                        p.scaling.x = s;
+                        p.scaling.y = s;
+                        p.scaling.z = 1;
+                        p.rotation.z = rand(0, Math.PI * 2);
+                    },
+                    matRed,
+                    root
+                );
+                glowLayer.addIncludedOnlyMesh(chestNeon.mesh);
+
+                const eyesRoot = new BABYLON.TransformNode("eyesRoot", scene);
+                eyesRoot.parent = root;
+                const leftEye = [
+                    { x: -0.32, y: 1.65 },
+                    { x: -0.08, y: 1.62 }
+                ];
+                const rightEye = [
+                    { x: 0.32, y: 1.65 },
+                    { x: 0.08, y: 1.62 }
+                ];
+                const leftEyeMeta = polylineLengths(leftEye);
+                const rightEyeMeta = polylineLengths(rightEye);
+
+                const eyes = createDots(
+                    "eyes",
+                    180,
+                    (p, i) => {
+                        const isLeft = i < 90;
+                        const j = isLeft ? i : (i - 90);
+                        const t = (j + Math.random()) / 90;
+                        const pt = samplePolyline(isLeft ? leftEye : rightEye, isLeft ? leftEyeMeta : rightEyeMeta, t);
+                        p.position.x = pt.x + rand(-0.01, 0.01);
+                        p.position.y = pt.y + rand(-0.01, 0.01);
+                        p.position.z = rand(-0.01, 0.01);
+                        const s = rand(1.05, 1.6);
+                        p.scaling.x = s;
+                        p.scaling.y = s * rand(0.7, 1.05);
+                        p.scaling.z = 1;
+                        p.rotation.z = rand(0, Math.PI * 2);
+                    },
+                    matEyeWhite,
+                    eyesRoot
+                );
+                glowLayer.addIncludedOnlyMesh(eyes.mesh);
+
+                const reactorRoot = new BABYLON.TransformNode("reactorRoot", scene);
+                reactorRoot.parent = root;
+                reactorRoot.position.y = -0.05;
+
+                const reactorRing = createDots(
+                    "reactorRing",
+                    420,
+                    (p, i) => {
+                        const a = (i / 420) * Math.PI * 2;
+                        const r = 0.36 + rand(-0.01, 0.01);
+                        p.position.x = Math.cos(a) * r;
+                        p.position.y = Math.sin(a) * r;
+                        p.position.z = rand(-0.01, 0.01);
+                        const s = rand(0.8, 1.4);
+                        p.scaling.x = s;
+                        p.scaling.y = s;
+                        p.scaling.z = 1;
+                        p.rotation.z = rand(0, Math.PI * 2);
+                    },
+                    matReactorCyan,
+                    reactorRoot
+                );
+                glowLayer.addIncludedOnlyMesh(reactorRing.mesh);
+
+                const reactorCore = createDots(
+                    "reactorCore",
+                    640,
+                    (p) => {
+                        const a = rand(0, Math.PI * 2);
+                        const rr = Math.sqrt(Math.random()) * 0.22;
+                        p.position.x = Math.cos(a) * rr;
+                        p.position.y = Math.sin(a) * rr;
+                        p.position.z = rand(-0.01, 0.01);
+                        const s = rand(0.85, 1.55);
+                        p.scaling.x = s;
+                        p.scaling.y = s;
+                        p.scaling.z = 1;
+                        p.rotation.z = rand(0, Math.PI * 2);
+                    },
+                    matReactorCyan,
+                    reactorRoot
+                );
+                glowLayer.addIncludedOnlyMesh(reactorCore.mesh);
+
+                const reactorSpokes = createDots(
+                    "reactorSpokes",
+                    220,
+                    (p, i) => {
+                        const t = (i + Math.random()) / 220;
+                        const axis = t < 0.5 ? 0 : Math.PI / 2;
+                        const u = (t < 0.5 ? t : (t - 0.5)) * 2;
+                        const x = (u - 0.5) * 0.62;
+                        const y = 0;
+                        const ca = Math.cos(axis);
+                        const sa = Math.sin(axis);
+                        p.position.x = x * ca - y * sa + rand(-0.01, 0.01);
+                        p.position.y = x * sa + y * ca + rand(-0.01, 0.01);
+                        p.position.z = rand(-0.01, 0.01);
+                        const s = rand(0.75, 1.25);
+                        p.scaling.x = s;
+                        p.scaling.y = s;
+                        p.scaling.z = 1;
+                        p.rotation.z = rand(0, Math.PI * 2);
+                    },
+                    matReactorCyan,
+                    reactorRoot
+                );
+                glowLayer.addIncludedOnlyMesh(reactorSpokes.mesh);
+
+                const dust = createDots(
+                    "dust",
+                    1200,
+                    (p) => {
+                        const x = rand(-viewHalfW * 1.08, viewHalfW * 1.08);
+                        const y = rand(-viewHalfH * 1.08, viewHalfH * 1.08);
+                        const z = rand(-0.06, 0.06);
+                        p.position.set(x, y, z);
+                        const s = rand(0.35, 0.9);
+                        p.scaling.x = s;
+                        p.scaling.y = s;
+                        p.scaling.z = 1;
+                        p.rotation.z = rand(0, Math.PI * 2);
+                    },
+                    matDustCyan,
+                    root
+                );
+                glowLayer.addIncludedOnlyMesh(dust.mesh);
+
+                const randomizeDust = () => {
+                    const hw = viewHalfW * 1.08;
+                    const hh = viewHalfH * 1.08;
+                    for (let i = 0; i < dust.sps.nbParticles; i++) {
+                        const p = dust.sps.particles[i];
+                        p.position.x = rand(-hw, hw);
+                        p.position.y = rand(-hh, hh);
+                        p.position.z = rand(-0.06, 0.06);
+                    }
+                    dust.sps.setParticles();
+                };
+
+                const state = {
+                    id,
+                    engine,
+                    scene,
+                    root,
+                    updateCameraOrtho,
+                    applyDpr,
+                    randomizeDust,
+                    glowLayer,
+                    pipeline,
+                    mats: { matRed, matGold, matReactorCyan, matEyeWhite, matBody },
+                    nodes: { reactorRoot },
+                    speaking: !!speaking,
+                    speakLevel: !!speaking ? 1 : 0,
+                    blinkUntil: 0,
+                    nextBlinkAt: rand(0.6, 1.4),
+                    t: 0
+                };
+
+                scene.onBeforeRenderObservable.add(() => {
+                    const dt = engine.getDeltaTime() / 1000;
+                    state.t += dt;
+
+                    const target = state.speaking ? 1 : 0;
+                    state.speakLevel = clamp(state.speakLevel + (target - state.speakLevel) * (1 - Math.exp(-dt * 10)), 0, 1);
+
+                    const amp = state.speakLevel;
+
+                    const talk = 0.75 + 0.25 * Math.sin(state.t * 13.0);
+                    const reactorPulse = 1.0 + (state.speaking ? (1.35 * (0.55 + 0.45 * Math.sin(state.t * 14.0))) : 0.0);
+                    const eyePulse = 1.0;
+
+                    const blinkCadenceMin = state.speaking ? 0.9 : 2.2;
+                    const blinkCadenceMax = state.speaking ? 1.6 : 4.2;
+                    if (state.t >= state.nextBlinkAt) {
+                        state.blinkUntil = state.t + rand(0.08, 0.12);
+                        state.nextBlinkAt = state.t + rand(blinkCadenceMin, blinkCadenceMax);
+                    }
+
+                    const blinking = state.t < state.blinkUntil;
+                    state.mats.matEyeWhite.alpha = blinking ? 0.12 : 0.95;
+
+                    state.mats.matReactorCyan.emissiveColor.set(0.35 * reactorPulse, 1.25 * reactorPulse, 1.6 * reactorPulse);
+                    state.mats.matReactorCyan.alpha = state.speaking ? (0.9 + 0.1 * Math.sin(state.t * 14.0) * 0.5 + 0.05) : 0.9;
+                    state.mats.matEyeWhite.emissiveColor.set(0.95 * eyePulse, 0.98 * eyePulse, 1.0 * eyePulse);
+
+                    state.glowLayer.intensity = 0.58 + 0.2 * amp;
+                    state.pipeline.bloomWeight = 0.14 + 0.1 * amp;
+                    state.pipeline.bloomScale = 0.55 + 0.12 * amp;
+
+                    state.nodes.reactorRoot.rotation.z = 0;
+                    state.nodes.reactorRoot.scaling.setAll(1.0 + 0.08 * amp + 0.08 * amp * Math.abs(Math.sin(state.t * 14.0)));
+                    state.root.position.y = 0.05 + 0.03 * Math.sin(state.t * 1.0);
+                });
+
+                engine.runRenderLoop(() => {
+                    scene.render();
+                });
+
+                setTimeout(() => {
+                    try {
+                        engine.resize();
+                        updateCameraOrtho();
+                        applyDpr();
+                        randomizeDust();
+                    } catch {
+                    }
+                }, 0);
+                instances.set(id, state);
+                return id;
+            };
+
+            const setSpeaking = (instanceId, speaking) => {
+                const state = instances.get(instanceId);
+                if (!state) return;
+                state.speaking = !!speaking;
+            };
+
+            const dispose = (instanceId) => {
+                const state = instances.get(instanceId);
+                if (!state) return;
+                try {
+                    state.engine.stopRenderLoop();
+                    state.scene.dispose();
+                    state.engine.dispose();
+                } finally {
+                    instances.delete(instanceId);
+                }
+            };
+
+            window.addEventListener("resize", () => {
+                for (const state of instances.values()) {
+                    try {
+                        if (typeof state.applyDpr === "function") {
+                            state.applyDpr();
+                        }
+                        state.engine.resize();
+                        if (typeof state.updateCameraOrtho === "function") {
+                            state.updateCameraOrtho();
+                        }
+                        if (typeof state.randomizeDust === "function") {
+                            state.randomizeDust();
+                        }
+                    } catch {
+                    }
+                }
+            });
+
+            return { create, setSpeaking, dispose };
+        })();
+    </script>
+    <script src="js/speech.js"></script>
+    <script src="js/stark-particles.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
 </body>
 

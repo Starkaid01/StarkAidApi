@@ -10,7 +10,7 @@ public class UserDashboardResponse
     public int QuantidadeDispositivosStarkSwitch { get; set; }
     public int TotalComandosSociais { get; set; }
     
-    // Últimos comandos
+    // Últimos comandos (Combined mainly for backward compat or simple view)
     public string? UltimoComandoEsp { get; set; }
     public string? UltimoComandoEwelink { get; set; }
     public string? UltimoComandoStarkSwitch { get; set; }
@@ -23,6 +23,10 @@ public class UserDashboardResponse
     public bool UsuarioOnline { get; set; }
     public string? UltimoFormAcessado { get; set; }
     public DateTimeOffset? UltimaActivityAcessada { get; set; }
+
+    // Separated Activities
+    public UserActivityDto? ActivitySoft { get; set; }
+    public UserActivityDto? ActivityApp { get; set; }
 }
 
 public class UserDto
@@ -40,3 +44,16 @@ public class UserDto
     public string? Bairro { get; set; }
 }
 
+public class UserActivityDto
+{
+    public string? UltimoComandoEsp { get; set; }
+    public string? UltimoComandoEwelink { get; set; }
+    public string? UltimoComandoStarkSwitch { get; set; }
+    public string? UltimoComandoSocial { get; set; }
+    public string? UltimaRespostaSocial { get; set; }
+    public string? UltimoComandoIA { get; set; }
+    public string? UltimaRespostaIA { get; set; }
+    public DateTimeOffset? LastUpdatedAt { get; set; }
+    public string? UltimoDispositivoAcionado { get; set; } // Added based on requirements
+    public string? UltimaUiAcessada { get; set; }
+}

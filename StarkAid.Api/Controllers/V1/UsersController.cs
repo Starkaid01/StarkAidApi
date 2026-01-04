@@ -18,7 +18,16 @@ using StarkAid.Api.Services.V1.Payment.Stripe;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Linq;
+using System.Text;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using System;
+using StarkAid.Api.Helpers;
+using StarkAid.Api.Services.V1.IA;
+using StarkAid.Api.Services.Telemetry;
+using StarkAid.Api.Options;
+using StarkAid.Api.Services.CommandRouter;
+using StarkAid.Api.DTOs.Commands;
 
 namespace StarkAid.Api.Controllers.V1
 {
@@ -35,6 +44,11 @@ namespace StarkAid.Api.Controllers.V1
     private readonly PlanoLimitesService _planoLimites;
     private readonly ITokenUsageService _tokenUsage;
         private readonly ILogger<UsersController> _logger;
+        private readonly IAprendizadoService _aprendizadoService;
+        private readonly ITelemetryService _telemetryService;
+        private readonly AiTelemetryOptions _telemetryOptions;
+        private readonly ICommandRouter _commandRouter;
+        private readonly StarkAid.Api.Services.V1.Fun.IIntentDetector _intentDetector;
 
     public UsersController(
         AppDbContext context,
@@ -43,14 +57,24 @@ namespace StarkAid.Api.Controllers.V1
         IaService iaService,
         PlanoLimitesService planoLimites,
         ITokenUsageService tokenUsage,
+        IAprendizadoService aprendizadoService,
+        ITelemetryService telemetryService,
+        IOptions<AiTelemetryOptions> telemetryOptions,
+        ICommandRouter commandRouter,
+        StarkAid.Api.Services.V1.Fun.IIntentDetector intentDetector,
         ILogger<UsersController> logger)
         {
             _context = context;
             _authService = authService;
             _emailService = emailService;
             _iaService = iaService;
-        _planoLimites = planoLimites;
-        _tokenUsage = tokenUsage;
+            _planoLimites = planoLimites;
+            _tokenUsage = tokenUsage;
+            _aprendizadoService = aprendizadoService;
+            _telemetryService = telemetryService;
+            _telemetryOptions = telemetryOptions.Value;
+            _commandRouter = commandRouter;
+            _intentDetector = intentDetector;
             _logger = logger;
         }
 
@@ -96,9 +120,25 @@ namespace StarkAid.Api.Controllers.V1
         [EnableRateLimiting("IaEndpoint")]
         public async Task<IActionResult> SuperIA([FromBody] SuperIaDto request)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            try
+            {
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return Unauthorized();
+
+            if (string.IsNullOrWhiteSpace(request.Texto))
+            {
+                var limiteEmpty = _planoLimites.ObterLimiteTokensSemana(user);
+                return Ok(new 
+                { 
+                    resultado = new IaResultado { Texto = "Mensagem vazia", HitResult = "InvalidInput" },
+                    planType = user.PlanType.ToString(),
+                    tokensConsumidosSemana = user.TokensConsumidosSemana,
+                    tokensSemanaMax = limiteEmpty,
+                    tokensRestantes = Math.Max(0, limiteEmpty - user.TokensConsumidosSemana),
+                    starkCoinBalance = user.StarkCoins
+                });
+            }
 
             // Verificar se há assinatura Premium ativa e atualizar PlanType se necessário
             var hasActivePremium = await _context.Assinaturas
@@ -119,15 +159,284 @@ namespace StarkAid.Api.Controllers.V1
                 await _context.SaveChangesAsync();
             }
 
+        // 0. Processar via CommandRouter (Math, Piadas, Dispositivos, etc.)
+        var commandRequest = new CommandRequestDto
+        {
+            UserId = userId,
+            Texto = request.Texto,
+            Origem = "Android",
+            Contexto = "privado"
+        };
+
+        var commandResult = await _commandRouter.RouteAsync(commandRequest);
+        if (commandResult.IsSuccess)
+        {
+            // Consumir tokens/coins para comandos locais (100 tokens ou 1 StarkCoin)
+            var consumeLocal = _tokenUsage.ConsumeTokens(user, 100, request.UseStarkCoins);
+            if (!consumeLocal.Success)
+            {
+                return StatusCode(402, new { message = "Saldo insuficiente. Adicione StarkCoins.", requiredCoins = consumeLocal.RequiredCoins });
+            }
+
+            await _context.SaveChangesAsync();
+
+            var limiteFun = _planoLimites.ObterLimiteTokensSemana(user);
+            return Ok(new
+            {
+                resultado = new IaResultado { Texto = commandResult.Message, HitResult = "LocalCommand" },
+                planType = user.PlanType.ToString(),
+                tokensConsumidosSemana = user.TokensConsumidosSemana,
+                tokensSemanaMax = limiteFun,
+                tokensRestantes = Math.Max(0, limiteFun - user.TokensConsumidosSemana),
+                starkCoinBalance = user.StarkCoins
+            });
+        }
+
+        // BLOQUEIO ADICIONAL: Se for Piada ou Matemática e falhou no Router Local, 
+        // NÃO deve cair na IA para evitar que ela tente dar respostas genéricas ou aprenda comandos básicos.
+        var intentSafety = _intentDetector.DetectIntent(request.Texto);
+        if (intentSafety != StarkAid.Api.Services.V1.Fun.FunIntent.None)
+        {
+            return Ok(new
+            {
+                resultado = new IaResultado { Texto = "Não consegui processar esse comando agora. Tente de outra forma.", HitResult = "FailureBlocked" },
+                planType = user.PlanType.ToString(),
+                starkCoinBalance = user.StarkCoins
+            });
+        }
+
+    // 1. Normalizar o texto de entrada para busca (Semântica leve: remove stopwords curtas)
+            var textoNormalizado = TextHelper.NormalizarParaBusca(request.Texto);
+            var ehAutocontido = EhAutocontido(request.Texto);
+            
+            // 2. Gerenciar Contexto de Conversa (Herança)
+            var conversaContext = await _context.UserConversaContexts.FirstOrDefaultAsync(c => c.UserId == userId);
+            if (conversaContext == null)
+            {
+                conversaContext = new UserConversaContext { UserId = userId };
+                _context.UserConversaContexts.Add(conversaContext);
+            }
+
+            string? contextoHerdado = null;
+            if (!ehAutocontido)
+            {
+                // Follow-ups herdam o contexto anterior se ele for recente (últimos 10 minutos)
+                if (conversaContext.LastUpdatedAt > DateTimeOffset.UtcNow.AddMinutes(-10) && !string.IsNullOrEmpty(conversaContext.ContextoAtual))
+                {
+                    contextoHerdado = conversaContext.ContextoAtual;
+                }
+            }
+
+            // 3. Iniciar Rastreamento de Telemetria
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var telemetria = new AiInteractionEvent
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                TextoOriginal = request.Texto,
+                TextoNormalizado = textoNormalizado,
+                Origem = "Android", // Default, pode ser expandido via DTO
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            // 4. Verificar Aprendizado (Cache) - Usando Service Unificado
+            var searchResult = await _aprendizadoService.BuscarAprendizadoAsync(userId, request.Texto, contextoHerdado);
+            telemetria.Resultado = searchResult.Resultado;
+            telemetria.SimilarityScore = searchResult.SimilarityScore;
+            
+            if (searchResult.Match != null)
+            {
+                telemetria.AprendizadoId = searchResult.Match.Id;
+                telemetria.AprendizadoTipo = searchResult.Match.Tipo;
+
+                var limiteSemanal = _planoLimites.ObterLimiteTokensSemana(user);
+                var tokensDisponiveis = Math.Max(0, limiteSemanal - user.TokensConsumidosSemana);
+
+                bool processadoPeloCache = false;
+
+                // Prioridade 1: Usar tokens semanais (custo fixo de 100 tokens para cache)
+                if (tokensDisponiveis >= 100)
+                {
+                    user.TokensConsumidosSemana += 100;
+                    processadoPeloCache = true;
+                }
+                // Prioridade 2: Usar StarkCoins se o usuário autorizou (custo fixo de 1 StarkCoin para cache)
+                else if (request.UseStarkCoins && user.StarkCoins >= 1)
+                {
+                    user.StarkCoins -= 1;
+                    processadoPeloCache = true;
+                }
+
+                if (processadoPeloCache)
+                {
+                    // As métricas de qualidade (HitCount, Confidence) já foram atualizadas dentro do AprendizadoService
+
+                    // Salvar no histórico
+                    var historicoCache = new IaHistorico
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        TextoUsuario = request.Texto,
+                        TextoIa = searchResult.Resposta!,
+                        CriadoEm = DateTimeOffset.UtcNow
+                    };
+                    _context.IaHistoricos.Add(historicoCache);
+
+                    // Registrar Telemetria de Sucesso do Cache
+                    sw.Stop();
+                    telemetria.LatenciaMs = (int)sw.ElapsedMilliseconds;
+                    telemetria.ChamouIaExterna = false;
+                    telemetria.TokensEstimadosEvitados = _telemetryOptions.DefaultTokensPerInteraction;
+                    telemetria.EconomiaUSD = (decimal)(telemetria.TokensEstimadosEvitados / 1000.0) * _telemetryOptions.CostPer1KTokens;
+                    
+                    _ = _telemetryService.RegistrarInteracaoIaAsync(telemetria); // Fire and forget
+                    
+                    await _context.SaveChangesAsync();
+
+                    var limiteRestante = _planoLimites.ObterLimiteTokensSemana(user);
+                    return Ok(new
+                    {
+                        resultado = new { 
+                            texto = searchResult.Resposta, 
+                            promptTokens = 0, 
+                            modelo = "Aprendizado-Local",
+                            hitResult = searchResult.Resultado,
+                            similarityScore = searchResult.SimilarityScore,
+                            aprendizadoTipo = searchResult.Match.Tipo,
+                            aprendizadoId = searchResult.Match.Id
+                        },
+                        planType = user.PlanType.ToString(),
+                        tokensConsumidosSemana = user.TokensConsumidosSemana,
+                        tokensSemanaMax = limiteRestante,
+                        tokensRestantes = Math.Max(0, limiteRestante - user.TokensConsumidosSemana),
+                        starkCoinBalance = user.StarkCoins,
+                        adsEnabled = _planoLimites.ExibeAnuncios(user),
+                        agendamentosMax = _planoLimites.ObterLimiteAgendamentos(user),
+                        rate = 100
+                    });
+                }
+                else
+                {
+                    // Se está no cache mas o usuário não pode "pagar", retorna erro de limite
+                    return StatusCode(402, new { 
+                        message = "Saldo insuficiente para processar comando. Adicione StarkCoins ou aguarde o reset semanal.", 
+                        requiredCoins = 1 
+                    });
+                }
+            }
+
+            // 5. Chamada à IA Externa (Cache Miss)
+            telemetria.ChamouIaExterna = true;
             var resultado = await _iaService.ProcessarMensagem(request.ContextoUser, request.ContextoIA, request.Texto, request.Estilo);
-            if (resultado == null) return StatusCode(500, "Erro ao processar mensagem.");
+            if (resultado != null) resultado.HitResult = "CacheMiss";
+            
+            sw.Stop();
+            telemetria.LatenciaMs = (int)sw.ElapsedMilliseconds;
+            _ = _telemetryService.RegistrarInteracaoIaAsync(telemetria); // Fire and forget (Miss)
+
+            if (resultado == null) 
+            {
+                return StatusCode(503, new { message = "IA temporariamente indisponível. Tente novamente em alguns minutos." });
+            }
+
+            // 6. Atualizar Estado da Conversa e Salvar Aprendizado (Novo Conhecimento)
+            if (ehAutocontido)
+            {
+                var resumo = GerarContextoResumo(request.Texto);
+                conversaContext.ContextoAtual = (resumo.Length > 6) ? resumo : string.Empty;
+                conversaContext.LastUpdatedAt = DateTimeOffset.UtcNow;
+
+                if (!string.IsNullOrWhiteSpace(resultado.Texto) && !string.IsNullOrWhiteSpace(textoNormalizado) && textoNormalizado.Length >= 2)
+                {
+                    bool ehPessoal = EhConteudoPessoal(textoNormalizado);
+                    bool ehAmbiguo = TextHelper.EhAmbiguo(request.Texto);
+                    var tipoFinal = (ehPessoal || ehAmbiguo) ? "Usuario" : "Global";
+                    var respostaFinal = (tipoFinal == "Global") ? TextHelper.LimparGirias(resultado.Texto) : resultado.Texto;
+
+                    // Captura o ID para associar variações
+                    var aprendizadoId = Guid.NewGuid();
+                    _context.Aprendizados.Add(new Aprendizado
+                    {
+                        Id = aprendizadoId,
+                        Texto = textoNormalizado,
+                        Resposta = respostaFinal,
+                        Tipo = tipoFinal,
+                        UserId = userId,
+                        Contexto = null,
+                        CreatedAt = DateTimeOffset.UtcNow
+                    });
+
+                    // Se for Global, gera variações de resposta usando IA
+                    if (tipoFinal == "Global")
+                    {
+                        _logger.LogInformation("SuperIA: Gerando variações para aprendizado Global {Id}", aprendizadoId);
+
+                        // 1. SEMPRE adiciona a resposta original como variação base
+                        _context.AprendizadoRespostas.Add(new AprendizadoResposta
+                        {
+                            Id = Guid.NewGuid(),
+                            AprendizadoId = aprendizadoId,
+                            Texto = respostaFinal,
+                            UsoCount = 0,
+                            CreatedAt = DateTimeOffset.UtcNow
+                        });
+
+                        try
+                        {
+                            var variacoes = await _iaService.GerarVariacoesParaGlobal(request.Texto, respostaFinal);
+                            _logger.LogInformation("SuperIA: IA retornou {Count} variações.", variacoes.Count);
+
+                            if (variacoes != null && variacoes.Any())
+                            {
+                                int adicionadas = 0;
+                                foreach (var v in variacoes)
+                                {
+                                    // Evitar duplicatas (caso a IA retorne a mesma frase)
+                                    if (!v.Trim().Equals(respostaFinal.Trim(), StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        _context.AprendizadoRespostas.Add(new AprendizadoResposta
+                                        {
+                                            Id = Guid.NewGuid(),
+                                            AprendizadoId = aprendizadoId,
+                                            Texto = v,
+                                            UsoCount = 0,
+                                            CreatedAt = DateTimeOffset.UtcNow
+                                        });
+                                        adicionadas++;
+                                    }
+                                }
+                                _logger.LogInformation("SuperIA: {Count} variações novas adicionadas ao contexto.", adicionadas);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Erro ao gerar variações para aprendizado global. AprendizadoId: {AprendizadoId}", aprendizadoId);
+                            // Continua sem as variações se houver um erro na IA
+                        }
+                    }
+                }
+            }
+            else if (!string.IsNullOrEmpty(contextoHerdado))
+            {
+                if (!string.IsNullOrWhiteSpace(resultado.Texto))
+                {
+                    _context.Aprendizados.Add(new Aprendizado
+                    {
+                        Id = Guid.NewGuid(),
+                        Texto = textoNormalizado,
+                        Resposta = resultado.Texto,
+                        Tipo = "Contextual",
+                        UserId = userId,
+                        Contexto = contextoHerdado,
+                        CreatedAt = DateTimeOffset.UtcNow
+                    });
+                }
+            }
 
             var tokensUsados = Math.Max(0, resultado.PromptTokens) + Math.Max(0, resultado.CompletionTokens);
             var limite = _planoLimites.ObterLimiteTokensSemana(user);
 
-            // Se o app autorizou uso de StarkCoins (useStarkCoins = true), permite consumo automático
-            // Caso contrário, retorna 402 quando limite atingido para o app perguntar ao usuário
-            var consumo = await _tokenUsage.TryConsumeTokensAsync(user, tokensUsados, request.UseStarkCoins);
+            var consumo = _tokenUsage.ConsumeTokens(user, tokensUsados, request.UseStarkCoins);
             if (!consumo.Success)
             {
                 return StatusCode(402, new { message = "Saldo insuficiente para tokens excedentes. Adicione StarkCoins ou aguarde o reset semanal.", requiredCoins = consumo.RequiredCoins });
@@ -143,7 +452,16 @@ namespace StarkAid.Api.Controllers.V1
                 CriadoEm = DateTimeOffset.UtcNow
             };
             _context.IaHistoricos.Add(historico);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                _logger.LogError(ex, "Erro ao salvar aprendizado/histórico no SuperIA");
+                return StatusCode(500, new { message = "Erro interno ao salvar dados.", error = errorMsg });
+            }
 
             return Ok(new
             {
@@ -152,11 +470,18 @@ namespace StarkAid.Api.Controllers.V1
                 tokensConsumidosSemana = user.TokensConsumidosSemana,
                 tokensSemanaMax = limite,
                 tokensRestantes = Math.Max(0, limite - user.TokensConsumidosSemana),
-                StarkCoinBalance = user.StarkCoins,
+                starkCoinBalance = user.StarkCoins,
                 adsEnabled = _planoLimites.ExibeAnuncios(user),
                 agendamentosMax = _planoLimites.ObterLimiteAgendamentos(user),
-                rate = 100
-            });
+                    rate = 100
+                });
+            }
+            catch (Exception ex)
+            {
+                var errorMsg = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                _logger.LogError(ex, "Erro CRITICO HANDLED em SuperIA");
+                return StatusCode(500, new { message = "Erro interno no servidor.", error = errorMsg, stackTrace = ex.StackTrace });
+            }
         }
 
         [HttpPost("request-password-reset")]
@@ -975,6 +1300,36 @@ namespace StarkAid.Api.Controllers.V1
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Log de falha registrado com sucesso." });
+        }
+
+        private bool EhAutocontido(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return false;
+            // Um comando é autocontido se NÃO for um follow-up e tiver tamanho mínimo.
+            return !TextHelper.EhFollowUp(input) && input.Trim().Length >= 5;
+        }
+
+        private bool EhFollowUp(string input)
+        {
+            return TextHelper.EhFollowUp(input);
+        }
+
+        private bool EhConteudoPessoal(string input)
+        {
+            return TextHelper.EhConteudoPessoal(input);
+        }
+
+        private string GerarContextoResumo(string input)
+        {
+            // 1. Normalização básica (lowercase, acentos, pontuação)
+            var texto = TextHelper.NormalizarTexto(input);
+            
+            // 2. Normalização forte para contexto (remover verbos de ação comuns e stopwords que não definem o tópico central)
+            // Utiliza Regex \b para garantir que remove apenas palavras inteiras
+            texto = Regex.Replace(texto, @"\b(posso|pode|podemos|usar|uso|utilizar|lavar|limpar|fazer|como|onde|quando|quem|qual|o que|que|tem|existe|ha)\b", "", RegexOptions.IgnoreCase);
+            
+            // 3. Limpeza final de espaços
+            return Regex.Replace(texto, @"\s+", " ").Trim();
         }
     }
 

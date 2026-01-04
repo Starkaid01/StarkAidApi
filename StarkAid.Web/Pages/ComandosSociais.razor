@@ -84,7 +84,7 @@ else
     private ComandoSocialCreateDto currentDto = new();
     private bool isModalOpen = false;
     private bool isEditing = false;
-    private string editingId = "";
+    private Guid editingId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,7 +137,7 @@ else
 
         if (isEditing)
         {
-            var success = await ApiService.EditComandoSocialAsync(editingId, currentDto, token, apiKey);
+            var success = await ApiService.EditComandoSocialAsync(editingId.ToString(), currentDto, token, apiKey);
             if (success) await LoadComandos();
         }
         else
@@ -148,14 +148,14 @@ else
         isModalOpen = false;
     }
 
-    private async Task Delete(string id)
+    private async Task Delete(Guid id)
     {
         bool confirmed = await JS.InvokeAsync<bool>("confirm", "Tem certeza que deseja excluir este comando?");
         if (!confirmed) return;
 
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "token");
         var apiKey = await JS.InvokeAsync<string>("localStorage.getItem", "apiKey");
-        var success = await ApiService.DeleteComandoSocialAsync(id, token, apiKey);
+        var success = await ApiService.DeleteComandoSocialAsync(id.ToString(), token, apiKey);
         if (success) await LoadComandos();
     }
 }

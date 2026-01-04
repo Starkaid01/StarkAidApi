@@ -20,8 +20,8 @@ android {
         applicationId = "com.starkaid.starkaidapp"
         minSdk = 26
         targetSdk = 35
-        versionCode = 59
-        versionName = "5.9"
+        versionCode = 61
+        versionName = "6.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
 
@@ -57,7 +57,7 @@ android {
         getByName("main") {
             java.srcDirs("src/main/java")
             res.srcDirs("src/main/res")
-            assets.srcDirs("src/main/assets")
+            assets.srcDirs("src/main/assets", "../../starkaid-avatar")
             manifest.srcFile("src/main/AndroidManifest.xml")
         }
     }
@@ -279,7 +279,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp-urlconnection:3.14.9")
 
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
-
+    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
 }
 
 

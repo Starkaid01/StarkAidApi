@@ -1072,7 +1072,7 @@
   <string name="thing_panel_share_group">Delningsgrupp</string>
   <string name="thing_permission_tip_location">- Få behörighet till platsinformation</string>
   <string name="thing_permission_tip_phone_state">Få behörighet att läsa telefonstatus</string>
-  <string name="thing_permission_tip_read_set">För att normalt använda %1$ s, var god bevilja behörighet att läsa eller skriva systeminställningar.</string>
+  <string name="thing_permission_tip_read_set">För att normalt använda %1$s, var god bevilja behörighet att läsa eller skriva systeminställningar.</string>
   <string name="thing_permission_tip_tail">Vänligen bevilja behörigheter ovan i telefon Inställningar-Program -%1$s-behörigheter</string>
   <string name="thing_permission_tip_title">För att normalt använda %1s, var god bevilja behörigheter nedan:</string>
   <string name="thing_permission_tip_write_storage">- Få tillstånd att använda lagring</string>

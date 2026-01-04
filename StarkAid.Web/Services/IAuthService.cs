@@ -9,5 +9,6 @@ namespace StarkAid.Web.Services
         Task<bool> RefreshTokenAsync();
         Task LogoutAsync();
         Task<string?> GetAccessTokenAsync();
+        Task<string?> GetApiKeyAsync();
     }
 }
