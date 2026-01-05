@@ -279,7 +279,6 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp-urlconnection:3.14.9")
 
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
-    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
 }
 
 

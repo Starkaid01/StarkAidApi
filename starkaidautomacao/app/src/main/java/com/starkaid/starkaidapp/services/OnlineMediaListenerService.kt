@@ -11,10 +11,10 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 
-class YouTubeMediaListenerService : Service() {
+class OnlineMediaListenerService : Service() {
 
     companion object {
-        private const val TAG = "YouTubeMedia"
+        private const val TAG = "OnlineMedia"
     }
 
     private lateinit var mediaSessionManager: MediaSessionManager
@@ -45,46 +45,13 @@ class YouTubeMediaListenerService : Service() {
                             override fun onPlaybackStateChanged(state: android.media.session.PlaybackState?) {
                                 when (state?.state) {
                                     PlaybackState.STATE_PLAYING ->
-                                        Log.i(TAG, "YouTubeMediaListenerService: midia externa tocando no yyyy")
+                                        Log.i(TAG, "OnlineMediaListenerService: midia externa tocando no yyyy")
                                     PlaybackState.STATE_PAUSED,
                                     PlaybackState.STATE_STOPPED ->
                                         Log.i(TAG, "nenhuma midia tocando")
-
-                                    PlaybackState.STATE_BUFFERING -> {
-                                        TODO()
-                                    }
-
-                                    PlaybackState.STATE_CONNECTING -> {
-                                        TODO()
-                                    }
-
-                                    PlaybackState.STATE_ERROR -> {
-                                        TODO()
-                                    }
-
-                                    PlaybackState.STATE_FAST_FORWARDING -> {
-                                        TODO()
-                                    }
-
-                                    PlaybackState.STATE_NONE -> {
-                                        TODO()
-                                    }
-
-                                    PlaybackState.STATE_REWINDING -> {
-                                        TODO()
-                                    }
-
-                                    PlaybackState.STATE_SKIPPING_TO_NEXT -> {
-                                        TODO()
-                                    }
-
-                                    PlaybackState.STATE_SKIPPING_TO_PREVIOUS -> {
-                                        TODO()
-                                    }
-
-                                    PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM -> {
-                                        TODO()
-                                    }
+                                    
+                                    // ... other states
+                                    else -> {} 
                                 }
                             }
                         }
@@ -96,30 +63,13 @@ class YouTubeMediaListenerService : Service() {
                         controller.playbackState?.let { state ->
                             when (state.state) {
                                 PlaybackState.STATE_PLAYING ->
-                                    Log.i(TAG, "YouTubeMediaListenerService: midia externa tocando no ttt222")
+                                    Log.i(TAG, "OnlineMediaListenerService: midia externa tocando no ttt222")
                                 PlaybackState.STATE_PAUSED,
                                 PlaybackState.STATE_STOPPED ->
                                     Log.i(TAG, "nenhuma midia tocando")
-
-                                PlaybackState.STATE_BUFFERING -> { /* noop */ }
-
-                                PlaybackState.STATE_CONNECTING -> { /* noop */ }
-
-                                PlaybackState.STATE_ERROR -> { /* noop */ }
-
-                                PlaybackState.STATE_FAST_FORWARDING -> { /* noop */ }
-
-                                PlaybackState.STATE_NONE -> { /* noop */ }
-
-                                PlaybackState.STATE_REWINDING -> { /* noop */ }
-
-                                PlaybackState.STATE_SKIPPING_TO_NEXT -> { /* noop */ }
-
-                                PlaybackState.STATE_SKIPPING_TO_PREVIOUS -> { /* noop */ }
-
-                                PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM -> { /* noop */ }
-
-                                else -> { /* estados não mapeados */ }
+                                
+                                // ... other states
+                                else -> {}
                             }
                         }
                     }
@@ -128,7 +78,7 @@ class YouTubeMediaListenerService : Service() {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            val component = ComponentName(this, YouTubeMediaListenerService::class.java)
+            val component = ComponentName(this, OnlineMediaListenerService::class.java)
             mediaSessionManager.addOnActiveSessionsChangedListener(sessionsChangedListener, component)
 
             // Inicializa imediatamente com sessões ativas

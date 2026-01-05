@@ -20,18 +20,18 @@ class MediaAccessibilityService : AccessibilityService() {
         event ?: return
         val pkg = event.packageName?.toString() ?: return
 
-        // Processa apenas eventos do YouTube
+        // Processa apenas eventos do Online Provider (YouTube)
         if (pkg != "com.google.android.youtube") return
 
         // Monitorar mais tipos de eventos
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED ||
             event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
             event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
-            detectYouTubePlaybackState()
+            detectOnlinePlaybackState()
         }
     }
     private var lastDetectionTime = 0L
-    private fun detectYouTubePlaybackState() {
+    private fun detectOnlinePlaybackState() {
         try {
             val now = System.currentTimeMillis()
             if (now - lastDetectionTime < 1000) {
@@ -39,7 +39,7 @@ class MediaAccessibilityService : AccessibilityService() {
             }
             lastDetectionTime = now
 
-            Log.d(TAG, "Detectando estado de reprodução do YouTube")
+            Log.d(TAG, "Detectando estado de reprodução externa")
 
             val rootNode = rootInActiveWindow ?: return
 
@@ -85,16 +85,16 @@ class MediaAccessibilityService : AccessibilityService() {
             allNodes.forEach { it.recycle() }
 
             if (isPlaying) {
-                Log.d(TAG, "YouTube está pausado")
+                Log.d(TAG, "Media externa está pausada")
                 sendMediaEvent("com.google.android.youtube", false)
             } else if (isPaused) {
-                Log.d(TAG, "YouTube está tocando")
+                Log.d(TAG, "Media externa está tocando")
                 sendMediaEvent("com.google.android.youtube", true)
             } else {
-                Log.d(TAG, "Estado do YouTube não determinado")
+                Log.d(TAG, "Estado da media não determinado")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao detectar estado do YouTube", e)
+            Log.e(TAG, "Erro ao detectar estado da media", e)
         }
     }
 

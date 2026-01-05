@@ -193,21 +193,40 @@ class MusicStage : CommandStage {
     override suspend fun process(ctx: CommandContext): StageResult {
         if (ctx.input.isPartial) return StageResult.Pass
         val text = ctx.input.cleanText.lowercase()
-        // Palavras-chave que indicam intenção musical ou controle
-        val musicKeywords = listOf(
-            "toca", "música", "musica", "rádio", "radio", 
-            "volume", "parar o som", "parar a música", "para a música",
-            "pausar", "pausa", "continua", "retoma", "próxima", "próximo",
-            "mudar de rádio", "muda a rádio", "outra rádio"
+        
+        // 1. Gatilhos de PESQUISA EXPLÍCITOS (Obrigatório começar com toca/tocar/toque)
+        val searchTriggers = listOf("tocar ", "toca ", "toque ")
+        val trigger = searchTriggers.find { text.startsWith(it) }
+
+        if (trigger != null) {
+            val query = text.substringAfter(trigger).trim()
+            if (query.isNotEmpty()) {
+                Log.d("Pipeline", "MusicStage: PESQUISA YouTube iniciada para '$query'")
+                if (ctx.actions.resolveAndPlayMusic(text)) { // Passamos o texto completo para o backend processar
+                    return StageResult.Handled
+                }
+            }
+        }
+
+        // 2. Comandos de CONTROLE e VOLUME
+        // Lista restrita para evitar capturar conversas aleatórias
+        val musicControlKeywords = listOf(
+            "volume", "abaixa", "baixa", "aumenta", "mais alto", "mais baixo", "aumenta mais", "baixa mais",
+            "pausa", "pause", "pausar", "continua", "resume", "retoma",
+            "parar música", "para música", "pare a música", "para a música", "parar o som", "parar som",
+            "quem está cantando", "que música é essa", "que música está tocando"
         )
         
-        // Se contém palavras-chave OU se o rádio já está rodando (para comandos de controle)
-        if (musicKeywords.any { text.contains(it) } || RadioPlayerService.isRunning()) {
-            Log.d("Pipeline", "MusicStage: Tentando resolver intenção musical para '$text'")
+        val isExplicitControl = musicControlKeywords.any { text.contains(it) } || 
+                                text == "parar" || text == "para" || text == "pare" || text == "stop"
+        
+        if (isExplicitControl) {
+            Log.d("Pipeline", "MusicStage: CONTROLE/VOLUME detectado em '$text'")
             if (ctx.actions.resolveAndPlayMusic(text)) {
                 return StageResult.Handled
             }
         }
+        
         return StageResult.Pass
     }
 }

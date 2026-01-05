@@ -322,6 +322,7 @@ try
 
 
     // 8. Serviços e Hosted Services
+    builder.Services.AddMemoryCache();
     builder.Services.AddHttpClient();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddScoped<RefreshTokenServiceV1>();
@@ -355,9 +356,9 @@ try
     builder.Services.AddScoped<ICommandHandler, FunCommandHandler>();
 
     // Music Module Services
-    builder.Services.AddScoped<IRadioBrowserService, RadioBrowserService>();
     builder.Services.AddScoped<IMusicIntentService, MusicIntentService>();
     builder.Services.AddScoped<IYouTubeMusicService, YouTubeMusicService>();
+    builder.Services.AddSingleton<IExternalAudioResolver, OnlineAudioResolver>();
 
     // Outros Handlers
     builder.Services.AddScoped<ICommandHandler, DeviceCommandHandler>();

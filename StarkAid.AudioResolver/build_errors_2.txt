@@ -1,0 +1,15 @@
+  Determinando os projetos a serem restaurados...
+E:\projetos\StarkaidAPI\StarkAid\StarkAid.AudioResolver\StarkAid.AudioResolver.csproj : error NU1605: Aviso como Erro: Downgrade de pacote detectado: Microsoft.OpenApi de 1.6.17 para 1.6.14. Referencie o pacote diretamente do projeto para selecionar uma vers├úo diferente. 
+E:\projetos\StarkaidAPI\StarkAid\StarkAid.AudioResolver\StarkAid.AudioResolver.csproj : error NU1605:  StarkAid.AudioResolver -> Microsoft.AspNetCore.OpenApi 9.0.0 -> Microsoft.OpenApi (>= 1.6.17) 
+E:\projetos\StarkaidAPI\StarkAid\StarkAid.AudioResolver\StarkAid.AudioResolver.csproj : error NU1605:  StarkAid.AudioResolver -> Microsoft.OpenApi (>= 1.6.14)
+  Falha ao restaurar E:\projetos\StarkaidAPI\StarkAid\StarkAid.AudioResolver\StarkAid.AudioResolver.csproj (em 605 ms).
+
+FALHA da compila├º├úo.
+
+E:\projetos\StarkaidAPI\StarkAid\StarkAid.AudioResolver\StarkAid.AudioResolver.csproj : error NU1605: Aviso como Erro: Downgrade de pacote detectado: Microsoft.OpenApi de 1.6.17 para 1.6.14. Referencie o pacote diretamente do projeto para selecionar uma vers├úo diferente. 
+E:\projetos\StarkaidAPI\StarkAid\StarkAid.AudioResolver\StarkAid.AudioResolver.csproj : error NU1605:  StarkAid.AudioResolver -> Microsoft.AspNetCore.OpenApi 9.0.0 -> Microsoft.OpenApi (>= 1.6.17) 
+E:\projetos\StarkaidAPI\StarkAid\StarkAid.AudioResolver\StarkAid.AudioResolver.csproj : error NU1605:  StarkAid.AudioResolver -> Microsoft.OpenApi (>= 1.6.14)
+    0 Aviso(s)
+    1 Erro(s)
+
+Tempo Decorrido 00:00:01.87

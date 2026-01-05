@@ -28,6 +28,8 @@ class RadioPlayerService : Service() {
         const val ACTION_PAUSE = "com.starkaid.ACTION_PAUSE"
         const val ACTION_STOP = "com.starkaid.ACTION_STOP"
         const val ACTION_NEXT = "com.starkaid.ACTION_NEXT"
+        const val ACTION_DUCK = "com.starkaid.ACTION_DUCK"
+        const val ACTION_UNDUCK = "com.starkaid.ACTION_UNDUCK"
         
         const val EXTRA_STATION_NAME = "station_name"
         const val EXTRA_STREAM_URL = "stream_url"
@@ -57,20 +59,33 @@ class RadioPlayerService : Service() {
         player = ExoPlayer.Builder(this).build()
         player?.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
-                updateNotification("RADIO")
-                if (state == Player.STATE_IDLE || state == Player.STATE_ENDED) {
-                    // Handle state
+                when (state) {
+                    Player.STATE_IDLE -> Log.d(TAG, "ExoPlayer: STATE_IDLE")
+                    Player.STATE_BUFFERING -> Log.d(TAG, "ExoPlayer: STATE_BUFFERING")
+                    Player.STATE_READY -> Log.d(TAG, "ExoPlayer: STATE_READY")
+                    Player.STATE_ENDED -> Log.d(TAG, "ExoPlayer: STATE_ENDED")
                 }
+                updateNotification(if (currentStation?.streamUrl?.contains("googlevideo") == true) "ONLINE" else "RADIO")
             }
 
             override fun onIsPlayingChanged(isPlayingNow: Boolean) {
+                Log.d(TAG, "ExoPlayer: isPlaying=$isPlayingNow")
                 isPlaying = isPlayingNow
-                updateNotification("RADIO")
+                val source = if (currentStation?.streamUrl?.contains("googlevideo") == true) "ONLINE" else "RADIO"
+                updateNotification(source)
                 updatePlaybackState()
                 
                 // Broadcast state to UI
                 val intent = Intent("com.starkaid.MUSIC_STATE_CHANGED")
                 intent.putExtra("isPlaying", isPlayingNow)
+                LocalBroadcastManager.getInstance(this@RadioPlayerService).sendBroadcast(intent)
+            }
+
+            override fun onPlayerError(error: com.google.android.exoplayer2.PlaybackException) {
+                Log.e(TAG, "ExoPlayer Error: ${error.message}", error)
+                // Implementar lógica de retry ou notificar UI para retry
+                val intent = Intent("com.starkaid.MUSIC_ERROR")
+                intent.putExtra("error", error.message)
                 LocalBroadcastManager.getInstance(this@RadioPlayerService).sendBroadcast(intent)
             }
         })
@@ -114,23 +129,33 @@ class RadioPlayerService : Service() {
                 val name = intent.getStringExtra(EXTRA_STATION_NAME) ?: "Música"
                 val source = intent.getStringExtra(EXTRA_SOURCE) ?: "RADIO"
                 
-                // Se mudamos para YouTube ou outra fonte externa, pausamos o player interno (Rádio)
+                // Se mudamos para Online ou outra fonte externa, pausamos o player interno (Rádio)
                 if (source != "RADIO") {
                     player?.pause()
                 }
                 
                 currentStation = MusicStation(name, "")
-                isPlaying = true // Assumimos que se atualizou é porque está tocando (YouTube)
+                isPlaying = true // Assumimos que se atualizou é porque está tocando (Online)
                 updateNotification(source)
+            }
+            ACTION_DUCK -> {
+                Log.d(TAG, "🔈 Ducking player volume")
+                player?.volume = 0.15f
+            }
+            ACTION_UNDUCK -> {
+                Log.d(TAG, "🔊 Unducking player volume")
+                player?.volume = 1.0f
             }
         }
         return START_STICKY
     }
 
     private fun playStation(url: String) {
+        Log.d(TAG, "ExoPlayer: setMediaItem(uri=$url)")
         val mediaItem = MediaItem.fromUri(Uri.parse(url))
         player?.setMediaItem(mediaItem)
         player?.prepare()
+        Log.d(TAG, "ExoPlayer: prepare()")
         player?.play()
         updateNotification()
     }
@@ -150,9 +175,9 @@ class RadioPlayerService : Service() {
     }
 
     private fun updateNotification(source: String = "RADIO") {
-        val isPlayingLocal = player?.isPlaying == true || (source == "YOUTUBE" && isPlaying)
+        val isPlayingLocal = player?.isPlaying == true || (source == "ONLINE" && isPlaying)
         val stationName = currentStation?.name ?: "Música StarkAid"
-        val content = if (source == "YOUTUBE") "Tocando via YouTube" else "Tocando rádio online"
+        val content = if (source == "ONLINE") "Tocando via Stream Online" else "Tocando rádio online"
 
         val playPauseAction = if (isPlayingLocal) {
             NotificationCompat.Action(

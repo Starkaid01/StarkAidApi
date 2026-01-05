@@ -54,6 +54,7 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         const val ACTION_START_LISTENING = "START_LISTENING"
         const val ACTION_STOP_LISTENING = "STOP_LISTENING"
         const val ACTION_STOP_SPEAKING = "STOP_SPEAKING"
+        const val ACTION_UNDUCK = "UNDUCK"
         const val EXTRA_RECOGNIZED_TEXT = "recognized_text"
         const val BROADCAST_SPEECH_RESULT = "com.starkaid.SPEECH_RESULT"
         const val BROADCAST_TTS_STARTED = "com.starkaid.TTS_STARTED"
@@ -69,6 +70,14 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
     private lateinit var audioManager: AudioManager
     private var tts: TextToSpeech? = null
     private var isSpeaking = AtomicBoolean(false)
+
+    private var isDucked = false
+    private val musicKeywordsForDucking = listOf(
+        "tocar ", "toca ", "toque ", "musica", "musica ", "som ", 
+        "volume", "aumentar", "aumenta", "aumente", 
+        "baixar", "baixa", "baixe", "parar", "para", "pausa", 
+        "proxima", "proximo", "seguinte", "anterior", "radio", "rádio"
+    )
 
     private var ultimaFalaAssistente = ""
 
@@ -90,6 +99,40 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
     private val lastTtsEndedAt = AtomicLong(0)
     private var speechEndValidationJob: Job? = null
 
+    private fun duckVolume() {
+        if (isDucked) return
+        try {
+            Log.d(TAG, "🔈 Ducking music via RadioPlayerService")
+            val intent = Intent(this, RadioPlayerService::class.java).apply {
+                action = RadioPlayerService.ACTION_DUCK
+            }
+            startService(intent)
+            isDucked = true
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao baixar volume", e)
+        }
+    }
+
+    private fun unduckVolume() {
+        if (!isDucked) return
+        try {
+            Log.d(TAG, "🔊 Restaurando volume music via RadioPlayerService")
+            val intent = Intent(this, RadioPlayerService::class.java).apply {
+                action = RadioPlayerService.ACTION_UNDUCK
+            }
+            startService(intent)
+            isDucked = false
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao restaurar volume", e)
+        }
+    }
+
+    private fun checkAndDuck(text: String) {
+        val clean = text.lowercase()
+        if (musicKeywordsForDucking.any { clean.contains(it) }) {
+            duckVolume()
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -266,6 +309,7 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
 
     fun speak(text: String) {
         val t = tts ?: return
+        
         val uttId = "utt-${System.currentTimeMillis()}"
         isSpeaking.set(true)
         ultimaFalaAssistente = text
@@ -336,6 +380,8 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
                 val intent = Intent(BROADCAST_TTS_STOPPED)
                 LocalBroadcastManager.getInstance(this@FullDuplexAssistantAdvancedService).sendBroadcast(intent)
 
+                unduckVolume()
+
                 // Reiniciar reconhecimento rapidamente
                 commandScope.launch {
                     delay(100)
@@ -396,6 +442,8 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         silenceStartTime.set(0)
         
         Log.d(TAG, "🛑 TTS interrompido manualmente")
+        
+        unduckVolume()
         
         // Broadcast para MainActivity parar animações
         val intent = Intent(BROADCAST_TTS_STOPPED)
@@ -471,6 +519,8 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
             val intent = Intent(BROADCAST_TTS_STOPPED)
             LocalBroadcastManager.getInstance(this@FullDuplexAssistantAdvancedService).sendBroadcast(intent)
             Log.d(TAG, "🛑 TTS marcado como parado IMEDIATAMENTE após onDone")
+            
+            unduckVolume()
             
             // Reiniciar reconhecimento IMEDIATAMENTE (sem delay grande)
             commandScope.launch {
@@ -559,6 +609,8 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
                                 return@let
                             }
                             
+                            checkAndDuck(text)
+                            
                             // Outros comandos parciais: processar normalmente (handleCommand filtra se TTS está falando)
                             handleCommand(text, true)
                         }
@@ -642,6 +694,9 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
             ACTION_STOP_SPEAKING -> {
                 Log.d(TAG, "🛑 Recebido comando para parar TTS")
                 stopSpeak()
+            }
+            ACTION_UNDUCK -> {
+                unduckVolume()
             }
             else -> {
                 val text = intent?.getStringExtra("text") ?: return START_STICKY
@@ -755,6 +810,8 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
             stopSpeak()
             return
         }
+
+        checkAndDuck(cleanText)
         
         // SEGUNDO: Se TTS está falando, IGNORAR todos os outros comandos
         if (isSpeaking.get()) {

@@ -1,5 +1,7 @@
 package com.starkaid.starkaidapp.models
 
+import com.google.gson.annotations.SerializedName
+
 data class MusicResolveRequest(
     val text: String
 )
@@ -9,7 +11,8 @@ data class MusicResolveResponse(
     val source: String? = null,
     val tts: String,
     val station: MusicStation? = null,
-    val youtubeVideoId: String? = null,
+    @SerializedName("youTubeVideoId")
+    val externalId: String? = null,
     val title: String? = null,
     val confidence: Double? = null
 )
@@ -20,4 +23,9 @@ data class MusicStation(
     val tags: String? = null,
     val country: String? = null,
     val bitrate: Int? = null
+)
+
+data class ExternalAudioStreamResult(
+    val streamUrl: String,
+    val expiresAt: String? = null
 )

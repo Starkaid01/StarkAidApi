@@ -1,4 +1,6 @@
 using System.Net.Http.Json;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using StarkAid.Api.Data;
@@ -6,9 +8,15 @@ using StarkAid.Api.Entities;
 
 namespace StarkAid.Api.Services.V1.Music
 {
+    public class YouTubeVideoResult
+    {
+        public string VideoId { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+    }
+
     public interface IYouTubeMusicService
     {
-        Task<(string? videoId, string? title)> SearchMusicAsync(string query);
+        Task<List<YouTubeVideoResult>> SearchMusicAsync(string query);
     }
 
     public class YouTubeMusicService : IYouTubeMusicService
@@ -33,22 +41,22 @@ namespace StarkAid.Api.Services.V1.Music
             _apiKey = config["YouTube:ApiKey"] ?? string.Empty;
         }
 
-        public async Task<(string? videoId, string? title)> SearchMusicAsync(string query)
+        public async Task<List<YouTubeVideoResult>> SearchMusicAsync(string query)
         {
             string normalized = MusicQueryNormalizer.Normalize(query);
-            if (string.IsNullOrEmpty(normalized)) return (null, null);
+            if (string.IsNullOrEmpty(normalized)) return new List<YouTubeVideoResult>();
 
-            string cacheKey = $"yt_music_{normalized}";
+            string cacheKey = $"yt_music_list_{normalized}";
 
             // 1. Memory Cache (L1)
-            if (_memoryCache.TryGetValue(cacheKey, out (string? vid, string? tit) cached))
+            if (_memoryCache.TryGetValue(cacheKey, out List<YouTubeVideoResult>? cached) && cached != null)
             {
                 _logger.LogInformation("YouTube L1 Cache Hit (Memory): {Query}", normalized);
-                await UpdateHitCountAsync(cached.vid);
+                if (cached.Count > 0) await UpdateHitCountAsync(cached[0].VideoId);
                 return cached;
             }
 
-            // 2. Database Cache (L2)
+            // 2. Database Cache (L2) 
             var dbEntry = await _dbContext.YouTubeMusicCaches
                 .FirstOrDefaultAsync(x => x.NormalizedQuery == normalized);
 
@@ -59,9 +67,8 @@ namespace StarkAid.Api.Services.V1.Music
                 dbEntry.LastUsedAt = DateTimeOffset.UtcNow;
                 await _dbContext.SaveChangesAsync();
 
-                var result = (dbEntry.VideoId, dbEntry.Title);
+                var result = new List<YouTubeVideoResult> { new YouTubeVideoResult { VideoId = dbEntry.VideoId, Title = dbEntry.Title } };
                 
-                // Fix: Specify size for MemoryCache entry
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                     .SetAbsoluteExpiration(TimeSpan.FromMinutes(30))
                     .SetSize(1);
@@ -71,52 +78,53 @@ namespace StarkAid.Api.Services.V1.Music
             }
 
             // 3. YouTube API Search (Fallback)
-            _logger.LogWarning("YouTube Cache Miss. Calling API for: {Query}. Quota usage: 100 units.", normalized);
-            
             try
             {
                 var searchUrl = $"https://www.googleapis.com/youtube/v3/search?part=snippet&q={Uri.EscapeDataString(normalized + " official audio")}&type=video&maxResults=5&key={_apiKey}";
                 var response = await _httpClient.GetFromJsonAsync<YouTubeSearchResponse>(searchUrl);
                 
-                if (response?.Items == null || response.Items.Count == 0) return (null, null);
+                if (response?.Items == null || response.Items.Count == 0) return new List<YouTubeVideoResult>();
 
-                // Heurística de seleção
-                var bestItem = response.Items.FirstOrDefault(item => 
-                    !item.Snippet.Title.ToLower().Contains("cover") &&
-                    !item.Snippet.Title.ToLower().Contains("karaoke") &&
-                    !item.Snippet.Title.ToLower().Contains("live") &&
-                    !item.Snippet.Title.ToLower().Contains("ao vivo")
-                ) ?? response.Items.First();
+                var results = response.Items.Select(item => new YouTubeVideoResult 
+                { 
+                    VideoId = item.Id.VideoId, 
+                    Title = item.Snippet.Title 
+                }).ToList();
 
-                // Salvar no Cache
-                var newCache = new YouTubeMusicCache
+                // Salvar o melhor no Cache do DB
+                var best = results.FirstOrDefault(item => 
+                    !item.Title.ToLower().Contains("cover") &&
+                    !item.Title.ToLower().Contains("karaoke") &&
+                    !item.Title.ToLower().Contains("live")
+                ) ?? results.First();
+
+                if (!await _dbContext.YouTubeMusicCaches.AnyAsync(x => x.NormalizedQuery == normalized))
                 {
-                    NormalizedQuery = normalized,
-                    VideoId = bestItem.Id.VideoId,
-                    Title = bestItem.Snippet.Title,
-                    Channel = bestItem.Snippet.ChannelTitle,
-                    Source = "YouTube",
-                    HitCount = 1
-                };
+                    var newCache = new YouTubeMusicCache
+                    {
+                        NormalizedQuery = normalized,
+                        VideoId = best.VideoId,
+                        Title = best.Title,
+                        Channel = response.Items.First(x => x.Id.VideoId == best.VideoId).Snippet.ChannelTitle,
+                        Source = "YouTube",
+                        HitCount = 1
+                    };
+                    _dbContext.YouTubeMusicCaches.Add(newCache);
+                    await _dbContext.SaveChangesAsync();
+                }
 
-                _dbContext.YouTubeMusicCaches.Add(newCache);
-                await _dbContext.SaveChangesAsync();
-
-                var finalResult = (newCache.VideoId, newCache.Title);
-                
-                // Fix: Specify size for MemoryCache entry
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                     .SetAbsoluteExpiration(TimeSpan.FromMinutes(30))
-                    .SetSize(1); // Each entry counts as 1 unit
+                    .SetSize(1);
                 
-                _memoryCache.Set(cacheKey, finalResult, cacheEntryOptions);
+                _memoryCache.Set(cacheKey, results, cacheEntryOptions);
 
-                return finalResult;
+                return results;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao buscar no YouTube API");
-                return (null, null);
+                return new List<YouTubeVideoResult>();
             }
         }
 

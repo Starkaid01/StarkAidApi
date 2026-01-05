@@ -4,10 +4,10 @@ import android.accessibilityservice.AccessibilityService
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 
-class YouTubeAccessibilityService : AccessibilityService() {
+class OnlineAccessibilityService : AccessibilityService() {
 
     companion object {
-        private const val TAG = "YouTubeService"
+        private const val TAG = "OnlineService"
     }
 
     private var lastWindowState: String? = null

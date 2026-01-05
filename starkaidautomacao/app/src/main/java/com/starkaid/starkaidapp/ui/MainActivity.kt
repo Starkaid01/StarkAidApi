@@ -49,9 +49,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -125,6 +123,7 @@ import com.starkaid.starkaidapp.models.DispositivoEsp
 import com.starkaid.starkaidapp.models.EnviarComandoRequest
 import com.microsoft.signalr.HubConnection
 import com.microsoft.signalr.HubConnectionBuilder
+import com.starkaid.starkaidapp.models.ExternalAudioStreamResult
 import io.reactivex.rxjava3.core.Single
 import com.starkaid.starkaidapp.services.PlanoAtivoResponse
 import com.starkaid.starkaidapp.services.VoiceSynthesizer
@@ -289,8 +288,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
     private lateinit var usuarioApi: UsuarioApi
     private lateinit var musicApi: MusicApi
-    private lateinit var youtubePlayerView: YouTubePlayerView
-    private var youtubePlayer: YouTubePlayer? = null
+
 
     // Adicione esta constante
     private companion object {
@@ -298,11 +296,13 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         const val NETWORK_PERMISSION_REQUEST_CODE = 1002
     }
 
+    private var pendingVideoId: String? = null // Mantido mas não usado, poderia ser removido se garantirmos limpeza completa
+
     private var ultimoContextoUser: String = ""
     private var ultimoContextoIA: String = ""
 
     private lateinit var spotifyService: SpotifyService
-    private var currentSource = "radio" // "radio" or "youtube"
+    private var currentSource = "radio" // "radio" or "online"
 
     private lateinit var tvStarkcoins: TextView
     private lateinit var recogActive: TextView //recognition_active
@@ -336,27 +336,15 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         tvMiniPlayerStation = findViewById(R.id.tvMiniPlayerStation)
         btnMiniPlayerPlayPause = findViewById(R.id.btnMiniPlayerPlayPause)
         btnMiniPlayerStop = findViewById(R.id.btnMiniPlayerStop)
-        youtubePlayerView = findViewById(R.id.youtubePlayerView)
+
         
-        // Lifecycle aware initialization
-        lifecycle.addObserver(youtubePlayerView)
-        
-        youtubePlayerView.addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
-            override fun onReady(youTubePlayer: YouTubePlayer) {
-                youtubePlayer = youTubePlayer
-                Log.d("YouTube", "Player pronto.")
-            }
-        })
+
 
         btnMiniPlayerPlayPause.setOnClickListener {
             lifecycleScope.launch {
-                if (currentSource == "youtube") {
-                    // Toggle YouTube
-                    // We don't have a reliable isPlaying for YT here without more listeners, 
-                    // but we can assume toggle for now or use pipelineActions
-                    pipelineActions.resumeMusic() 
-                } else if (RadioPlayerService.isRunning()) {
+                if (RadioPlayerService.isRunning()) {
                     val action = if (RadioPlayerService.isPlaying()) RadioPlayerService.ACTION_PAUSE else RadioPlayerService.ACTION_PLAY
+                    Log.d("MiniPlayer", "Toggling playback: current isPlaying=${RadioPlayerService.isPlaying()}, sending action=$action")
                     startService(Intent(this@MainActivity, RadioPlayerService::class.java).apply { this.action = action })
                 }
             }
@@ -370,7 +358,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     private fun updateMiniPlayer(stationName: String?, isVisible: Boolean, sourceType: String = "RADIO") {
         runOnUiThread {
             if (isVisible && stationName != null) {
-                val prefix = if (sourceType == "YOUTUBE") "📺 " else "📻 "
+                val prefix = if (sourceType == "ONLINE") "📺 " else "📻 "
                 tvMiniPlayerStation.text = prefix + stationName
                 miniPlayerContainer.visibility = View.VISIBLE
             } else {
@@ -902,25 +890,17 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                 }
             }, IntentFilter("com.starkaid.MUSIC_STATE_CHANGED"))
 
-            // Sincronização YouTube vindo da Notificação/Service
             LocalBroadcastManager.getInstance(this).registerReceiver(object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
-                    if (currentSource == "youtube") resumeYouTube()
+                    // Resume logic handled by service notification actions or voice commands
                 }
             }, IntentFilter("com.starkaid.MUSIC_PLAY"))
 
-            LocalBroadcastManager.getInstance(this).registerReceiver(object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    if (currentSource == "youtube") pauseYouTube()
-                }
-            }, IntentFilter("com.starkaid.MUSIC_PAUSE"))
+
 
             LocalBroadcastManager.getInstance(this).registerReceiver(object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
-                    if (currentSource == "youtube") {
-                        stopYouTube()
-                        updateMiniPlayer(null, false)
-                    }
+                     updateMiniPlayer(null, false)
                 }
             }, IntentFilter("com.starkaid.MUSIC_STOP"))
 
@@ -7491,31 +7471,44 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     }
 
 
-    private fun playYouTubeVideo(videoId: String?, title: String?) {
-        if (videoId == null) return
+    private fun playOnlineAudio(externalId: String?, title: String?) {
+        if (externalId == null) return
         
-        Log.d("YouTube", "Tentando tocar vídeo: $videoId - $title")
+        Log.d("Music", "Resolvendo stream de áudio online para ID: $externalId")
         
-        runOnUiThread {
-            youtubePlayer?.let { player ->
-                Log.d("YouTube", "Player pronto, carregando vídeo...")
-                player.loadVideo(videoId, 0f)
-            } ?: run {
-                Log.w("YouTube", "Player ainda não está pronto. Aguardando inicialização...")
-            }
+        CoroutineScope(Dispatchers.IO).launch {
+             try {
+                 val response = musicApi.getAudioStream(externalId)
+                 if (response.isSuccessful && response.body() != null) {
+                     val streamUrl = response.body()!!.streamUrl
+                     Log.d("Music", "Stream URL resolvido: $streamUrl")
+                     
+                     withContext(Dispatchers.Main) {
+                         val intent = Intent(this@MainActivity, RadioPlayerService::class.java).apply {
+                            action = RadioPlayerService.ACTION_PLAY
+                            putExtra(RadioPlayerService.EXTRA_STATION_NAME, title ?: "Música Online")
+                            putExtra(RadioPlayerService.EXTRA_STREAM_URL, streamUrl)
+                            putExtra(RadioPlayerService.EXTRA_SOURCE, "ONLINE")
+                        }
+                        startService(intent)
+                        updateMiniPlayer(title ?: "Música", true, "ONLINE")
+                     }
+                  } else {
+                      val errorBody = response.errorBody()?.string() ?: ""
+                      Log.d("Music", "Falha ao resolver stream: ${response.code()} - $errorBody")
+                      
+                      val msg = if (response.code() == 404) {
+                          "Essa música não está disponível para extração de áudio. Tente outra."
+                      } else {
+                          "Erro no servidor ao carregar áudio. Verifique os logs do sistema."
+                      }
+                      speakTextFromService(msg)
+                  }
+             } catch (e: Exception) {
+                 Log.e("Music", "Erro de rede ao resolver stream", e)
+                 speakTextFromService("Houve um erro de conexão ao tentar tocar a música.")
+             }
         }
-    }
-
-    private fun stopYouTube() {
-        runOnUiThread { youtubePlayer?.pause() }
-    }
-
-    private fun pauseYouTube() {
-        runOnUiThread { youtubePlayer?.pause() }
-    }
-
-    private fun resumeYouTube() {
-        runOnUiThread { youtubePlayer?.play() }
     }
 
     // ---------------- PIPELINE INITIALIZATION & EXECUTION ----------------
@@ -7633,35 +7626,18 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     val response = musicApi.resolveMusic(MusicResolveRequest(text))
                     if (response.isSuccessful && response.body() != null) {
                         val body = response.body()!!
-                        speakTextFromService(body.tts)
+                        if (!body.tts.isNullOrBlank()) {
+                            speakTextFromService(body.tts)
+                        }
+
+                        if (body.type == "none" || body.type.isNullOrBlank()) {
+                            return false
+                        }
 
                         when (body.type) {
-                            "radio" -> {
-                                currentSource = "radio"
-                                stopYouTube() // Ensure YT is off
-                                val intent = Intent(this@MainActivity, RadioPlayerService::class.java).apply {
-                                    action = RadioPlayerService.ACTION_PLAY
-                                    putExtra(RadioPlayerService.EXTRA_STATION_NAME, body.station?.name)
-                                    putExtra(RadioPlayerService.EXTRA_STREAM_URL, body.station?.streamUrl)
-                                }
-                                startService(intent)
-                                updateMiniPlayer(body.station?.name ?: "Rádio", true, "RADIO")
-                                true
-                            }
-                            "youtube" -> {
-                                currentSource = "youtube"
-                                // stopMusic() // REMOVED: Kills service and causes loop
-                                
-                                // Notify service to pause Radio and update notification
-                                val intent = Intent(this@MainActivity, RadioPlayerService::class.java).apply {
-                                    action = RadioPlayerService.ACTION_UPDATE_METADATA
-                                    putExtra(RadioPlayerService.EXTRA_STATION_NAME, body.title)
-                                    putExtra(RadioPlayerService.EXTRA_SOURCE, "YOUTUBE")
-                                }
-                                startService(intent)
-                                
-                                playYouTubeVideo(body.youtubeVideoId, body.title)
-                                updateMiniPlayer(body.title ?: "YouTube", true, "YOUTUBE")
+                            "radio_two" -> {
+                                currentSource = "online"
+                                playOnlineAudio(body.externalId, body.title)
                                 true
                             }
                             "error" -> {
@@ -7670,21 +7646,13 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                             else -> {
                                 // Control commands
                                 when (body.type) {
-                                    "stop" -> {
-                                        stopMusic()
-                                        stopYouTube()
-                                    }
-                                    "pause" -> {
-                                        if (currentSource == "youtube") pauseYouTube() else pauseMusic()
-                                    }
-                                    "resume" -> {
-                                        if (currentSource == "youtube") resumeYouTube() else resumeMusic()
-                                    }
-                                    "next" -> nextMusic()
+                                    "stop" -> stopMusic()
+                                    "pause" -> pauseMusic()
+                                    "resume" -> resumeMusic()
                                     "volume_up" -> setMusicVolume(true)
                                     "volume_down" -> setMusicVolume(false)
                                     "status" -> {
-                                        val playing = if (currentSource == "youtube") "YouTube" else tvMiniPlayerStation.text
+                                        val playing = if (currentSource == "online") "Música Online" else tvMiniPlayerStation.text
                                         speakTextFromService("Está tocando $playing.")
                                     }
                                 }
@@ -7703,6 +7671,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
 
             override fun stopMusic() {
+                // Unified Stop logic (works for both Radio and Online Stream)
                 val intent = Intent(this@MainActivity, RadioPlayerService::class.java).apply {
                     action = RadioPlayerService.ACTION_STOP
                 }
@@ -7711,6 +7680,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             }
 
             override fun pauseMusic() {
+                // Unified Pause logic
                 val intent = Intent(this@MainActivity, RadioPlayerService::class.java).apply {
                     action = RadioPlayerService.ACTION_PAUSE
                 }
@@ -7718,6 +7688,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             }
 
             override fun resumeMusic() {
+                 // Unified Resume logic
                 val intent = Intent(this@MainActivity, RadioPlayerService::class.java).apply {
                     action = RadioPlayerService.ACTION_PLAY
                 }
@@ -7735,6 +7706,13 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                 val am = getSystemService(AUDIO_SERVICE) as AudioManager
                 val direction = if (up) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER
                 am.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, AudioManager.FLAG_SHOW_UI)
+            }
+
+            override fun unduckMusic() {
+                val intent = Intent(this@MainActivity, FullDuplexAssistantAdvancedService::class.java).apply {
+                    action = FullDuplexAssistantAdvancedService.ACTION_UNDUCK
+                }
+                startService(intent)
             }
         }
         
@@ -7772,6 +7750,12 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         
         // Executar pipeline
         commandPipeline.execute(ctx)
+        
+        // Se após o pipeline o sistema NÃO estiver falando e o comando foi finalizado, 
+        // garantir que restauramos o volume (caso tenha sido baixado)
+        if (!ctx.input.isPartial && !isTtsSpeaking) {
+            pipelineActions.unduckMusic()
+        }
     }
 
     private fun verificarDisparosPendentes() {

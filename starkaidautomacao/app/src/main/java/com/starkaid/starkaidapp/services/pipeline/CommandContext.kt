@@ -125,4 +125,5 @@ interface AssistantActions {
     fun resumeMusic()
     fun nextMusic()
     fun setMusicVolume(up: Boolean)
+    fun unduckMusic()
 }

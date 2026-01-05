@@ -4,8 +4,8 @@ import android.accessibilityservice.AccessibilityService
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 
-class YouTubeWatcherService : AccessibilityService() {
-    private val TAG = "YouTubeWatcher"
+class OnlineWatcherService : AccessibilityService() {
+    private val TAG = "OnlineWatcher"
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         event ?: return

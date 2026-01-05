@@ -29,5 +29,37 @@ namespace StarkAid.Api.Controllers.V1
 
             return Ok(response);
         }
+
+        [HttpGet("online/stream/{externalId}")]
+        public async Task<IActionResult> GetAudioStream([FromRoute] string externalId, [FromServices] IExternalAudioResolver audioResolver)
+        {
+            if (string.IsNullOrWhiteSpace(externalId))
+                return BadRequest("External ID is required");
+
+            // Feature Flag (Hardcoded for now as requested: Music.EnableOnlineFallback check simulated)
+            bool enableOnlineFallback = true; 
+            if (!enableOnlineFallback)
+            {
+                return NotFound("Online fallback disabled.");
+            }
+
+            try 
+            {
+                var result = await audioResolver.GetAudioStreamUrlAsync(externalId);
+                
+                if (result == null)
+                {
+                    _logger.LogWarning("Resolver returned null for ID: {Id}", externalId);
+                    return NotFound("Stream not found or unavailable.");
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Controller error resolving stream for ID: {Id}", externalId);
+                return StatusCode(500, $"Internal error resolving stream: {ex.Message}");
+            }
+        }
     }
 }

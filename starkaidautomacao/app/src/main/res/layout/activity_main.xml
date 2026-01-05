@@ -734,11 +734,7 @@
         </LinearLayout>
 
 
-        <com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
-            android:id="@+id/youtubePlayerView"
-            android:layout_width="1dp"
-            android:layout_height="1dp"
-            android:visibility="gone" />
+
 
         <!-- Mini Player UX (Alexa style) -->
         <com.google.android.material.card.MaterialCardView
