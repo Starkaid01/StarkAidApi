@@ -20,12 +20,13 @@
         <li><NavLink href="/agendamento-starkswitch" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Agendamento StarkSwitch</NavLink></li>
         <li><NavLink href="/agendamento-udp" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Agendamento UDP</NavLink></li>
         <li><NavLink href="/comandos-sociais" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Comandos Sociais</NavLink></li>
-        <li><NavLink href="/aprendizado-ia" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Aprendizado IA</NavLink></li>
         <li><NavLink href="/assistente-voz" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Assistente de Voz</NavLink></li>
 
         <AuthorizeView Roles="Administrador">
             <li class="section-divider">ADMINISTRADOR</li>
             <li><NavLink href="/admin/dashboard" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Dashboard Admin</NavLink></li>
+            <li><NavLink href="/aprendizado-ia" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Aprendizado IA</NavLink></li>
+            <li><NavLink href="/admin/music-admin" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Músicas Admin</NavLink></li>
             <li><NavLink href="/admin/ia-telemetry" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Telemetria IA</NavLink></li>
             <li><NavLink href="/admin/suporte" @onclick="() => CloseOnMobile()" Match="NavLinkMatch.Prefix">Suporte Técnico</NavLink></li>
         </AuthorizeView>

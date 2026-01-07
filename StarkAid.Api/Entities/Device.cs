@@ -18,5 +18,7 @@ public class Device
 
     [MaxLength(200)] public string? Comando { get; set; }
 
+    public bool IsOn { get; set; } = false;
+    
     public User User { get; set; } = null!;
 }

@@ -39,6 +39,8 @@ using StarkAid.Api.Services.CommandRouter;
 using StarkAid.Api.Services.CommandRouter.Handlers;
 using StarkAid.Api.Services.V1.Fun;
 using StarkAid.Api.Services.V1.Music;
+using StarkAid.Api.Services.V1.Comodos;
+using StarkAid.Api.Services.V1.Rotinas;
 using Stripe;
 using System.Diagnostics;
 using System.Threading.RateLimiting;
@@ -345,8 +347,13 @@ try
     builder.Services.AddScoped<ITokenUsageService, TokenUsageService>();
 
     // 9. Command Router e Telemetria
+    builder.Services.AddScoped<IEscopoConversacionalService, EscopoConversacionalService>();
+    builder.Services.AddScoped<IComodoService, ComodoService>();
+
     builder.Services.AddScoped<ITelemetryService, TelemetryService>();
     builder.Services.AddScoped<ICommandRouter, CommandRouter>();
+    builder.Services.AddScoped<IRotinaService, RotinaService>();
+    builder.Services.AddScoped<ICommandHandler, RoutineCommandHandler>();
     
     // Fun Module Services (Prioridade Máxima)
     builder.Services.AddScoped<IIntentDetector, StarkAid.Api.Services.V1.Fun.IntentDetector>();
@@ -362,30 +369,70 @@ try
 
     // Outros Handlers
     builder.Services.AddScoped<ICommandHandler, DeviceCommandHandler>();
+    builder.Services.AddScoped<ICommandHandler, HomeCommandHandler>();
     builder.Services.AddScoped<ICommandHandler, SocialCommandHandler>();
     builder.Services.AddScoped<ICommandHandler, SystemCommandHandler>();
     builder.Services.AddScoped<ICommandHandler, LearningCommandHandler>();
     
-    // builder.Services.AddScoped<ICommandHandler, IaCommandHandler>();
+    builder.Services.AddScoped<ICommandHandler, IaCommandHandler>();
     builder.Services.AddScoped<IAprendizadoService, AprendizadoService>();
 
 
-    // 🧩 Lê o domínio Cloudflare atual do banco e injeta na configuração
-    using (var scope = builder.Services.BuildServiceProvider().CreateScope())
+    // 🔍 Diagnóstico do Banco de Dados
+    try
     {
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var config = db.ConfiguracoesSistema.FirstOrDefault();
+        using (var scope = builder.Services.BuildServiceProvider().CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var conn = db.Database.GetDbConnection();
+            await conn.OpenAsync();
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "SELECT name FROM sys.tables";
+                var tables = new List<string>();
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync()) tables.Add(reader.GetString(0));
+                }
+                Console.WriteLine($"🔍 Tabelas encontradas: {string.Join(", ", tables)}");
 
-        if (config != null && !string.IsNullOrWhiteSpace(config.DominioCloudflare))
-        {
-            builder.Configuration["WppConnectOptions:BaseUrl"] = config.DominioCloudflare;
-            Console.WriteLine($"🌐 Dominio Cloudflare carregado do banco: {config.DominioCloudflare}");
-        }
-        else
-        {
-            Console.WriteLine("⚠️ Nenhum domínio Cloudflare encontrado no banco, usando valor padrão do appsettings.json.");
+                if (tables.Contains("Users"))
+                {
+                    cmd.CommandText = "SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('Users')";
+                    var cols = new List<string>();
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync()) cols.Add(reader.GetString(0));
+                    }
+                    Console.WriteLine($"🔍 Colunas na tabela 'Users': {string.Join(", ", cols)}");
+                }
+            }
         }
     }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"🔍 Erro no diagnóstico do banco: {ex.Message}");
+    }
+
+    // 🧩 Lê o domínio Cloudflare atual do banco e injeta na configuração
+    try
+    {
+        using (var scope = builder.Services.BuildServiceProvider().CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var config = db.ConfiguracoesSistema.AsNoTracking().FirstOrDefault();
+
+            if (config != null && !string.IsNullOrWhiteSpace(config.DominioCloudflare))
+            {
+                builder.Configuration["WppConnectOptions:BaseUrl"] = config.DominioCloudflare;
+                Console.WriteLine($"🌍 Domínio Cloudflare carregado do banco: {config.DominioCloudflare}");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+    }
+
 
 
     builder.Services.AddHostedService<AgendamentoWorker>();
@@ -394,6 +441,7 @@ try
     builder.Services.AddHostedService<AssinaturaStatusChecker>();
     builder.Services.AddHostedService<WeeklyTokensResetService>();
     builder.Services.AddHostedService<StarkAid.Api.Services.Background.CognitiveGarbageCollectorService>();
+    builder.Services.AddHostedService<RoutineSchedulerService>();
 
     builder.Services.AddSingleton<IMqttClientService, MqttClientService>();
 

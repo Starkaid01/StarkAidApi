@@ -12,13 +12,14 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp =>
 {
+    var baseUrl = builder.Configuration["Api:BaseUrl"] ?? "https://starkaid.runasp.net/";
     return new HttpClient
     {
-        BaseAddress = new Uri("https://starkaid.runasp.net/")  // Confirme se � 5000 ou 5001; logs mostram 5000
+        BaseAddress = new Uri(baseUrl.EndsWith("/") ? baseUrl : baseUrl + "/")
     };
 });
 
-// Servi�os da API
+// Serviços da API
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<ApiService>();
 builder.Services.AddScoped<AuthService>();

@@ -838,7 +838,6 @@
         android:visibility="gone" />
 
 
-    <!-- Menu lateral futurístico -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="280dp"
@@ -849,6 +848,7 @@
         app:menu="@menu/drawer_menu"
         app:itemIconTint="#FFFFFF"
         app:itemTextColor="#FFFFFF"
+        app:itemTextAppearance="@style/DrawerItemTextAppearance"
         />
 
 </androidx.drawerlayout.widget.DrawerLayout>

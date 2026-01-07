@@ -41,8 +41,20 @@ namespace StarkAid.Api.Services.V1.Devices
                 .ToListAsync();
         }
 
-        public async Task EnviarNotificacaoAsync(string token, string titulo, string corpo, Guid disparoId)
+        public async Task EnviarNotificacaoAsync(string token, string titulo, string corpo, Guid? disparoId = null, string tipo = "disparo")
         {
+            var data = new Dictionary<string, string>
+            {
+                { "titulo", titulo },
+                { "corpo", corpo },
+                { "tipo", tipo }
+            };
+
+            if (disparoId.HasValue)
+            {
+                data.Add("disparoId", disparoId.Value.ToString());
+            }
+
             var message = new Message()
             {
                 Token = token,
@@ -50,12 +62,7 @@ namespace StarkAid.Api.Services.V1.Devices
                 {
                     Priority = Priority.High
                 },
-                Data = new Dictionary<string, string>
-                {
-                    { "titulo", titulo },
-                    { "corpo", corpo },
-                    { "disparoId", disparoId.ToString() }
-                }
+                Data = data
             };
 
             var messaging = FirebaseMessaging.DefaultInstance;
@@ -81,13 +88,13 @@ namespace StarkAid.Api.Services.V1.Devices
             }
         }
 
-        public async Task EnviarParaUsuarioAsync(Guid userId, string titulo, string corpo, Guid disparoId)
+        public async Task EnviarParaUsuarioAsync(Guid userId, string titulo, string corpo, Guid? disparoId = null, string tipo = "disparo")
         {
             var tokens = await ObterTokensPorUsuario(userId);
 
             foreach (var token in tokens)
             {
-                await EnviarNotificacaoAsync(token, titulo, corpo, disparoId);
+                await EnviarNotificacaoAsync(token, titulo, corpo, disparoId, tipo);
             }
         }
     }

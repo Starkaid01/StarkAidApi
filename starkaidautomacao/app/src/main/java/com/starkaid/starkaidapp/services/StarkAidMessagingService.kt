@@ -57,6 +57,14 @@ class StarkAidMessagingService : FirebaseMessagingService() {
         val disparoId = remoteMessage.data["disparoId"]
         val titulo = remoteMessage.data["titulo"] ?: "StarkAid"
         val corpo = remoteMessage.data["corpo"] ?: ""
+        val tipo = remoteMessage.data["tipo"] ?: "disparo"
+
+        Log.d("StarkAidFCM", "Tipo de mensagem: $tipo")
+
+        if (tipo == "rotina") {
+            mostrarNotificacao(titulo, corpo, null)
+            return
+        }
 
         if (StarkAidApp.isAppVisible) {
             // App tá aberto — chama diretamente a activity

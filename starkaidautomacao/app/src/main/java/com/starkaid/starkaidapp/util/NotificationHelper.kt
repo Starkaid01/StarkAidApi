@@ -43,8 +43,17 @@ object NotificationHelper {
                 enableVibration(true)
             }
 
+            val generalChannel = NotificationChannel(
+                "starkaid_general_channel",
+                "Notificações Gerais",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                enableVibration(true)
+            }
+
             notificationManager.createNotificationChannel(somChannel)
             notificationManager.createNotificationChannel(silenciosoChannel)
+            notificationManager.createNotificationChannel(generalChannel)
         }
 
     }

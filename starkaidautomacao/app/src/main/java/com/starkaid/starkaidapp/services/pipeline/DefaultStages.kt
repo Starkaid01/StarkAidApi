@@ -194,7 +194,7 @@ class MusicStage : CommandStage {
         if (ctx.input.isPartial) return StageResult.Pass
         val text = ctx.input.cleanText.lowercase()
         
-        // 1. Gatilhos de PESQUISA EXPLÍCITOS (Obrigatório começar com toca/tocar/toque)
+        // 1. Gatilhos de PESQUISA EXPLÍCITOS (Obrigatório começar with toca/tocar/toque)
         val searchTriggers = listOf("tocar ", "toca ", "toque ")
         val trigger = searchTriggers.find { text.startsWith(it) }
 
@@ -254,6 +254,65 @@ class ProcessCommandStage : CommandStage {
         }
         
         return StageResult.Pass
+    }
+}
+
+// --- 9.5 DeviceControlStage ---
+class DeviceControlStage : CommandStage {
+    override suspend fun process(ctx: CommandContext): StageResult {
+        if (ctx.input.isPartial) return StageResult.Pass
+        
+        val text = ctx.input.cleanText.lowercase()
+        
+        // Check if we are waiting for confirmation
+        if (ctx.session.roomsConfirmationPending.get()) {
+            if (ctx.actions.processDeviceControl(text, null, isConfirmation = true)) {
+                 ctx.session.roomsConfirmationPending.set(false)
+                 ctx.kind = CommandKind.DEVICE
+                 return StageResult.Handled
+            }
+        }
+        
+        val triggers = listOf("acende", "liga", "ligar", "apaga", "desliga", "desligar")
+        val triggerFound = triggers.find { text.contains(it) }
+        
+        if (triggerFound != null) {
+            val deviceType = extractDeviceType(text, triggerFound)
+            if (deviceType.isNotEmpty()) {
+                Log.d("Pipeline", "DeviceControlStage: Comando detectado - Tipo: '$deviceType', Inteira: '$text'")
+                if (ctx.actions.processDeviceControl(text, deviceType, isConfirmation = false)) {
+                    ctx.kind = CommandKind.DEVICE
+                    return StageResult.Handled
+                }
+            }
+        }
+        
+        return StageResult.Pass
+    }
+
+    private fun extractDeviceType(text: String, trigger: String): String {
+        try {
+            val afterTrigger = text.substringAfter(trigger).trim()
+            if (afterTrigger.isEmpty()) return ""
+            
+            // Remove room info if present to isolate device type
+            // Ex: "luz da sala" -> "luz"
+            val parts = afterTrigger.split(Regex("\\s(da|do|de|na|no|em)\\s"))
+            var type = parts[0].trim()
+            
+            // Remove articles
+            val articles = listOf("o ", "a ", "os ", "as ", "um ", "uma ")
+            for (art in articles) {
+                if (type.startsWith(art)) {
+                    type = type.substring(art.length).trim()
+                    break
+                }
+            }
+            
+            return type
+        } catch (e: Exception) {
+            return ""
+        }
     }
 }
 

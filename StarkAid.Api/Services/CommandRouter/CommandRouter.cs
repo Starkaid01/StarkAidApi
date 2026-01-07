@@ -17,12 +17,15 @@ namespace StarkAid.Api.Services.CommandRouter
         public async Task<CommandResult> RouteAsync(CommandRequestDto request)
         {
             var matchingHandlers = _handlers.Where(h => h.CanHandle(request)).ToList();
+            System.Console.WriteLine($"[CommandRouter] Processando: '{request.Texto}'");
 
             foreach (var handler in matchingHandlers)
             {
+                System.Console.WriteLine($"[CommandRouter] Tentando: {handler.GetType().Name}");
                 var result = await handler.ExecuteAsync(request);
                 if (result.IsSuccess)
                 {
+                    System.Console.WriteLine($"[CommandRouter] Sucesso: {handler.GetType().Name}");
                     return result;
                 }
             }

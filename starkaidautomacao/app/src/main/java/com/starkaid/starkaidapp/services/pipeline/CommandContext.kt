@@ -23,21 +23,22 @@ data class CommandContext(
             rawText: String, 
             escutando: AtomicBoolean, 
             confirmContato: AtomicBoolean,
+            roomsConfirmationPending: AtomicBoolean,
             isTtsSpeaking: Boolean,
             actions: AssistantActions
         ): CommandContext {
-            val isPartial = rawText.lowercase().contains("parcial:")
+            val isPayment = rawText.lowercase().contains("parcial:")
             val isSpeaking = rawText.lowercase().contains("speaking:")
             
             // Limpeza básica inicial do texto
             var clean = rawText
-            if (isPartial) clean = clean.replace("parcial:", "", ignoreCase = true)
+            if (isPayment) clean = clean.replace("parcial:", "", ignoreCase = true)
             if (isSpeaking) clean = clean.replace("speaking:", "", ignoreCase = true)
             
             val inputState = InputState(
                 rawText = rawText,
                 cleanText = clean.trim(),
-                isPartial = isPartial
+                isPartial = isPayment
             )
             
             val voiceState = VoiceState(
@@ -47,7 +48,8 @@ data class CommandContext(
             
             val sessionState = SessionState(
                 escutando = escutando,
-                confirmContato = confirmContato
+                confirmContato = confirmContato,
+                roomsConfirmationPending = roomsConfirmationPending
             )
 
             return CommandContext(
@@ -73,7 +75,8 @@ data class VoiceState(
 
 data class SessionState(
    val escutando: AtomicBoolean,
-   val confirmContato: AtomicBoolean
+   val confirmContato: AtomicBoolean,
+   val roomsConfirmationPending: AtomicBoolean
 )
 
 enum class CommandKind {
@@ -126,4 +129,10 @@ interface AssistantActions {
     fun nextMusic()
     fun setMusicVolume(up: Boolean)
     fun unduckMusic()
+    
+    // Comodos
+    suspend fun processDeviceControl(text: String, deviceType: String?, isConfirmation: Boolean): Boolean
+    fun setRoomsConfirmationPending(pending: Boolean)
+    fun isRoomsConfirmationPending(): Boolean
 }
+

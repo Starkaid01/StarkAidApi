@@ -233,7 +233,7 @@ dependencies {
     implementation("com.google.ads.mediation:unity:4.12.0.0")
     implementation("com.unity3d.ads:unity-ads:4.12.0")
 
-    implementation("com.microsoft.signalr:signalr:7.0.5")
+    implementation("com.microsoft.signalr:signalr:8.0.0")
 
     // ✅ Lottie
     implementation("com.airbnb.android:lottie:6.1.0")

@@ -300,6 +300,86 @@ namespace StarkAid.Web.Services
             var response = await _http.SendAsync(request);
             return response.IsSuccessStatusCode;
         }
+
+        // ========== ADMIN CONFIG & MUSIC CACHE ==========
+        public async Task<SystemConfigDto?> GetSystemConfigAsync(string token, string apiKey)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Admin/config");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("Api-Key", apiKey);
+            var response = await _http.SendAsync(request);
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<SystemConfigDto>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+
+        public async Task<bool> UpdateSystemConfigAsync(SystemConfigDto dto, string token, string apiKey)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Put, "api/v1/Admin/config");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("Api-Key", apiKey);
+            request.Content = JsonContent.Create(dto);
+            var response = await _http.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<List<YouTubeMusicCacheDto>> GetMusicCacheAsync(string token, string apiKey)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Admin/music-cache");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("Api-Key", apiKey);
+            var response = await _http.SendAsync(request);
+            if (!response.IsSuccessStatusCode) return new List<YouTubeMusicCacheDto>();
+            return await response.Content.ReadFromJsonAsync<List<YouTubeMusicCacheDto>>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<YouTubeMusicCacheDto>();
+        }
+
+        public async Task<bool> CreateMusicCacheAsync(YouTubeMusicCacheDto dto, string token, string apiKey)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/Admin/music-cache");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("Api-Key", apiKey);
+            request.Content = JsonContent.Create(dto);
+            var response = await _http.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> UpdateMusicCacheAsync(int id, YouTubeMusicCacheDto dto, string token, string apiKey)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Put, $"api/v1/Admin/music-cache/{id}");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("Api-Key", apiKey);
+            request.Content = JsonContent.Create(dto);
+            var response = await _http.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> DeleteMusicCacheAsync(int id, string token, string apiKey)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Delete, $"api/v1/Admin/music-cache/{id}");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("Api-Key", apiKey);
+            var response = await _http.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<List<MergeSuggestionDto>> GetMergeSuggestionsAsync(string token, string apiKey)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "api/v1/Admin/music-cache/merge-suggestions");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("Api-Key", apiKey);
+            var response = await _http.SendAsync(request);
+            if (!response.IsSuccessStatusCode) return new List<MergeSuggestionDto>();
+            return await response.Content.ReadFromJsonAsync<List<MergeSuggestionDto>>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<MergeSuggestionDto>();
+        }
+
+        public async Task<bool> ExecuteMergeAsync(MergeExecutionRequest dto, string token, string apiKey)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/Admin/music-cache/merge");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("Api-Key", apiKey);
+            request.Content = JsonContent.Create(dto);
+            var response = await _http.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
     }
 }
 

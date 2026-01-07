@@ -1,0 +1,495 @@
+@page "/admin/music-admin"
+@using StarkAid.Web.Services
+@using StarkAid.Web.DTOs
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrador")]
+@inject AdminService AdminService
+@inject IAuthService AuthService
+@inject IJSRuntime JS
+
+<PageTitle>Administração de Músicas - StarkAid</PageTitle>
+
+<div class="admin-page">
+    <div class="header-section">
+        <h1>Administração de Músicas</h1>
+        <p class="subtitle">Gerencie o pool de músicas do YouTube e configurações de áudio</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Carregando dados...</p>
+        </div>
+    }
+    else
+    {
+        <div class="config-section glass mb-4">
+            <div class="section-header">
+                <h3>Configurações de Rede</h3>
+            </div>
+            <div class="row align-items-end g-3">
+                <div class="col-md-8">
+                    <label class="form-label">Domínio Audio Resolver (Tunel)</label>
+                    <input @bind="config.DominioAudioResolver" class="form-control" placeholder="https://seu-tunel.com" />
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary w-100" @onclick="SaveConfig">
+                        <i class="fas fa-save me-2"></i> Salvar Configuração
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2>Pool de Músicas (YouTube Cache)</h2>
+                <button class="btn btn-success btn-sm" @onclick="() => OpenModal()">
+                    <i class="fas fa-plus me-1"></i> Nova Música
+                </button>
+            </div>
+            
+    <div class="row align-items-center mb-3">
+        <div class="col-8">
+            <div class="search-bar">
+                <input type="text" @bind="searchTerm" @bind:event="oninput" class="form-control" placeholder="Pesquisar por termo, título ou ID..." />
+            </div>
+        </div>
+        <div class="col-4 text-end">
+            <button class="btn btn-warning btn-sm me-2" @onclick="OpenMergeDashboard">
+                <i class="fas fa-code-branch me-1"></i> Fusão Assistida
+            </button>
+        </div>
+    </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Termo Buscado</th>
+                            <th>Tipo</th>
+                            <th>Título / Canal</th>
+                            <th>Video ID</th>
+                            <th>Hits</th>
+                            <th>Último Uso</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in FilteredCache)
+                        {
+                            <tr>
+                                <td><span class="fw-bold">@item.NormalizedQuery</span></td>
+                                <td>
+                                    <span class="badge badge-@(item.Kind == 1 ? "info" : "primary")">
+                                        @(item.Kind == 1 ? "Artista" : "Música")
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="music-info">
+                                        <div class="title">@item.Title</div>
+                                        <div class="channel">@item.Channel</div>
+                                    </div>
+                                </td>
+                                <td><code class="video-id">@item.VideoId</code></td>
+                                <td>@item.HitCount</td>
+                                <td><small>@item.LastUsedAt.ToString("g")</small></td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" @onclick="() => OpenModal(item)">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" @onclick="() => DeleteMusic(item.Id)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (!FilteredCache.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-4">Nenhuma música encontrada no cache.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@if (isModalOpen)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content glass">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">@(isEditing ? "Editar Música" : "Nova Música no Pool")</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Termo Buscado (Normalizado)</label>
+                            <input @bind="selectedItem.NormalizedQuery" class="form-control" placeholder="ex: charlie brown jr" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de Intenção</label>
+                            <select @bind="selectedItem.Kind" class="form-select">
+                                <option value="0">Música (1:1)</option>
+                                <option value="1">Artista (Pool)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Título da Música</label>
+                            <input @bind="selectedItem.Title" class="form-control" placeholder="Título completo..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">YouTube Video ID</label>
+                            <input @bind="selectedItem.VideoId" class="form-control" placeholder="ID de 11 caracteres" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nome do Canal</label>
+                            <input @bind="selectedItem.Channel" class="form-control" placeholder="Opcional" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-light" @onclick="CloseModal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveMusic">
+                        @(isEditing ? "Salvar Alterações" : "Adicionar ao Pool")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (isMergeModalOpen)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content glass">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title text-warning"><i class="fas fa-code-branch me-2"></i> Dashboard de Fusão de Artistas</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseMergeDashboard"></button>
+                </div>
+                <div class="modal-body">
+                   <div class="alert alert-info">
+                       <i class="fas fa-info-circle me-1"></i> Sugestões de merge baseadas em similaridade fonética e textual.
+                   </div>
+                   <table class="table table-hover">
+                       <thead>
+                           <tr>
+                               <th>Pool Origem (Será Alias)</th>
+                               <th><i class="fas fa-arrow-right"></i></th>
+                               <th>Pool Destino (Canônico)</th>
+                               <th>Score</th>
+                               <th class="text-end">Ação</th>
+                           </tr>
+                       </thead>
+                       <tbody>
+                           @foreach (var merge in mergeSuggestions)
+                           {
+                               <tr class="@(merge.IsBlocked ? "opacity-50" : "")">
+                                   <td>@merge.Source</td>
+                                   <td><i class="fas fa-arrow-right text-muted"></i></td>
+                                   <td><strong>@merge.Target</strong></td>
+                                   <td>
+                                       @{
+                                           var color = merge.Score > 0.9 ? "success" : "warning";
+                                           if(merge.IsBlocked) color = "danger";
+                                       }
+                                       <span class="badge bg-@color">@((merge.Score * 100).ToString("F0"))%</span>
+                                   </td>
+                                   <td class="text-end">
+                                       @if (merge.IsBlocked)
+                                       {
+                                           <span class="badge bg-secondary"><i class="fas fa-ban me-1"></i> Bloqueado Semântico</span>
+                                       }
+                                       else
+                                       {
+                                           <button class="btn btn-sm btn-outline-success" @onclick="() => ExecuteMerge(merge)">
+                                               <i class="fas fa-check me-1"></i> Aprovar Fusão
+                                           </button>
+                                       }
+                                   </td>
+                               </tr>
+                           }
+                       </tbody>
+                   </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .admin-page { padding: 2rem; color: #fff; }
+    .header-section { margin-bottom: 2rem; }
+    .header-section h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .subtitle { color: rgba(255, 255, 255, 0.6); }
+
+    .glass {
+        background: rgba(30, 41, 59, 0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 1.5rem;
+    }
+
+    .section-card {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 1.5rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .table { color: #fff; margin-bottom: 0; }
+    .table th { border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.6); font-weight: 500; font-size: 0.875rem; }
+    .table td { border-bottom: 1px solid rgba(255, 255, 255, 0.05); vertical-align: middle; padding: 1rem 0.75rem; }
+    
+    .music-info .title { font-weight: 500; }
+    .music-info .channel { font-size: 0.75rem; color: rgba(255, 255, 255, 0.5); }
+    
+    .video-id { background: rgba(0, 0, 0, 0.3); padding: 0.2rem 0.4rem; border-radius: 4px; color: #facc15; font-size: 0.8rem; }
+    
+    .badge { padding: 0.4rem 0.75rem; border-radius: 6px; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; }
+    .badge-primary { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .badge-info { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
+
+    .form-control, .form-select {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+    .form-control:focus, .form-select:focus {
+        background: rgba(0, 0, 0, 0.3);
+        border-color: #6366f1;
+        color: #fff;
+        box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25);
+    }
+
+    .modal-content.glass {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(99, 102, 241, 0.2);
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 2rem auto;
+    }
+    @@keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-state { text-align: center; padding: 4rem; }
+</style>
+
+@code {
+    private SystemConfigDto config = new();
+    private List<YouTubeMusicCacheDto> musicCache = new();
+    private bool isLoading = true;
+    private string searchTerm = "";
+    
+    private bool isModalOpen = false;
+    private bool isEditing = false;
+    private YouTubeMusicCacheDto selectedItem = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            var token = await AuthService.GetAccessTokenAsync();
+            var apiKey = await AuthService.GetApiKeyAsync();
+            
+            if (!string.IsNullOrEmpty(token))
+            {
+                var configTask = AdminService.GetSystemConfigAsync(token, apiKey);
+                var cacheTask = AdminService.GetMusicCacheAsync(token, apiKey);
+                
+                await Task.WhenAll(configTask, cacheTask);
+                
+                config = await configTask ?? new();
+                musicCache = await cacheTask ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar dados de música: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private IEnumerable<YouTubeMusicCacheDto> FilteredCache => 
+        string.IsNullOrWhiteSpace(searchTerm) 
+            ? musicCache 
+            : musicCache.Where(c => 
+                c.NormalizedQuery.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                c.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                c.VideoId.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private async Task SaveConfig()
+    {
+        var token = await AuthService.GetAccessTokenAsync();
+        var apiKey = await AuthService.GetApiKeyAsync();
+        
+        var success = await AdminService.UpdateSystemConfigAsync(config, token, apiKey);
+        if (success)
+        {
+            await JS.InvokeVoidAsync("alert", "Configuração salva com sucesso!");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao salvar configuração.");
+        }
+    }
+
+    private void OpenModal(YouTubeMusicCacheDto? item = null)
+    {
+        if (item != null)
+        {
+            isEditing = true;
+            selectedItem = new YouTubeMusicCacheDto
+            {
+                Id = item.Id,
+                NormalizedQuery = item.NormalizedQuery,
+                VideoId = item.VideoId,
+                Title = item.Title,
+                Channel = item.Channel,
+                Kind = item.Kind
+            };
+        }
+        else
+        {
+            isEditing = false;
+            selectedItem = new YouTubeMusicCacheDto { Kind = 0 };
+        }
+        isModalOpen = true;
+    }
+
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+    private async Task SaveMusic()
+    {
+        if (string.IsNullOrWhiteSpace(selectedItem.NormalizedQuery) || string.IsNullOrWhiteSpace(selectedItem.VideoId))
+        {
+            await JS.InvokeVoidAsync("alert", "Termo e Video ID são obrigatórios.");
+            return;
+        }
+
+        var token = await AuthService.GetAccessTokenAsync();
+        var apiKey = await AuthService.GetApiKeyAsync();
+        
+        bool success;
+        if (isEditing)
+        {
+            success = await AdminService.UpdateMusicCacheAsync(selectedItem.Id, selectedItem, token, apiKey);
+        }
+        else
+        {
+            success = await AdminService.CreateMusicCacheAsync(selectedItem, token, apiKey);
+        }
+
+        if (success)
+        {
+            await LoadData();
+            isModalOpen = false;
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao salvar música.");
+        }
+    }
+
+    private async Task DeleteMusic(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "Tem certeza que deseja remover esta música do pool?"))
+            return;
+
+        var token = await AuthService.GetAccessTokenAsync();
+        var apiKey = await AuthService.GetApiKeyAsync();
+        
+        if (await AdminService.DeleteMusicCacheAsync(id, token, apiKey))
+        {
+            await LoadData();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao excluir música.");
+        }
+    }
+
+    // --- Merge Dashboard (Real) ---
+    private bool isMergeModalOpen = false;
+    private List<MergeSuggestionDto> mergeSuggestions = new();
+    private bool isLoadingSuggestions = false;
+
+    private async Task OpenMergeDashboard()
+    {
+        isMergeModalOpen = true;
+        isLoadingSuggestions = true;
+        try
+        {
+            var token = await AuthService.GetAccessTokenAsync();
+            var apiKey = await AuthService.GetApiKeyAsync();
+            mergeSuggestions = await AdminService.GetMergeSuggestionsAsync(token, apiKey);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar sugestões: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingSuggestions = false;
+        }
+    }
+
+    private void CloseMergeDashboard() => isMergeModalOpen = false;
+
+    private async Task ExecuteMerge(MergeSuggestionDto merge)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"Confirmar fusão de '{merge.Source}' em '{merge.Target}'?")) return;
+        
+        var token = await AuthService.GetAccessTokenAsync();
+        var apiKey = await AuthService.GetApiKeyAsync();
+
+        var request = new MergeExecutionRequest
+        {
+            SourceQuery = merge.Source,
+            TargetCanonical = merge.Target
+        };
+
+        var success = await AdminService.ExecuteMergeAsync(request, token, apiKey);
+
+        if (success)
+        {
+            mergeSuggestions.Remove(merge);
+            await LoadData(); // Atualiza a tabela principal também
+            await JS.InvokeVoidAsync("alert", $"Fusão realizada! '{merge.Source}' agora é alias de '{merge.Target}'.");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao executar fusão. Verifique os logs.");
+        }
+    }
+}

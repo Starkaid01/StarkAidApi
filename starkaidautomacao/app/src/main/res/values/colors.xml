@@ -50,4 +50,6 @@
     <color name="jarvis_gradient_start">#000A1A</color>
     <color name="jarvis_gradient_mid">#001F3F</color>
     <color name="jarvis_gradient_end">#003366</color>
+    <color name="red">#F44336</color>
+    <color name="green">#4CAF50</color>
 </resources>

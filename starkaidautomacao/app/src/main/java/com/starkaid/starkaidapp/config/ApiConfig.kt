@@ -9,7 +9,7 @@ object ApiConfig {
     // CONFIGURAÇÃO DE AMBIENTE
     // ============================================
     // Altere este valor para true (desenvolvimento) ou false (produção)
-    private const val IS_DEVELOPMENT = false // PRODUÇÃO
+    private const val IS_DEVELOPMENT = true // DESENVOLVIMENTO
 
     // ============================================
     // URLs DE DESENVOLVIMENTO

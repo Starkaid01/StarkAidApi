@@ -69,7 +69,10 @@ public class WebsocketController : ControllerBase
         finally
         {
             _connections.TryRemove(userId, out _);
-            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
+            if (socket.State == WebSocketState.Open || socket.State == WebSocketState.CloseReceived || socket.State == WebSocketState.CloseSent)
+            {
+               await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
+            }
         }
     }
 

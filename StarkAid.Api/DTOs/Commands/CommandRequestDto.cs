@@ -9,5 +9,7 @@ namespace StarkAid.Api.DTOs.Commands
         public string Texto { get; set; } = string.Empty;
         public string? DeviceId { get; set; }
         public string Contexto { get; set; } = "privado"; // privado, global, followup
+        public int ExecutionDepth { get; set; } = 0;
+        public bool UseStarkCoins { get; set; } = false;
     }
 }

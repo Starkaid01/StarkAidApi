@@ -6,6 +6,7 @@ using StarkAid.Api.DTOs.V1.Auth;
 using StarkAid.Api.Entities;
 using StarkAid.Api.Services.V1.Auth;
 using StarkAid.Api.Services.V1;
+using StarkAid.Api.Services.V1.Rotinas;
 using System.Security.Cryptography;
 
 namespace StarkAid.Api.Controllers.V1;
@@ -17,12 +18,14 @@ public class AuthController : ControllerBase
 {
     private readonly AuthService _authService;
     private readonly RefreshTokenService _refreshTokenService;
+    private readonly IRotinaService _rotinaService;
     private readonly AppDbContext _context;
 
-    public AuthController(AuthService authService, RefreshTokenService refreshTokenService, AppDbContext context)
+    public AuthController(AuthService authService, RefreshTokenService refreshTokenService, IRotinaService rotinaService, AppDbContext context)
     {
         _authService = authService;
         _refreshTokenService = refreshTokenService;
+        _rotinaService = rotinaService;
         _context = context;
     }
 
@@ -114,6 +117,9 @@ public class AuthController : ControllerBase
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+
+        // Seed default routines
+        await _rotinaService.SeedDefaultRotinasAsync(user.Id);
 
         var isFromApp = request.Origem?.ToLower() == "app";
         var token = _authService.GenerateJwtToken(user, isFromApp);

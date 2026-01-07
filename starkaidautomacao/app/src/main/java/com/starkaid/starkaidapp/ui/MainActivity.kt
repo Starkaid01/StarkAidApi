@@ -190,6 +190,7 @@ import com.unity3d.ads.BuildConfig
 import com.starkaid.starkaidapp.services.pipeline.*
 import com.starkaid.starkaidapp.models.AnaliseTexto
 import com.starkaid.starkaidapp.models.MusicResolveRequest
+import com.starkaid.starkaidapp.services.ComodosApi
 import com.starkaid.starkaidapp.services.MusicApi
 import com.starkaid.starkaidapp.services.RadioPlayerService
 
@@ -407,6 +408,8 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     private val devicesOriginalText = "⚡ StarkSwitch"
 
     private var isIaResponsing = AtomicBoolean(false)
+    private var lastDeviceType: String? = null
+    private var lastTurnOnIntent: Boolean = true
 
     private lateinit var ewelinkSecureStorage: SecureStorageManager
 
@@ -752,7 +755,19 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             }
 
 
-            loadDevices()
+            // Setup Comodos Button reusing the old TextView or finding a new button
+            // Modifying tvExpandDevices to act as "Dispositivos" button
+            tvExpandDevices = findViewById(R.id.tvExpandDevices) // Assuming ID exists
+            tvExpandDevices.text = "🏠 Dispositivos (Cômodos)"
+            tvExpandDevices.setOnClickListener {
+                startActivity(Intent(this, ComodosActivity::class.java))
+            }
+            
+            // Remove/Hide other lists
+            findViewById<View>(R.id.rvDevices).visibility = View.GONE
+            findViewById<View>(R.id.rvEwelinkDevices).visibility = View.GONE
+            findViewById<View>(R.id.tvExpandEwelink).visibility = View.GONE
+
 
             window.decorView.postDelayed({
                 findViewById<FloatingActionButton>(R.id.btnMicrophone).createHoverEffect()
@@ -807,9 +822,29 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                         drawerLayout.closeDrawer(GravityCompat.START)
                         true
                     }
+                    R.id.nav_rotinas -> {
+                        startActivity(Intent(this, RotinasActivity::class.java))
+                        drawerLayout.closeDrawer(GravityCompat.START)
+                        true
+                    }
                     R.id.nav_chat_suporte -> {
                         val intent = Intent(this, ChatSuporteActivity::class.java)
                         startActivity(intent)
+                        drawerLayout.closeDrawer(GravityCompat.START)
+                        true
+                    }
+                    R.id.nav_ewelink -> {
+                        Toast.makeText(this, "Acesso rápido EweLink", Toast.LENGTH_SHORT).show()
+                        drawerLayout.closeDrawer(GravityCompat.START)
+                        true
+                    }
+                    R.id.nav_starkswitch -> {
+                        Toast.makeText(this, "Acesso rápido StarkSwitch", Toast.LENGTH_SHORT).show()
+                        drawerLayout.closeDrawer(GravityCompat.START)
+                        true
+                    }
+                    R.id.nav_planos -> {
+                        Toast.makeText(this, "Ver Meus Planos", Toast.LENGTH_SHORT).show()
                         drawerLayout.closeDrawer(GravityCompat.START)
                         true
                     }
@@ -4580,8 +4615,8 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                 }
             }
         } else {
-            Log.d("WhatsAppSession", "Ia desativada")
-            return false
+            Log.d("WhatsAppSession", "Ia desativada - verificando rotinas/comandos locais")
+            return chamarIaSuper(text, true, skipAi = true)
         }
     }
 
@@ -5835,7 +5870,8 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     var ultimaRespostaIA = ""
     private suspend fun chamarIaSuper(
         pergunta: String,
-        ePergunta: Boolean
+        ePergunta: Boolean,
+        skipAi: Boolean = false
     ): Boolean {
         if (pergunta.isBlank()) {
             Log.d("TestandoIA", "Comando vazio ou nulo recebido, ignorando chamada.")
@@ -5924,7 +5960,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
         return try {
             // Se o usuário autorizou uso de StarkCoins, enviar flag para o backend
-            val dto = IaRequest(pergunta, person, ultimoContextoUser, ultimoContextoIA, iaUsandoStarkCoins)
+            val dto = IaRequest(pergunta, person, ultimoContextoUser, ultimoContextoIA, iaUsandoStarkCoins, skipAi)
             val response = api.chamarSuperIA(dto)
 
             if (response.code() == 402) {
@@ -5981,7 +6017,8 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                             iaLimitReached = false
                             aguardandoLiberarConsumoStarkcoins = false
                             ultimaRespostaIA = ""
-                            return false
+                            // Se foi um comando local (ex: rotina), consideramos como handled true mesmo sem texto
+                            return iaResponse.resultado?.hitResult == "LocalCommand"
                         }
                         val economy = iaResponse.economy ?: EconomicPayload(
                             planType = iaResponse.planType ?: "Free",
@@ -7110,6 +7147,52 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         }
     }
 
+    override fun onOpenUrl(url: String) {
+        runOnUiThread {
+            try {
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                startActivity(intent)
+            } catch (e: Exception) {
+                Log.e("SignalR", "Erro ao abrir URL: $url", e)
+            }
+        }
+    }
+
+    override fun onNotificationReceived(titulo: String, mensagem: String) {
+        Log.d("HubListener", "Notificação recebida: $titulo - $mensagem")
+        runOnUiThread {
+            // Se for resposta da IA, usar TTS
+            if (titulo == "IA" || titulo == "StarkAid") {
+                lifecycleScope.launch {
+                    voiceSynthesizer.speak(mensagem)
+                }
+                
+                // Exibir no TextView de fala também
+                tvSpeechText.text = mensagem
+            }
+
+            val builder = androidx.core.app.NotificationCompat.Builder(this, "starkaid_general_channel")
+                .setSmallIcon(R.drawable.logo02)
+                .setContentTitle(titulo)
+                .setContentText(mensagem)
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+
+            val nm = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            nm.notify(System.currentTimeMillis().toInt(), builder.build())
+            
+            Toast.makeText(this, "$titulo: $mensagem", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onAssistantCommandReceived(comando: String) {
+        Log.d("HubListener", "Comando de assistente recebido da rotina: $comando")
+        lifecycleScope.launch {
+            processCommandViaPipeline(comando)
+        }
+    }
+
     private fun executarAcaoSuporte(acao: String) {
         when (acao.lowercase()) {
             "limparcache" -> {
@@ -7511,6 +7594,8 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         }
     }
 
+    private val roomsConfirmationPending = AtomicBoolean(false)
+
     // ---------------- PIPELINE INITIALIZATION & EXECUTION ----------------
     private fun initializePipeline() {
         pipelineActions = object : AssistantActions {
@@ -7667,6 +7752,62 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     false
                 }
             }
+            
+            override suspend fun processDeviceControl(text: String, deviceType: String?, isConfirmation: Boolean): Boolean {
+                val api = ApiClient.getClient(this@MainActivity).create(ComodosApi::class.java)
+                try {
+                    val actualType = if (isConfirmation) lastDeviceType ?: "luz" else deviceType ?: "luz"
+                    val comodoParam = if (isConfirmation) text else null
+                    
+                    // Determine intent
+                    val commandLower = text.lowercase()
+                    val currentTurnOn = if (isConfirmation) {
+                        lastTurnOnIntent
+                    } else {
+                        !commandLower.contains("apaga") && !commandLower.contains("desliga")
+                    }
+                    
+                    // We can pass a flag or the original command that had the intent
+                    // For simplicity, let's pass a synthetic command if it's a confirmation to preserve intent
+                    val commandToSend = if (isConfirmation) {
+                        if (lastTurnOnIntent) "ligar" else "desligar"
+                    } else {
+                        text
+                    }
+
+                    val response = api.resolverDispositivo(actualType, commandToSend, comodoParam)
+                    if (response.isSuccessful && response.body() != null) {
+                        val result = response.body()!!
+                        speakTextFromService(result.mensagemVoz)
+                        setRoomsConfirmationPending(result.requerConfirmacao)
+                        
+                        if (result.requerConfirmacao) {
+                             lastDeviceType = actualType
+                             lastTurnOnIntent = currentTurnOn
+                             // Force listening if waiting for answer
+                             escutando.set(true)
+                             runOnUiThread {
+                                 iniciarTimerDesativacaoEscutando()
+                                 updateAvatarSleepingState()
+                             }
+                        } else {
+                             lastDeviceType = null
+                        }
+                        return true
+                    }
+                } catch (e: Exception) {
+                    Log.e("DeviceControl", "Error", e)
+                }
+                return false
+            }
+
+            override fun setRoomsConfirmationPending(pending: Boolean) {
+                roomsConfirmationPending.set(pending)
+            }
+            
+            override fun isRoomsConfirmationPending(): Boolean {
+                return roomsConfirmationPending.get()
+            }
 
 
 
@@ -7724,6 +7865,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             SleepModeStage(),
             MusicStage(),
             WhatsappConfirmationStage(), // Requires listening
+            DeviceControlStage(), // Enhanced Room Control Stage
             AnalyzeTextStage(analizaTexto),
             ProcessCommandStage(),
             IaFallbackStage()
@@ -7744,6 +7886,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             rawText = text,
             escutando = escutando,
             confirmContato = confirmContato,
+            roomsConfirmationPending = roomsConfirmationPending,
             isTtsSpeaking = isTtsSpeaking,
             actions = pipelineActions
         )
@@ -7810,5 +7953,6 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         val token = sessionManager.fetchAuthToken()
         return extractRoleFromToken(token)
     }
+
 
 }

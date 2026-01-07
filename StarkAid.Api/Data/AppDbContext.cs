@@ -49,13 +49,25 @@ public class AppDbContext : DbContext
     public DbSet<AprendizadoResposta> AprendizadoRespostas => Set<AprendizadoResposta>();
     public DbSet<Telemetria> Telemetrias => Set<Telemetria>();
     public DbSet<AiInteractionEvent> AiInteractionEvents => Set<AiInteractionEvent>();
+
     public DbSet<YouTubeMusicCache> YouTubeMusicCaches => Set<YouTubeMusicCache>();
+    public DbSet<MusicArtistAlias> MusicArtistAliases => Set<MusicArtistAlias>();
+
+    // Comodos Module
+    public DbSet<Comodo> Comodos => Set<Comodo>();
+    public DbSet<ComodoDispositivo> ComodoDispositivos => Set<ComodoDispositivo>();
+    public DbSet<EscopoConversacional> EscoposConversacionais => Set<EscopoConversacional>();
     
     // Fun Module
     public DbSet<Piada> Piadas => Set<Piada>();
     public DbSet<Receita> Receitas => Set<Receita>();
     public DbSet<ReceitaPasso> ReceitaPassos => Set<ReceitaPasso>();
     public DbSet<UserFunState> UserFunStates => Set<UserFunState>();
+    
+    // Automation / Routines Module
+    public DbSet<Rotina> Rotinas => Set<Rotina>();
+    public DbSet<RotinaGatilho> RotinaGatilhos => Set<RotinaGatilho>();
+    public DbSet<RotinaAcao> RotinaAcoes => Set<RotinaAcao>();
 
   
 
@@ -155,20 +167,30 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Agendamento>(entity =>
         {
             entity.HasKey(a => a.Id);
-            entity.Property(a => a.AgendadoPara).HasColumnType("datetimeoffset").IsRequired();
+
+            entity.Property(a => a.AgendadoPara)
+                .HasColumnType("datetimeoffset")
+                .IsRequired();
+
             entity.Property(a => a.Comando).IsRequired();
             entity.Property(a => a.Executado).IsRequired();
             entity.Property(a => a.TipoAgendamento).IsRequired();
-            
+
+            // 🔥 FIX PRINCIPAL
+            entity.HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Restrict); // ⬅️ ESSENCIAL
+
             entity.HasOne(a => a.Device)
-                  .WithMany()
-                  .HasForeignKey(a => a.DeviceId)
-                  .OnDelete(DeleteBehavior.SetNull);
-                  
+                .WithMany()
+                .HasForeignKey(a => a.DeviceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             entity.HasOne(a => a.DispositivoEsp)
-                  .WithMany()
-                  .HasForeignKey(a => a.DispositivoEspId)
-                  .OnDelete(DeleteBehavior.SetNull);
+                .WithMany()
+                .HasForeignKey(a => a.DispositivoEspId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Configurações de DispositivoDisparo
@@ -542,7 +564,7 @@ public class AppDbContext : DbContext
          modelBuilder.Entity<YouTubeMusicCache>(entity =>
          {
              entity.HasKey(e => e.Id);
-             entity.HasIndex(e => e.NormalizedQuery).IsUnique();
+             entity.HasIndex(e => e.NormalizedQuery);
              entity.Property(e => e.NormalizedQuery).IsRequired().HasMaxLength(500);
              entity.Property(e => e.VideoId).IsRequired().HasMaxLength(50);
          });
@@ -659,7 +681,8 @@ public class AppDbContext : DbContext
              );
          });
 
-         modelBuilder.Entity<UserFunState>(entity =>
+
+        modelBuilder.Entity<UserFunState>(entity =>
          {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.PiadasContadasIds).HasColumnType("nvarchar(max)");
@@ -670,6 +693,97 @@ public class AppDbContext : DbContext
                   .HasForeignKey<UserFunState>(u => u.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
          });
+
+         // --- Comodos Configuration ---
+
+         modelBuilder.Entity<Comodo>(entity =>
+         {
+             entity.HasKey(e => e.Id);
+             entity.Property(e => e.Nome).IsRequired().HasMaxLength(150);
+             entity.Property(e => e.CriadoEm).HasColumnType("datetimeoffset").IsRequired();
+
+             entity.HasOne(e => e.User)
+                   .WithMany()
+                   .HasForeignKey(e => e.UserId)
+                   .OnDelete(DeleteBehavior.Cascade);
+         });
+
+         modelBuilder.Entity<ComodoDispositivo>(entity =>
+         {
+             entity.HasKey(e => new { e.ComodoId, e.DispositivoId });
+             
+             entity.Property(e => e.Papel).HasMaxLength(50);
+             entity.Property(e => e.DispositivoId).HasMaxLength(100);
+             entity.Property(e => e.Tipo).HasMaxLength(50);
+
+             entity.HasOne(e => e.Comodo)
+                   .WithMany(c => c.Dispositivos)
+                   .HasForeignKey(e => e.ComodoId)
+                   .OnDelete(DeleteBehavior.Cascade);
+                   
+             // No FK to Device
+         });
+
+
+         modelBuilder.Entity<EscopoConversacional>(entity =>
+         {
+             entity.HasKey(e => e.Id);
+             entity.Property(e => e.ExpiraEm).HasColumnType("datetimeoffset").IsRequired();
+             entity.Property(e => e.CriadoEm).HasColumnType("datetimeoffset").IsRequired();
+
+             entity.HasOne(e => e.User)
+                   .WithMany()
+                   .HasForeignKey(e => e.UserId)
+                   .OnDelete(DeleteBehavior.NoAction); // Avoid circles, or Cascade if User deleted. Let's say NoAction or Cascade. Start with NoAction to be safe on multiple cascades.
+
+             entity.HasOne(e => e.Comodo)
+                   .WithMany()
+                   .HasForeignKey(e => e.ComodoId)
+                   .OnDelete(DeleteBehavior.Cascade);
+         });
+
+         // --- Automation / Routines Configuration ---
+
+         modelBuilder.Entity<Rotina>(entity =>
+         {
+             entity.HasKey(e => e.Id);
+             entity.Property(e => e.Nome).IsRequired().HasMaxLength(150);
+             entity.Property(e => e.Descricao).HasMaxLength(300);
+             entity.Property(e => e.CriadaEm).HasColumnType("datetimeoffset").IsRequired();
+             entity.Property(e => e.AtualizadaEm).HasColumnType("datetimeoffset").IsRequired();
+
+             entity.HasOne(e => e.User)
+                   .WithMany()
+                   .HasForeignKey(e => e.UserId)
+                   .OnDelete(DeleteBehavior.Cascade);
+             
+             entity.HasMany(e => e.Gatilhos)
+                   .WithOne(g => g.Rotina)
+                   .HasForeignKey(g => g.RotinaId)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+             entity.HasMany(e => e.Acoes)
+                   .WithOne(a => a.Rotina)
+                   .HasForeignKey(a => a.RotinaId)
+                   .OnDelete(DeleteBehavior.Cascade);
+         });
+
+         modelBuilder.Entity<RotinaGatilho>(entity =>
+         {
+             entity.HasKey(e => e.Id);
+             entity.Property(e => e.Expressao).IsRequired().HasMaxLength(300);
+             entity.Property(e => e.DiasSemana).HasMaxLength(50);
+             entity.Property(e => e.Tipo).IsRequired();
+         });
+
+         modelBuilder.Entity<RotinaAcao>(entity =>
+         {
+             entity.HasKey(e => e.Id);
+             entity.Property(e => e.Payload).IsRequired();
+             entity.Property(e => e.OrdemExecucao).IsRequired();
+             entity.Property(e => e.Tipo).IsRequired();
+         });
+
 
      }
 }

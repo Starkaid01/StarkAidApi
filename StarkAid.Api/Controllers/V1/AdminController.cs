@@ -1105,13 +1105,186 @@ namespace StarkAid.Api.Controllers.V1
             var resposta = await _context.AprendizadoRespostas.FindAsync(respostaId);
             if (resposta == null) return NotFound();
 
-            // Garantir que não deletamos a única resposta se for Global (opcional, mas boa prática)
-            // Varificar se pertencente a um aprendizado Global que deve ter pelo menos 1? 
-            // Para simplificar, permitimos deletar, mas o sistema pode ficar sem variações se deletar todas.
-            
             _context.AprendizadoRespostas.Remove(resposta);
             await _context.SaveChangesAsync();
             return Ok(new { message = "Variação deletada com sucesso." });
+        }
+
+        // ========== ADMIN SYSTEM CONFIG MANAGEMENT ==========
+        [HttpGet("config")]
+        public async Task<IActionResult> GetSystemConfig()
+        {
+            var config = await _context.ConfiguracoesSistema.FirstOrDefaultAsync();
+            if (config == null)
+            {
+                config = new ConfiguracaoSistema { DominioAudioResolver = "http://localhost:5000" };
+                _context.ConfiguracoesSistema.Add(config);
+                await _context.SaveChangesAsync();
+            }
+            return Ok(config);
+        }
+
+        [HttpPut("config")]
+        public async Task<IActionResult> UpdateSystemConfig([FromBody] AdminUpdateSystemConfigRequest request)
+        {
+            var config = await _context.ConfiguracoesSistema.FirstOrDefaultAsync();
+            if (config == null)
+            {
+                config = new ConfiguracaoSistema();
+                _context.ConfiguracoesSistema.Add(config);
+            }
+
+            if (request.DominioAudioResolver != null) config.DominioAudioResolver = request.DominioAudioResolver;
+            if (request.DominioCloudflare != null) config.DominioCloudflare = request.DominioCloudflare;
+            if (request.DominioNlp != null) config.DominioNlp = request.DominioNlp;
+
+            config.UltimaAtualizacao = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Configuração do sistema atualizada com sucesso.", config });
+        }
+
+        // ========== ADMIN YOUTUBE MUSIC CACHE MANAGEMENT ==========
+        [HttpGet("music-cache")]
+        public async Task<IActionResult> GetMusicCache()
+        {
+            var cache = await _context.YouTubeMusicCaches
+                .OrderByDescending(c => c.CreatedAt)
+                .Select(c => new YouTubeMusicCacheDto
+                {
+                    Id = c.Id,
+                    NormalizedQuery = c.NormalizedQuery,
+                    VideoId = c.VideoId,
+                    Title = c.Title,
+                    Channel = c.Channel,
+                    Kind = (int)c.Kind,
+                    HitCount = c.HitCount,
+                    CreatedAt = c.CreatedAt,
+                    LastUsedAt = c.LastUsedAt
+                })
+                .ToListAsync();
+            return Ok(cache);
+        }
+
+        [HttpPost("music-cache")]
+        public async Task<IActionResult> CreateMusicCache([FromBody] AdminMusicCacheRequest request)
+        {
+            var entry = new YouTubeMusicCache
+            {
+                NormalizedQuery = request.NormalizedQuery,
+                VideoId = request.VideoId,
+                Title = request.Title,
+                Channel = request.Channel,
+                Kind = request.Kind,
+                CreatedAt = DateTimeOffset.UtcNow,
+                LastUsedAt = DateTimeOffset.UtcNow,
+                HitCount = 0
+            };
+
+            _context.YouTubeMusicCaches.Add(entry);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Entrada de cache de música criada com sucesso.", id = entry.Id });
+        }
+
+        [HttpPut("music-cache/{id}")]
+        public async Task<IActionResult> UpdateMusicCache(int id, [FromBody] AdminMusicCacheRequest request)
+        {
+            var entry = await _context.YouTubeMusicCaches.FindAsync(id);
+            if (entry == null) return NotFound();
+
+            entry.NormalizedQuery = request.NormalizedQuery;
+            entry.VideoId = request.VideoId;
+            entry.Title = request.Title;
+            entry.Channel = request.Channel;
+            entry.Kind = request.Kind;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Entrada de cache de música atualizada com sucesso." });
+        }
+
+        [HttpDelete("music-cache/{id}")]
+        public async Task<IActionResult> DeleteMusicCache(int id)
+        {
+            var entry = await _context.YouTubeMusicCaches.FindAsync(id);
+            if (entry == null) return NotFound();
+
+            _context.YouTubeMusicCaches.Remove(entry);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Entrada de cache de música deletada com sucesso." });
+        }
+
+        // ========== MERGE SUGGESTIONS ==========
+        [HttpGet("music-cache/merge-suggestions")]
+        public async Task<IActionResult> GetMergeSuggestions()
+        {
+            // 1. Carrega todos os artistas/queries do cache
+            var entries = await _context.YouTubeMusicCaches
+                .Where(x => x.Kind == MusicKind.Artist) // Foco em fusão de Artistas
+                .Select(x => x.NormalizedQuery)
+                .Distinct()
+                .ToListAsync();
+
+            var suggestions = new List<MergeSuggestionDto>();
+            var processed = new HashSet<string>();
+
+            // 2. Comparação N x N (simplificada para demonstração)
+            // Em produção com muitos dados, use uma busca indexada ou ElasticSearch
+            for (int i = 0; i < entries.Count; i++)
+            {
+                for (int j = i + 1; j < entries.Count; j++)
+                {
+                    var source = entries[i];
+                    var target = entries[j];
+                    
+                    var score = Helpers.TextHelper.JaccardSimilarity(source, target);
+                    
+                    if (score >= 0.6) // Threshold para sugestão
+                    {
+                        suggestions.Add(new MergeSuggestionDto
+                        {
+                            Source = source.Length < target.Length ? source : target, // Assume o mais curto como alias potencial
+                            Target = source.Length < target.Length ? target : source, // Assume o mais longo como canônico potencial
+                            Score = score,
+                            Reason = "Similaridade Textual (Jaccard)",
+                            IsBlocked = false // TODO: Check SemanticBlock table if implemented
+                        });
+                    }
+                }
+            }
+
+            return Ok(suggestions.OrderByDescending(x => x.Score).Take(50));
+        }
+
+        [HttpPost("music-cache/merge")]
+        public async Task<IActionResult> ExecuteMerge([FromBody] MergeExecutionRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.SourceQuery) || string.IsNullOrWhiteSpace(request.TargetCanonical))
+                return BadRequest("Source e Target são obrigatórios.");
+
+            // 1. Cria o Alias no Banco
+            var alias = new MusicArtistAlias
+            {
+                Alias = request.SourceQuery.ToLowerInvariant(),
+                Canonical = request.TargetCanonical.ToLowerInvariant()
+            };
+            
+            _context.MusicArtistAliases.Add(alias);
+
+            // 2. Opcional: Atualizar ou Remover o cache antigo do Source
+            // Se o Source era um pool separado, podemos removê-lo para forçar o uso do Canônico na próxima
+            var oldCache = await _context.YouTubeMusicCaches
+                .Where(x => x.NormalizedQuery == request.SourceQuery)
+                .ToListAsync();
+            
+            if (oldCache.Any())
+            {
+                // Estratégia: Remover para limpar a sujeira.
+                // O sistema recriará o cache correto (com nome canônico) na próxima busca.
+                _context.YouTubeMusicCaches.RemoveRange(oldCache);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = $"Merge realizado: '{request.SourceQuery}' -> '{request.TargetCanonical}'" });
         }
     }
 

@@ -9,6 +9,7 @@
 
         public string Estilo { get; set; } = string.Empty;
         public bool UseStarkCoins { get; set; } = false; // Indica se o app autorizou uso de StarkCoins
+        public bool SkipAi { get; set; } = false; // Indica se o app deseja apenas comandos locais/rotinas
     }
 
 }

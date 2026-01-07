@@ -14,11 +14,11 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "http://localhost:5000",
+      "applicationUrl": "http://0.0.0.0:5000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "Firebase__CredentialsPath": "Configs/firebase-adminsdk.json",
-        "ConnectionStrings__DefaultConnection": "Server=db32296.public.databaseasp.net,1433;Database=db32296;User Id=db32296;Password=Q@n4%j7Cd6L-;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True"
+        "ConnectionStrings__DefaultConnection": "Server=db37440.public.databaseasp.net,1433; Database=db37440; User Id=db37440; Password=8r?JhW3@P=o9; Encrypt=True; TrustServerCertificate=True; MultipleActiveResultSets=True;"
       }
     },
     "https": {
@@ -26,11 +26,11 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "https://localhost:5001;http://localhost:5000",
+      "applicationUrl": "https://0.0.0.0:5001;http://0.0.0.0:5000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "Firebase__CredentialsPath": "Configs/firebase-adminsdk.json",
-        "ConnectionStrings__DefaultConnection": "Server=db32296.public.databaseasp.net,1433;Database=db32296;User Id=db32296;Password=Q@n4%j7Cd6L-;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True"
+        "ConnectionStrings__DefaultConnection": "Server=db37440.public.databaseasp.net,1433; Database=db37440; User Id=db37440; Password=8r?JhW3@P=o9; Encrypt=True; TrustServerCertificate=True; MultipleActiveResultSets=True;"
       }
     },
     "IIS Express": {
@@ -40,7 +40,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "Firebase__CredentialsPath": "Configs/firebase-adminsdk.json",
-        "ConnectionStrings__DefaultConnection": "Server=db32296.public.databaseasp.net,1433;Database=db32296;User Id=db32296;Password=Q@n4%j7Cd6L-;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True"
+        "ConnectionStrings__DefaultConnection": "Server=db37440.public.databaseasp.net,1433; Database=db37440; User Id=db37440; Password=8r?JhW3@P=o9; Encrypt=True; TrustServerCertificate=True; MultipleActiveResultSets=True;"
       }
     }
   }

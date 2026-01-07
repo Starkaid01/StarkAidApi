@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using StarkAid.Api.Data;
 using StarkAid.Api.Entities;
+using StarkAid.Api.Helpers;
 
 namespace StarkAid.Api.Services.V1.Music
 {
@@ -12,11 +13,12 @@ namespace StarkAid.Api.Services.V1.Music
     {
         public string VideoId { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
+        public string? Channel { get; set; }
     }
 
     public interface IYouTubeMusicService
     {
-        Task<List<YouTubeVideoResult>> SearchMusicAsync(string query);
+        Task<List<YouTubeVideoResult>> SearchMusicAsync(string query, MusicKind kind = MusicKind.Song);
     }
 
     public class YouTubeMusicService : IYouTubeMusicService
@@ -41,14 +43,14 @@ namespace StarkAid.Api.Services.V1.Music
             _apiKey = config["YouTube:ApiKey"] ?? string.Empty;
         }
 
-        public async Task<List<YouTubeVideoResult>> SearchMusicAsync(string query)
+        public async Task<List<YouTubeVideoResult>> SearchMusicAsync(string query, MusicKind kind = MusicKind.Song)
         {
             string normalized = MusicQueryNormalizer.Normalize(query);
             if (string.IsNullOrEmpty(normalized)) return new List<YouTubeVideoResult>();
 
-            string cacheKey = $"yt_music_list_{normalized}";
+            string cacheKey = $"yt_music_list_{normalized}_{kind}";
 
-            // 1. Memory Cache (L1)
+            // 1. Memory Cache (L1) - Rápido para evitar DB em repetições imediatas
             if (_memoryCache.TryGetValue(cacheKey, out List<YouTubeVideoResult>? cached) && cached != null)
             {
                 _logger.LogInformation("YouTube L1 Cache Hit (Memory): {Query}", normalized);
@@ -57,69 +59,135 @@ namespace StarkAid.Api.Services.V1.Music
             }
 
             // 2. Database Cache (L2) 
-            var dbEntry = await _dbContext.YouTubeMusicCaches
-                .FirstOrDefaultAsync(x => x.NormalizedQuery == normalized);
+            var dbEntries = await _dbContext.YouTubeMusicCaches
+                .Where(x => x.NormalizedQuery == normalized && x.Kind == kind)
+                .OrderBy(x => x.LastUsedAt) // Menos usada primeiro para variedade
+                .ToListAsync();
 
-            if (dbEntry != null)
+            if (dbEntries.Any())
             {
-                _logger.LogInformation("YouTube L2 Cache Hit (DB): {Query}", normalized);
-                dbEntry.HitCount++;
-                dbEntry.LastUsedAt = DateTimeOffset.UtcNow;
+                _logger.LogInformation("YouTube L2 Cache Hit (DB): {Query} ({Count} items)", normalized, dbEntries.Count);
+                
+                // Pegamos a menos usada
+                var selected = dbEntries.First();
+                selected.HitCount++;
+                selected.LastUsedAt = DateTimeOffset.UtcNow;
                 await _dbContext.SaveChangesAsync();
 
-                var result = new List<YouTubeVideoResult> { new YouTubeVideoResult { VideoId = dbEntry.VideoId, Title = dbEntry.Title } };
+                var result = new List<YouTubeVideoResult> { new YouTubeVideoResult { VideoId = selected.VideoId, Title = selected.Title } };
                 
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(30))
-                    .SetSize(1);
-                    
-                _memoryCache.Set(cacheKey, result, cacheEntryOptions);
+                // Cacheamos na memória por pouco tempo para não quebrar a rotação rapidamente se o usuário repetir o comando logo em seguida?
+                // Na verdade, se cachearmos na memória, a rotação só acontece quando o cache expira. 
+                // Por isso, para ARTISTA, talvez não devamos fazer cache L1 agressivo.
+                if (kind == MusicKind.Song)
+                {
+                    _memoryCache.Set(cacheKey, result, new MemoryCacheEntryOptions 
+                    { 
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30),
+                        Size = 1 
+                    });
+                }
+                
                 return result;
+            }
+
+            // 2.b Smart L2 Cache (Procura música específica dentro de pools de artistas já salvos)
+            if (kind == MusicKind.Song)
+            {
+                var smartMatch = await TrySmartSearchAsync(normalized);
+                if (smartMatch != null)
+                {
+                    _logger.LogInformation("YouTube Smart Cache Hit (Fuzzy DB): {Query} encontrado em pool de {Title}", normalized, smartMatch.Title);
+                    await UpdateHitCountAsync(smartMatch.VideoId);
+                    
+                    var result = new List<YouTubeVideoResult> { new YouTubeVideoResult { VideoId = smartMatch.VideoId, Title = smartMatch.Title } };
+                    _memoryCache.Set(cacheKey, result, new MemoryCacheEntryOptions 
+                    { 
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30),
+                        Size = 1 
+                    });
+                    return result;
+                }
             }
 
             // 3. YouTube API Search (Fallback)
             try
             {
-                var searchUrl = $"https://www.googleapis.com/youtube/v3/search?part=snippet&q={Uri.EscapeDataString(normalized + " official audio")}&type=video&maxResults=5&key={_apiKey}";
+                int maxResults = kind == MusicKind.Artist ? 10 : 5;
+                string searchQuery = kind == MusicKind.Artist ? normalized : normalized + " official audio";
+                
+                var searchUrl = $"https://www.googleapis.com/youtube/v3/search?part=snippet&q={Uri.EscapeDataString(searchQuery)}&type=video&maxResults={maxResults}&key={_apiKey}";
+                _logger.LogInformation("YouTube API Search: {Url}", searchUrl);
+                
                 var response = await _httpClient.GetFromJsonAsync<YouTubeSearchResponse>(searchUrl);
                 
-                if (response?.Items == null || response.Items.Count == 0) return new List<YouTubeVideoResult>();
+                if (response?.Items == null || response.Items.Count == 0)
+                {
+                    _logger.LogWarning("YouTube API returned NO results for query: {Query}", searchQuery);
+                    return new List<YouTubeVideoResult>();
+                }
+
+                _logger.LogInformation("YouTube API returned {Count} results.", response.Items.Count);
 
                 var results = response.Items.Select(item => new YouTubeVideoResult 
                 { 
                     VideoId = item.Id.VideoId, 
-                    Title = item.Snippet.Title 
+                    Title = item.Snippet.Title,
+                    Channel = item.Snippet.ChannelTitle
                 }).ToList();
 
-                // Salvar o melhor no Cache do DB
-                var best = results.FirstOrDefault(item => 
-                    !item.Title.ToLower().Contains("cover") &&
-                    !item.Title.ToLower().Contains("karaoke") &&
-                    !item.Title.ToLower().Contains("live")
-                ) ?? results.First();
-
-                if (!await _dbContext.YouTubeMusicCaches.AnyAsync(x => x.NormalizedQuery == normalized))
+                // Salvar todos no Cache do DB se for Artista, ou o melhor se for Música
+                if (kind == MusicKind.Artist)
                 {
+                    bool first = true;
+                    foreach (var res in results)
+                    {
+                        var entry = new YouTubeMusicCache
+                        {
+                            NormalizedQuery = normalized,
+                            VideoId = res.VideoId,
+                            Title = res.Title,
+                            Channel = res.Channel,
+                            Kind = kind,
+                            HitCount = first ? 1 : 0,
+                            LastUsedAt = first ? DateTimeOffset.UtcNow : DateTimeOffset.UtcNow.AddMinutes(-5) // Diferenciar para o orderby
+                        };
+                        _dbContext.YouTubeMusicCaches.Add(entry);
+                        first = false;
+                    }
+                    await _dbContext.SaveChangesAsync();
+                }
+                else
+                {
+                    // Música específica: salva apenas a melhor
+                    var best = results.FirstOrDefault(item => 
+                        !item.Title.ToLower().Contains("cover") &&
+                        !item.Title.ToLower().Contains("karaoke") &&
+                        !item.Title.ToLower().Contains("live")
+                    ) ?? results.First();
+
                     var newCache = new YouTubeMusicCache
                     {
                         NormalizedQuery = normalized,
                         VideoId = best.VideoId,
                         Title = best.Title,
-                        Channel = response.Items.First(x => x.Id.VideoId == best.VideoId).Snippet.ChannelTitle,
-                        Source = "YouTube",
-                        HitCount = 1
+                        Channel = best.Channel,
+                        Kind = kind,
+                        HitCount = 1,
+                        LastUsedAt = DateTimeOffset.UtcNow
                     };
                     _dbContext.YouTubeMusicCaches.Add(newCache);
                     await _dbContext.SaveChangesAsync();
+                    
+                    results = new List<YouTubeVideoResult> { best };
+                    _memoryCache.Set(cacheKey, results, new MemoryCacheEntryOptions 
+                    { 
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30),
+                        Size = 1 
+                    });
                 }
 
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(30))
-                    .SetSize(1);
-                
-                _memoryCache.Set(cacheKey, results, cacheEntryOptions);
-
-                return results;
+                return results.Take(1).ToList();
             }
             catch (Exception ex)
             {
@@ -128,9 +196,38 @@ namespace StarkAid.Api.Services.V1.Music
             }
         }
 
-        private async Task UpdateHitCountAsync(string? videoId)
+        private async Task<YouTubeMusicCache?> TrySmartSearchAsync(string normalized)
         {
-            if (string.IsNullOrEmpty(videoId)) return;
+            // 1️⃣ Normaliza a consulta e remove stop‑words
+            var cleanedQuery = Helpers.TextHelper.NormalizarParaBusca(normalized);
+            // Carrega todo o cache (tamanho atual ainda é pequeno)
+            var allEntries = await _dbContext.YouTubeMusicCaches.ToListAsync();
+            // 2️⃣ Primeiro tenta encontrar um título que contenha a consulta limpa
+            var containmentMatch = allEntries
+                .FirstOrDefault(e =>
+                    Helpers.TextHelper.NormalizarTexto(e.Title).Contains(cleanedQuery));
+            if (containmentMatch != null)
+                return containmentMatch;
+            // 3️⃣ Fallback: similaridade de Jaccard (limiar mais baixo)
+            var best = allEntries
+                .Select(entry => new
+                {
+                    Entry = entry,
+                    Similarity = TextHelper.JaccardSimilarity(
+                        cleanedQuery,
+                        Helpers.TextHelper.NormalizarTexto(entry.Title))
+                })
+                .Where(x => x.Similarity >= 0.2) // aceita sobreposição mínima
+                .OrderByDescending(x => x.Similarity)
+                .ThenByDescending(x => x.Entry.HitCount)
+                .ThenByDescending(x => x.Entry.LastUsedAt)
+                .Select(x => x.Entry)
+                .FirstOrDefault();
+            return best;
+        }
+
+        private async Task UpdateHitCountAsync(string videoId)
+        {
             try
             {
                 var entry = await _dbContext.YouTubeMusicCaches.FirstOrDefaultAsync(x => x.VideoId == videoId);
@@ -141,7 +238,7 @@ namespace StarkAid.Api.Services.V1.Music
                     await _dbContext.SaveChangesAsync();
                 }
             }
-            catch { /* Ignore logging hit count errors */ }
+            catch { /* Ignore */ }
         }
 
         private class YouTubeSearchResponse

@@ -7,14 +7,12 @@
 
     <!-- Lâmpada (estado desligado) -->
     <path
-        android:fillColor="#FFBDBDBD"
+        android:fillColor="@android:color/white"
         android:pathData="M12,22c-0.55,0 -1,-0.45 -1,-1h2c0,0.55 -0.45,1 -1,1z"/>
     <path
-        android:fillColor="#FFE0E0E0"
+        android:fillColor="@android:color/white"
         android:pathData="M12,2C8.14,2 5,5.14 5,9c0,2.38 1.19,4.47 3,5.74V17c0,0.55 0.45,1 1,1h6c0.55,0 1,-0.45 1,-1v-2.26c1.81,-1.27 3,-3.36 3,-5.74 0,-3.86 -3.14,-7 -7,-7z"/>
     <path
-        android:fillColor="#FFBDBDBD"
+        android:fillColor="@android:color/white"
         android:pathData="M9,20h6v1H9z"/>
-
-
 </vector>

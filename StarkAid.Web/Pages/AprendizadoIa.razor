@@ -1,4 +1,6 @@
 @page "/aprendizado-ia"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Administrador")]
 @using StarkAid.Web.DTOs
 @using StarkAid.Web.Services
 @using StarkAid.Web.Shared

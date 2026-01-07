@@ -1,37 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    android:orientation="vertical"
+    android:background="#1E1E1E"
+    android:layout_marginBottom="8dp"
+    android:padding="12dp"
+    android:elevation="4dp"
+    android:clickable="true"
+    android:focusable="true">
 
     <LinearLayout
+        android:id="@+id/layoutHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp"
-        android:background="?android:attr/selectableItemBackground">
+        android:gravity="center_vertical"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground">
 
         <TextView
-            android:id="@+id/txtNomeComodo"
+            android:id="@+id/tvNomeComodo"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:text="Nome do Cômodo"
             android:textSize="18sp"
-            android:textStyle="bold"
-            android:gravity="center_vertical" />
+            android:textColor="#FFFFFF" />
 
-        <!-- 🔥 NOVO BOTÃO: Excluir Cômodo -->
         <ImageButton
-            android:id="@+id/btnExcluirComodo"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_delete"
+            android:id="@+id/btnExpand"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/arrow_down_float"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Excluir cômodo"
-            app:tint="@color/red_600" />
-
+            android:tint="#FFFFFF"
+            android:layout_marginEnd="16dp"/>
+            
+         <ImageButton
+            android:id="@+id/btnDeleteComodo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_delete"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#FF5252"/>
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+
+    <LinearLayout
+        android:id="@+id/layoutDevices"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+        
+        <Button 
+            android:id="@+id/btnAddDevice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Adicionar Dispositivo"
+            android:textSize="12sp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvComodoDevices"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+            
+    </LinearLayout>
+
+</LinearLayout>

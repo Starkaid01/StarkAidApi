@@ -19,6 +19,7 @@ public class DeviceHub : Hub
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, userId);
+            Console.WriteLine($"[SignalR] Usuário {userId} entrou no grupo de notificações (Connection: {Context.ConnectionId})");
             await Clients.Caller.SendAsync("Connected", "CONNECTED");
         }
 
@@ -33,6 +34,7 @@ public class DeviceHub : Hub
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, userId);
+            Console.WriteLine($"[SignalR] Usuário {userId} saiu do grupo de notificações (Connection: {Context.ConnectionId})");
         }
 
         await base.OnDisconnectedAsync(exception);

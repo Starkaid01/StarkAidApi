@@ -192,6 +192,20 @@ namespace StarkAid.Api.Controllers.V1
             });
         }
 
+        if (request.SkipAi)
+        {
+            var limiteSkip = _planoLimites.ObterLimiteTokensSemana(user);
+            return Ok(new
+            {
+                resultado = new IaResultado { Texto = "", HitResult = "SkippedByRequest" },
+                planType = user.PlanType.ToString(),
+                tokensConsumidosSemana = user.TokensConsumidosSemana,
+                tokensSemanaMax = limiteSkip,
+                tokensRestantes = Math.Max(0, limiteSkip - user.TokensConsumidosSemana),
+                starkCoinBalance = user.StarkCoins
+            });
+        }
+
         // BLOQUEIO ADICIONAL: Se for Piada ou Matemática e falhou no Router Local, 
         // NÃO deve cair na IA para evitar que ela tente dar respostas genéricas ou aprenda comandos básicos.
         var intentSafety = _intentDetector.DetectIntent(request.Texto);

@@ -1,43 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <item
-        android:id="@+id/nav_close"
-        android:title="Fechar Menu"
-        android:icon="@drawable/ic_arrow_left" />
-
+    <!-- Home page -->
     <item
         android:id="@+id/home_page"
-        android:title="Home"
-        android:icon="@drawable/ic_home" />
+        android:icon="@drawable/ic_home"
+        android:title="Início"
+        app:showAsAction="ifRoom" />
 
+    <!-- Close drawer -->
+    <item
+        android:id="@+id/nav_close"
+        android:icon="@drawable/ic_close"
+        android:title="Fechar"
+        app:showAsAction="ifRoom" />
+
+    <!-- Configurações -->
     <item
         android:id="@+id/nav_config"
+        android:icon="@drawable/ic_settings"
         android:title="Configurações"
-        android:icon="@drawable/ic_settings" />
+        app:showAsAction="ifRoom" />
 
+    <!-- Rotinas -->
     <item
-        android:id="@+id/nav_pruducts"
-        android:title="Nossos Produtos"
-        android:icon="@drawable/ic_products" />
+        android:id="@+id/nav_rotinas"
+        android:icon="@drawable/ic_routine"
+        android:title="Rotinas"
+        app:showAsAction="ifRoom" />
 
-    <item
-        android:id="@+id/nav_cursos"
-        android:title="Nossos Cursos"
-        android:icon="@drawable/ic_products" />
-
-    <item
-        android:id="@+id/nav_contact"
-        android:title="Contato"
-        android:icon="@drawable/ic_contact" />
-
+    <!-- Chat de suporte -->
     <item
         android:id="@+id/nav_chat_suporte"
-        android:title="Chat Suporte"
-        android:icon="@drawable/ic_contact" />
+        android:icon="@drawable/ic_chat"
+        android:title="Suporte"
+        app:showAsAction="ifRoom" />
 
+    <!-- eWeLink -->
     <item
+        android:id="@+id/nav_ewelink"
+        android:icon="@drawable/ic_ewelink"
+        android:title="eWeLink"
+        app:showAsAction="ifRoom" />
+
+    <!-- Starkswitch -->
+    <item
+        android:id="@+id/nav_starkswitch"
+        android:icon="@drawable/ic_switch"
+        android:title="Starkswitch"
+        app:showAsAction="ifRoom" />
+
+    <!-- Meus Planos -->
+    <item
+        android:id="@+id/nav_planos"
+        android:icon="@drawable/ic_payment"
+        android:title="Meus Planos"
+        app:showAsAction="ifRoom" />    <item
         android:id="@+id/nav_logout"
+        android:icon="@drawable/ic_logout"
         android:title="Sair"
-        android:icon="@drawable/ic_logout" />
+        app:showAsAction="ifRoom" />
+
 </menu>

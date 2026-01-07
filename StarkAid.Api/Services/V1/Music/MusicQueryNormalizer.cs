@@ -16,7 +16,7 @@ namespace StarkAid.Api.Services.V1.Music
 
             // 2. Remove common prefixes
             text = Regex.Replace(text, @"^(toca|tocar|coloque|ouvir|quero ouvir|play)\s*", "");
-            text = Regex.Replace(text, @"\b(do|da|de|pelo|pela|com|e)\b", " ");
+            // text = Regex.Replace(text, @"\b(do|da|de|pelo|pela|com|e)\b", " "); // Mantemos para melhor precisão no YouTube
 
             // 3. Remove Accents
             text = RemoveAccents(text);
@@ -24,8 +24,10 @@ namespace StarkAid.Api.Services.V1.Music
             // 4. Clean special characters
             text = Regex.Replace(text, @"[^a-z0-9\s]", " ");
 
-            // 5. Remove extra spaces
-            text = Regex.Replace(text, @"\s+", " ").Trim();
+            // 5. Remove extra spaces and sort words
+            var tokens = Regex.Replace(text, @"\s+", " ").Trim().Split(' ');
+            Array.Sort(tokens);
+            text = string.Join(" ", tokens);
 
             return text;
         }

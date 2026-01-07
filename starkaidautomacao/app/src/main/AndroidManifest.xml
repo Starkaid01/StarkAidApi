@@ -246,6 +246,22 @@
             android:theme="@style/Theme.StarkAid" />
 
         <activity android:name="com.starkaid.starkaidapp.ui.AddStarkcoinsActivity" />
+        
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.ComodosActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StarkAid" />
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.RotinasActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StarkAid" />
+
+        <activity
+            android:name="com.starkaid.starkaidapp.ui.EditarRotinaActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StarkAid" />
+
 
         <service
             android:name="com.starkaid.starkaidapp.services.FullDuplexAssistantAdvancedService"

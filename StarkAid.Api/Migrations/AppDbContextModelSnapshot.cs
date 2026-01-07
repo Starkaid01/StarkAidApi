@@ -56,6 +56,9 @@ namespace StarkAid.Api.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("UserId1")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DeviceId");
@@ -63,6 +66,8 @@ namespace StarkAid.Api.Migrations
                     b.HasIndex("DispositivoEspId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId1");
 
                     b.ToTable("Agendamentos");
                 });
@@ -298,6 +303,53 @@ namespace StarkAid.Api.Migrations
                     b.ToTable("ComandosSociais");
                 });
 
+            modelBuilder.Entity("StarkAid.Api.Entities.Comodo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CriadoEm")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Comodos");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.ComodoDispositivo", b =>
+                {
+                    b.Property<Guid>("ComodoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DispositivoId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Papel")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("ComodoId", "DispositivoId");
+
+                    b.ToTable("ComodoDispositivos");
+                });
+
             modelBuilder.Entity("StarkAid.Api.Entities.ConfiguracaoSistema", b =>
                 {
                     b.Property<int>("Id")
@@ -359,6 +411,9 @@ namespace StarkAid.Api.Migrations
                     b.Property<string>("Comando")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsOn")
+                        .HasColumnType("bit");
 
                     b.Property<string>("MqttTopic")
                         .IsRequired()
@@ -631,6 +686,33 @@ namespace StarkAid.Api.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("ErrorLogsSoft");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.EscopoConversacional", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ComodoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CriadoEm")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiraEm")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComodoId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("EscoposConversacionais");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.EwelinkAccount", b =>
@@ -939,6 +1021,29 @@ namespace StarkAid.Api.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("LogsFalhasSoft", (string)null);
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.MusicArtistAlias", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Alias")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Canonical")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MusicArtistAliases");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Notification", b =>
@@ -1650,6 +1755,94 @@ namespace StarkAid.Api.Migrations
                     b.ToTable("ResolvendoSuportes", (string)null);
                 });
 
+            modelBuilder.Entity("StarkAid.Api.Entities.Rotina", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("AtualizadaEm")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CriadaEm")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Descricao")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Rotinas");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.RotinaAcao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("OrdemExecucao")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("RotinaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RotinaId");
+
+                    b.ToTable("RotinaAcoes");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.RotinaGatilho", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DiasSemana")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Expressao")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<Guid>("RotinaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RotinaId");
+
+                    b.ToTable("RotinaGatilhos");
+                });
+
             modelBuilder.Entity("StarkAid.Api.Entities.StarkCoinPurchase", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2171,6 +2364,9 @@ namespace StarkAid.Api.Migrations
                     b.Property<bool>("IsLive")
                         .HasColumnType("bit");
 
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
                     b.Property<DateTimeOffset>("LastUsedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -2194,8 +2390,7 @@ namespace StarkAid.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("NormalizedQuery")
-                        .IsUnique();
+                    b.HasIndex("NormalizedQuery");
 
                     b.ToTable("YouTubeMusicCaches");
                 });
@@ -2213,10 +2408,14 @@ namespace StarkAid.Api.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("StarkAid.Api.Entities.User", "User")
-                        .WithMany("Agendamentos")
+                        .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("StarkAid.Api.Entities.User", null)
+                        .WithMany("Agendamentos")
+                        .HasForeignKey("UserId1");
 
                     b.Navigation("Device");
 
@@ -2264,6 +2463,28 @@ namespace StarkAid.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.Comodo", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.ComodoDispositivo", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.Comodo", "Comodo")
+                        .WithMany("Dispositivos")
+                        .HasForeignKey("ComodoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Comodo");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.Device", b =>
@@ -2335,6 +2556,25 @@ namespace StarkAid.Api.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.EscopoConversacional", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.Comodo", "Comodo")
+                        .WithMany()
+                        .HasForeignKey("ComodoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Comodo");
 
                     b.Navigation("User");
                 });
@@ -2471,6 +2711,39 @@ namespace StarkAid.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StarkAid.Api.Entities.Rotina", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.RotinaAcao", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.Rotina", "Rotina")
+                        .WithMany("Acoes")
+                        .HasForeignKey("RotinaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Rotina");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.RotinaGatilho", b =>
+                {
+                    b.HasOne("StarkAid.Api.Entities.Rotina", "Rotina")
+                        .WithMany("Gatilhos")
+                        .HasForeignKey("RotinaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Rotina");
+                });
+
             modelBuilder.Entity("StarkAid.Api.Entities.StarkCoinPurchase", b =>
                 {
                     b.HasOne("StarkAid.Api.Entities.User", "User")
@@ -2553,6 +2826,11 @@ namespace StarkAid.Api.Migrations
                     b.Navigation("Respostas");
                 });
 
+            modelBuilder.Entity("StarkAid.Api.Entities.Comodo", b =>
+                {
+                    b.Navigation("Dispositivos");
+                });
+
             modelBuilder.Entity("StarkAid.Api.Entities.DispositivoDisparo", b =>
                 {
                     b.Navigation("Disparos");
@@ -2566,6 +2844,13 @@ namespace StarkAid.Api.Migrations
             modelBuilder.Entity("StarkAid.Api.Entities.Receita", b =>
                 {
                     b.Navigation("Passos");
+                });
+
+            modelBuilder.Entity("StarkAid.Api.Entities.Rotina", b =>
+                {
+                    b.Navigation("Acoes");
+
+                    b.Navigation("Gatilhos");
                 });
 
             modelBuilder.Entity("StarkAid.Api.Entities.User", b =>
