@@ -1,6 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using StarkAid.Api.Services;
 using StarkAid.Api.Services.V1.Music;
+using StarkAid.Api.DTOs;
 using StarkAid.Api.DTOs.V1.Music;
+using StarkAid.Api.Data;
 
 namespace StarkAid.Api.Controllers.V1
 {
@@ -9,14 +14,21 @@ namespace StarkAid.Api.Controllers.V1
     public class MusicController : ControllerBase
     {
         private readonly IMusicIntentService _musicIntentService;
+        private readonly ITokenUsageService _tokenUsage;
+        private readonly AppDbContext _context;
         private readonly ILogger<MusicController> _logger;
+        private readonly Services.PlanoLimitesService _planoLimites;
 
-        public MusicController(IMusicIntentService musicIntentService, ILogger<MusicController> logger)
+        public MusicController(IMusicIntentService musicIntentService, ITokenUsageService tokenUsage, AppDbContext context, Services.PlanoLimitesService planoLimites, ILogger<MusicController> logger)
         {
             _musicIntentService = musicIntentService;
+            _tokenUsage = tokenUsage;
+            _context = context;
+            _planoLimites = planoLimites;
             _logger = logger;
         }
 
+        [Authorize]
         [HttpPost("resolve")]
         public async Task<IActionResult> Resolve([FromBody] MusicResolveRequest request)
         {

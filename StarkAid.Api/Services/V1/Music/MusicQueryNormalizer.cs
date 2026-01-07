@@ -15,7 +15,7 @@ namespace StarkAid.Api.Services.V1.Music
             string text = query.ToLowerInvariant();
 
             // 2. Remove common prefixes
-            text = Regex.Replace(text, @"^(toca|tocar|coloque|ouvir|quero ouvir|play)\s*", "");
+            text = Regex.Replace(text, @"^(toca|tocar|toque|coloque|colocar|ouvir|quero ouvir|play|musica|musica de|solta|reproduz|reproduzir)\s*", "");
             // text = Regex.Replace(text, @"\b(do|da|de|pelo|pela|com|e)\b", " "); // Mantemos para melhor precisão no YouTube
 
             // 3. Remove Accents

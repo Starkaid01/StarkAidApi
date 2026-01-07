@@ -374,7 +374,7 @@ try
     builder.Services.AddScoped<ICommandHandler, SystemCommandHandler>();
     builder.Services.AddScoped<ICommandHandler, LearningCommandHandler>();
     
-    builder.Services.AddScoped<ICommandHandler, IaCommandHandler>();
+    // builder.Services.AddScoped<ICommandHandler, IaCommandHandler>();
     builder.Services.AddScoped<IAprendizadoService, AprendizadoService>();
 
 

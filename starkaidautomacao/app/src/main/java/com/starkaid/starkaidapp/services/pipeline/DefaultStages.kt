@@ -194,17 +194,16 @@ class MusicStage : CommandStage {
         if (ctx.input.isPartial) return StageResult.Pass
         val text = ctx.input.cleanText.lowercase()
         
-        // 1. Gatilhos de PESQUISA EXPLÍCITOS (Obrigatório começar with toca/tocar/toque)
-        val searchTriggers = listOf("tocar ", "toca ", "toque ")
+        // 1. Gatilhos de PESQUISA EXPLÍCITOS (Obrigatório começar com toca/tocar/toque/musica/ouvir/reproduzir/colocar/solta)
+        val searchTriggers = listOf("tocar ", "toca ", "toque ", "musica ", "ouvir ", "reproduzir ", "colocar ", "solta ")
         val trigger = searchTriggers.find { text.startsWith(it) }
 
         if (trigger != null) {
             val query = text.substringAfter(trigger).trim()
             if (query.isNotEmpty()) {
                 Log.d("Pipeline", "MusicStage: PESQUISA YouTube iniciada para '$query'")
-                if (ctx.actions.resolveAndPlayMusic(text)) { // Passamos o texto completo para o backend processar
-                    return StageResult.Handled
-                }
+                ctx.actions.resolveAndPlayMusic(text) // O resultado não importa aqui para o pipeline
+                return StageResult.Handled // Sempre bloqueia para o AI não responder "música ..."
             }
         }
 
@@ -222,9 +221,8 @@ class MusicStage : CommandStage {
         
         if (isExplicitControl) {
             Log.d("Pipeline", "MusicStage: CONTROLE/VOLUME detectado em '$text'")
-            if (ctx.actions.resolveAndPlayMusic(text)) {
-                return StageResult.Handled
-            }
+            ctx.actions.resolveAndPlayMusic(text)
+            return StageResult.Handled // Bloqueia para ser atômico e gratuito
         }
         
         return StageResult.Pass

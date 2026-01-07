@@ -142,6 +142,10 @@ namespace StarkAid.Api.Services.V1.Music
                     bool first = true;
                     foreach (var res in results)
                     {
+                        // Evita duplicados por VideoId no mesmo Kind
+                        if (await _dbContext.YouTubeMusicCaches.AnyAsync(x => x.VideoId == res.VideoId && x.Kind == kind))
+                            continue;
+
                         var entry = new YouTubeMusicCache
                         {
                             NormalizedQuery = normalized,
@@ -150,7 +154,7 @@ namespace StarkAid.Api.Services.V1.Music
                             Channel = res.Channel,
                             Kind = kind,
                             HitCount = first ? 1 : 0,
-                            LastUsedAt = first ? DateTimeOffset.UtcNow : DateTimeOffset.UtcNow.AddMinutes(-5) // Diferenciar para o orderby
+                            LastUsedAt = first ? DateTimeOffset.UtcNow : DateTimeOffset.UtcNow.AddMinutes(-5)
                         };
                         _dbContext.YouTubeMusicCaches.Add(entry);
                         first = false;
@@ -166,17 +170,28 @@ namespace StarkAid.Api.Services.V1.Music
                         !item.Title.ToLower().Contains("live")
                     ) ?? results.First();
 
-                    var newCache = new YouTubeMusicCache
+                    // Verifica se essa música já existe no banco (mesmo com query diferente)
+                    var existing = await _dbContext.YouTubeMusicCaches.FirstOrDefaultAsync(x => x.VideoId == best.VideoId && x.Kind == kind);
+                    if (existing != null)
                     {
-                        NormalizedQuery = normalized,
-                        VideoId = best.VideoId,
-                        Title = best.Title,
-                        Channel = best.Channel,
-                        Kind = kind,
-                        HitCount = 1,
-                        LastUsedAt = DateTimeOffset.UtcNow
-                    };
-                    _dbContext.YouTubeMusicCaches.Add(newCache);
+                        existing.HitCount++;
+                        existing.LastUsedAt = DateTimeOffset.UtcNow;
+                    }
+                    else
+                    {
+                        var newCache = new YouTubeMusicCache
+                        {
+                            NormalizedQuery = normalized,
+                            VideoId = best.VideoId,
+                            Title = best.Title,
+                            Channel = best.Channel,
+                            Kind = kind,
+                            HitCount = 1,
+                            LastUsedAt = DateTimeOffset.UtcNow
+                        };
+                        _dbContext.YouTubeMusicCaches.Add(newCache);
+                    }
+                    
                     await _dbContext.SaveChangesAsync();
                     
                     results = new List<YouTubeVideoResult> { best };
@@ -187,6 +202,11 @@ namespace StarkAid.Api.Services.V1.Music
                     });
                 }
 
+                if (kind == MusicKind.Artist)
+                {
+                    return results;
+                }
+                
                 return results.Take(1).ToList();
             }
             catch (Exception ex)

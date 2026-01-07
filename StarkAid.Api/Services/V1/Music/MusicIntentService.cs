@@ -35,7 +35,8 @@ namespace StarkAid.Api.Services.V1.Music
 
             // 2. Classificação e Resolução
             // SÓ pesquisamos se houver gatilho explícito
-            if (text.StartsWith("toca ") || text.StartsWith("tocar ") || text.StartsWith("toque "))
+            var searchTriggers = new[] { "toca ", "tocar ", "toque ", "musica ", "ouvir ", "coloque ", "solta ", "reproduz ", "reproduzir " };
+            if (searchTriggers.Any(trigger => text.StartsWith(trigger)))
             {
                 return await HandleMusicIntentAsync(text);
             }
@@ -46,7 +47,7 @@ namespace StarkAid.Api.Services.V1.Music
         private async Task<MusicResolveResponse> HandleMusicIntentAsync(string text)
         {
             // Limpeza
-            var cleanText = Regex.Replace(text, @"^(toca|tocar|toque|coloque|ouvir|quero ouvir)\s*", "").Trim();
+            var cleanText = Regex.Replace(text, @"^(toca|tocar|toque|coloque|ouvir|quero ouvir|musica|musica de|solta|reproduz|reproduzir|colocar)\s*", "").Trim();
             
             if (string.IsNullOrEmpty(cleanText))
                 return new MusicResolveResponse { Type = "none", Tts = "" };
@@ -75,6 +76,14 @@ namespace StarkAid.Api.Services.V1.Music
             if (searchResults != null && searchResults.Count > 0)
             {
                 var first = searchResults[0];
+                if (kind == MusicKind.Artist && searchResults.Count > 1)
+                {
+                    // Se for artista novo (acabou de buscar), escolhemos um aleatório dos 10 iniciais
+                    // para não tocar SEMPRE a mesma primeira música na primeira vez.
+                    var random = new Random();
+                    first = searchResults[random.Next(Math.Min(searchResults.Count, 5))];
+                }
+
                 return new MusicResolveResponse
                 {
                     Type = "radio_two",
@@ -89,7 +98,7 @@ namespace StarkAid.Api.Services.V1.Music
             return new MusicResolveResponse
             {
                 Type = "error",
-                Tts = "Desculpe, não consegui encontrar essa música no YouTube agora."
+                Tts = ""
             };
         }
 
@@ -147,27 +156,23 @@ namespace StarkAid.Api.Services.V1.Music
             if (Regex.IsMatch(text, @"\s(de|do|da|by|from|feat|ft\.|with)\s", RegexOptions.IgnoreCase) || text.Contains(" - "))
                 return MusicKind.Song;
 
-            // 3. Whitelist de Artistas (A única exceção à regra padrão)
-            // Só classificamos como ARTISTA se for um match claro em query curta (<= 3 palavras).
-            // Isso evita que "céu azul charlie brown jr" vire artista.
+            // 3. Whitelist de Artistas (Match exato)
             var knownArtists = new[] { 
                 "charlie brown jr", "charlie brown", "legiao urbana", "legião urbana", "engenheiros do hawaii",
                 "queen", "the beatles", "beatles", "djavan", "adele", "madonna", "coldplay", 
                 "u2", "metallica", "nirvana", "iron maiden", "pink floyd", "guns n roses", "ac/dc",
-                "linkin park", "red hot chili peppers", "foo fighters"
+                "linkin park", "red hot chili peppers", "foo fighters", "nickelback", "creed", "pearl jam"
             };
 
-            if (tokens.Length <= 3 && knownArtists.Any(a => lower == a || (a.Contains(" ") && lower == a))) 
+            // Heurística de Artista:
+            // - Se for apenas UMA palavra: Provavelmente artista (Banda)
+            // - Se estiver no whitelist exato (mesmo com várias palavras como "Guns N Roses")
+            if (tokens.Length == 1 || knownArtists.Any(a => lower == a)) 
             {
-               return MusicKind.Artist;
-            }
-            
-            // Refinamento: Se contém parte de um nome composto muito forte, mas a query é curta
-            if (tokens.Length <= 3 && (lower.Contains("charlie brown") || lower.Contains("legiao urbana")))
                 return MusicKind.Artist;
+            }
 
-            // 4. Padrão Absoluto: Música (Song)
-            // "Céu Azul", "Evidências", "Anna Júlia", "Tempo Perdido" caem aqui.
+            // 4. Se não caiu nas regras acima, tratamos como MÚSICA específica (Pool unitário)
             return MusicKind.Song;
         }
 

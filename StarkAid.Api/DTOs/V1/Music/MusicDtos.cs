@@ -1,3 +1,5 @@
+using StarkAid.Api.DTOs;
+
 namespace StarkAid.Api.DTOs.V1.Music
 {
     public class MusicResolveRequest
@@ -14,6 +16,7 @@ namespace StarkAid.Api.DTOs.V1.Music
         public string? YouTubeVideoId { get; set; }
         public string? Title { get; set; }
         public double Confidence { get; set; }
+        public EconomicPayload? Economy { get; set; }
     }
 
     public class MusicStationStation

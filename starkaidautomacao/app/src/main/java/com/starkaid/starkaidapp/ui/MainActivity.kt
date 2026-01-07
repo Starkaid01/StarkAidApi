@@ -7711,6 +7711,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     val response = musicApi.resolveMusic(MusicResolveRequest(text))
                     if (response.isSuccessful && response.body() != null) {
                         val body = response.body()!!
+
                         if (!body.tts.isNullOrBlank()) {
                             speakTextFromService(body.tts)
                         }

@@ -14,7 +14,8 @@ data class MusicResolveResponse(
     @SerializedName("youTubeVideoId")
     val externalId: String? = null,
     val title: String? = null,
-    val confidence: Double? = null
+    val confidence: Double? = null,
+    val economy: EconomicPayload? = null
 )
 
 data class MusicStation(
