@@ -89,6 +89,11 @@ class HubService(
             listener?.onAssistantCommandReceived(comando)
         }, String::class.java)
 
+        deviceHubConnection?.on("SpeakLembrete", { texto: String, id: String ->
+            Log.d("SignalR", "Lembrete para falar recebido: $texto")
+            listener?.onLembreteReceived(texto, id)
+        }, String::class.java, String::class.java)
+
         deviceHubConnection?.on("Connected", { message: String ->
             Log.d("SignalR", "DeviceHub Connected: $message")
         }, String::class.java)

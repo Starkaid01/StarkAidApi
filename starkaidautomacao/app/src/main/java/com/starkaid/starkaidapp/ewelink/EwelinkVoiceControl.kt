@@ -45,15 +45,31 @@ class EwelinkVoiceControl(private val context: Context, private val deviceServic
 
     fun controlarDispositivoPorComandoAsync(
         comando: String,
+        contextoComodo: String? = null,
         callback: (String) -> Unit
     ) {
-        Log.d("EWE_VOICE_TEST_ACAO", "🔍 Analisando comando: $comando")
+        Log.d("EWE_VOICE_TEST_ACAO", "🔍 Analisando comando: $comando [Contexto: $contextoComodo]")
 
         // Normalizar o comando
+        // 🔥 Ignorar verbos no passado e frases de confirmação para evitar loop
         val comandoNormalizado = comando.lowercase().trim()
+            .replace("desliguei", "")
+            .replace("liguei", "")
+            .replace("acendi", "")
+            .replace("apaguei", "")
+            .replace("desligada", "")
+            .replace("ligada", "")
+            .replace("acesa", "")
+            .replace("apagada", "")
+            .replace("já estava", "")
+            .replace("ja estava", "")
+            .replace("esta desligado", "")
+            .replace("esta ligado", "")
+            
             //ligar desligar
             .replace("liga", "ligar")
             .replace("ligue", "ligar")
+            .replace("ligar", "ligar")
 
             .replace("acenda", "ligar")
             .replace("acende", "ligar")
@@ -110,7 +126,7 @@ class EwelinkVoiceControl(private val context: Context, private val deviceServic
 
 
         // Encontrar dispositivo e ação
-        val (dispositivo, acao) = encontrarDispositivoEAcao(comandoNormalizado)
+        val (dispositivo, acao) = encontrarDispositivoEAcao(comandoNormalizado, contextoComodo)
 
         if (dispositivo != null && acao != null) {
             executarAcao(dispositivo, acao, callback)
@@ -119,26 +135,60 @@ class EwelinkVoiceControl(private val context: Context, private val deviceServic
         }
     }
 
-    private fun encontrarDispositivoEAcao(comandorecive: String): Pair<EwelinkDevice?, String?> {
+    private fun cleanText(text: String): String {
+        return java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
+            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            .lowercase()
+            .trim()
+    }
+
+    private fun encontrarDispositivoEAcao(comandorecive: String, contextoComodo: String?): Pair<EwelinkDevice?, String?> {
         var dispositivoEncontrado: EwelinkDevice? = null
         var acaoEncontrada: String? = null
 
-        val comando = comandorecive.lowercase().trim()
+        val comando = cleanText(comandorecive)
 
-        // Otimização: Buscar no mapa primeiro (mais rápido)
-        // Tentar encontrar por nome exato no mapa
-        for ((nome, dispositivo) in dispositivosMap) {
-            if (comando.contains(nome)) {
-                dispositivoEncontrado = dispositivo
-                Log.d("EWE_VOICE", "✅ Dispositivo encontrado: ${dispositivo.name}")
-                break
+        // Lógica de Prioridade por Contexto
+        if (!contextoComodo.isNullOrEmpty()) {
+            val contextoFilter = cleanText(contextoComodo)
+            Log.d("EWE_VOICE", "🔍 Buscando dispositivo com contexto: $contextoFilter")
+            
+            // 1. Tentar encontrar dispositivo que combine Nome + Contexto na lista
+            for (dispositivo in dispositivos) {
+                val nomeDispositivo = cleanText(dispositivo.name)
+                
+                if (nomeDispositivo.contains(contextoFilter)) {
+                    val nomeSemContexto = nomeDispositivo.replace(contextoFilter, "").trim()
+                    
+                    // Verifica se o comando contém o nome do dispositivo (ex: "luz" em "luz quarto")
+                    // Ou se o nome do dispositivo sem contexto está no comando
+                    if (comando.contains(nomeSemContexto) || 
+                        (nomeSemContexto.isEmpty() && comando.contains("luz")) || // Caso "Quarto" e comando "Luz"
+                        comando.contains(nomeDispositivo)) {
+                         dispositivoEncontrado = dispositivo
+                         Log.d("EWE_VOICE", "✅ Dispositivo encontrado (por contexto): ${dispositivo.name}")
+                         break
+                    }
+                }
+            }
+        }
+
+        // Se não encontrou por contexto, busca padrão
+        if (dispositivoEncontrado == null) {
+            // Otimização: Buscar no mapa primeiro (mais rápido)
+            for ((nome, dispositivo) in dispositivosMap) {
+                if (comando.contains(cleanText(nome))) {
+                    dispositivoEncontrado = dispositivo
+                    Log.d("EWE_VOICE", "✅ Dispositivo encontrado: ${dispositivo.name}")
+                    break
+                }
             }
         }
         
         // Se não encontrou no mapa, tentar na lista (fallback)
         if (dispositivoEncontrado == null) {
             for (dispositivo in dispositivos) {
-                val nomeDispositivo = dispositivo.name.lowercase().trim()
+                val nomeDispositivo = cleanText(dispositivo.name)
                 if (comando.contains(nomeDispositivo)) {
                     dispositivoEncontrado = dispositivo
                     Log.d("EWE_VOICE", "✅ Dispositivo encontrado (fallback): ${dispositivo.name}")

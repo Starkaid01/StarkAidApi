@@ -3,6 +3,7 @@ package com.starkaid.starkaidapp.services.pipeline
 import android.util.Log
 import com.starkaid.starkaidapp.services.AnalizaTexto
 import com.starkaid.starkaidapp.services.RadioPlayerService
+import java.text.Normalizer
 
 // --- 1. StopTalkingStage ---
 class StopTalkingStage : CommandStage {
@@ -262,54 +263,150 @@ class DeviceControlStage : CommandStage {
         
         val text = ctx.input.cleanText.lowercase()
         
-        // Check if we are waiting for confirmation
+        // 0. Confirmação Pendente (Ex: "Na sala", "Quarto")
         if (ctx.session.roomsConfirmationPending.get()) {
-            if (ctx.actions.processDeviceControl(text, null, isConfirmation = true)) {
-                 ctx.session.roomsConfirmationPending.set(false)
-                 ctx.kind = CommandKind.DEVICE
-                 return StageResult.Handled
-            }
-        }
-        
-        val triggers = listOf("acende", "liga", "ligar", "apaga", "desliga", "desligar")
-        val triggerFound = triggers.find { text.contains(it) }
-        
-        if (triggerFound != null) {
-            val deviceType = extractDeviceType(text, triggerFound)
-            if (deviceType.isNotEmpty()) {
-                Log.d("Pipeline", "DeviceControlStage: Comando detectado - Tipo: '$deviceType', Inteira: '$text'")
-                if (ctx.actions.processDeviceControl(text, deviceType, isConfirmation = false)) {
-                    ctx.kind = CommandKind.DEVICE
+            // Verificar se a resposta contém um cômodo válido do texto
+            val comodos = ctx.actions.getComodos()
+            val normalizedText = text.removeAccents()
+            val comodoEncontrado = comodos.find { normalizedText.contains(it.removeAccents()) }
+            
+            if (comodoEncontrado != null) {
+                // Atualiza contexto e reprocessa
+                ctx.actions.setActiveRoom(comodoEncontrado)
+                // Retenta processar o comando original com o novo contexto? 
+                // Simplificação: Passa o cômodo como "texto" para a API confirmar
+                if (ctx.actions.processDeviceControl(comodoEncontrado, null, isConfirmation = true)) {
+                     ctx.session.roomsConfirmationPending.set(false)
+                     ctx.kind = CommandKind.DEVICE
+                     return StageResult.Handled
+                }
+            } else {
+                // Se não entendeu o cômodo, talvez seja cancelamento
+                if (text.contains("cancela") || text.contains("esquece")) {
+                    ctx.session.roomsConfirmationPending.set(false)
+                    ctx.actions.speak("Ok, cancelado.")
+                    ctx.kind = CommandKind.SYSTEM
                     return StageResult.Handled
+                }
+                // Senão, repassa para API tentar entender (fallback antigo)
+                 if (ctx.actions.processDeviceControl(text, null, isConfirmation = true)) {
+                     ctx.session.roomsConfirmationPending.set(false)
+                     ctx.kind = CommandKind.DEVICE
+                     return StageResult.Handled
                 }
             }
         }
+
+        // 1. Prioridade DESLIGAR (Break Flow)
+        val turnOffTriggers = listOf("apaga", "desliga", "desligar", "desligue")
+        val isTurnOff = turnOffTriggers.any { text.contains(it) }
         
+        // 2. LIGAR (só se não for desligar, mas aqui processamos ambos com intent flag implícita no texto)
+        val turnOnTriggers = listOf("acende", "liga", "ligar", "ligue")
+        val isTurnOn = turnOnTriggers.any { text.contains(it) }
+
+        if (!isTurnOff && !isTurnOn) return StageResult.Pass
+
+        // Se for Desligar, garantimos que a API receba explicitamente (ou processamos aqui)
+        // O user pediu explicitamente: "assim que desligar e responder fluxo deve break"
+        // Nossa implementação chama processDeviceControl que retorna true/false.
+        
+        // 3. Identificação de Cômodo
+        val comodos = ctx.actions.getComodos()
+        val normalizedMainText = text.removeAccents()
+        // Ordenar por tamanho decrescente para pegar "quarto do casal" antes de "quarto"
+        val comodoEncontrado = comodos.sortedByDescending { it.length }.find { normalizedMainText.contains(it.removeAccents()) }
+        
+        var targetRoom = comodoEncontrado
+        
+        if (targetRoom != null) {
+            // Se encontrou no texto, atualiza o contexto ativo
+            ctx.actions.setActiveRoom(targetRoom)
+        } else {
+            // Se não encontrou, usa o ativo
+            targetRoom = ctx.actions.getActiveRoom()
+        }
+
+        // 4. Extração do Dispositivo (Tipo)
+        // Remover gatilhos e cômodos para achar o "objeto" (ex: "luz", "ventilador")
+        // Simplificado: Se contém "luz", "lampada" -> luz. 
+        // A função extractDeviceType tenta fazer isso genericamente.
+        val mainTrigger = if (isTurnOff) turnOffTriggers.find { text.contains(it) } else turnOnTriggers.find { text.contains(it) }
+        val deviceType = extractDeviceType(text, mainTrigger ?: "")
+
+        // LOGICA DE AMBIGUIDADE (Simulada, pois a API faz a busca real)
+        // Se targetRoom é NULL e deviceType é genérico (ex: "luz"), 
+        // deveríamos checar se há multiplas.
+        // Como não temos a lista completa de devices aqui com facilidade (temos getDevicesInRoom mas não All),
+        // vamos confiar na API para perguntar "Em qual cômodo?" SE enviarmos sem cômodo.
+        // MAS, se tivermos contexto ativo, enviamos o contexto!
+        
+        // Construir comando final ou deixar API resolver?
+        // Se temos targetRoom, injetamos no texto ou passamos parametro? 
+        // A função processDeviceControl na MainActivity usa o texto raw OU comodoParam se confirmation.
+        // Vamos modificar a estratégia: Append room if found/active implicitamente?
+        // Melhor: Passar o texto original. A API (com a mudança na MainActivity que fizemos) deveria saber do Contexto?
+        // Ah, MainActivity não manda comodoContext para a ComodosApi :(
+        // A ComodosApi espera (tipo, comando, comodoOpcional).
+        
+        // HACK: Se temos targetRoom e ele não está no texto, adicionamos artificialmente para a API achar?
+        // Ou melhor, a API provavelmente já suporta receber o cômodo.
+        // Vamos manter a chamada e confiar que se a API retornar "confirmação necessária", 
+        // a gente trata no passo 0 na próxima vez.
+        
+        // No entanto, o user pediu para atualizar a flag `comodoAtivo`. Já fizemos acima.
+        
+        // Reforço da prioridade Desligar:
+        if (isTurnOff) {
+             Log.d("Pipeline", "DeviceControlStage: Prioridade DESLIGAR - $text [Room: $targetRoom]")
+             // Workaround: Injetar o cômodo ativo no texto se ele não estiver lá, para ajudar a API
+             var textoFinal = text
+             if (targetRoom != null && !text.contains(targetRoom)) {
+                 textoFinal = "$text no $targetRoom"
+             }
+             
+             if (ctx.actions.processDeviceControl(textoFinal, deviceType, isConfirmation = false)) {
+                 ctx.kind = CommandKind.DEVICE
+                 return StageResult.Handled
+             }
+        } 
+        
+        // Se não era desligar (ou falhou?), tenta Ligar
+        if (isTurnOn && !isTurnOff) {
+             Log.d("Pipeline", "DeviceControlStage: LIGAR - $text [Room: $targetRoom]")
+             var textoFinal = text
+             if (targetRoom != null && !text.contains(targetRoom)) {
+                 textoFinal = "$text no $targetRoom"
+             }
+
+             if (ctx.actions.processDeviceControl(textoFinal, deviceType, isConfirmation = false)) {
+                 ctx.kind = CommandKind.DEVICE
+                 return StageResult.Handled
+             }
+        }
+
         return StageResult.Pass
     }
 
     private fun extractDeviceType(text: String, trigger: String): String {
         try {
+            if (trigger.isEmpty()) return "luz" // Default seguro
             val afterTrigger = text.substringAfter(trigger).trim()
-            if (afterTrigger.isEmpty()) return ""
+            if (afterTrigger.isEmpty()) return "luz"
             
-            // Remove room info if present to isolate device type
-            // Ex: "luz da sala" -> "luz"
-            val parts = afterTrigger.split(Regex("\\s(da|do|de|na|no|em)\\s"))
-            var type = parts[0].trim()
+            // Tenta pegar a primeira palavra significativa
+            val parts = afterTrigger.split(" ")
+            // Pular artigos
+            val ignore = listOf("a", "o", "as", "os", "um", "uma", "da", "do", "de", "no", "na")
             
-            // Remove articles
-            val articles = listOf("o ", "a ", "os ", "as ", "um ", "uma ")
-            for (art in articles) {
-                if (type.startsWith(art)) {
-                    type = type.substring(art.length).trim()
-                    break
+            for (part in parts) {
+                if (!ignore.contains(part) && part.length > 2) {
+                    return part // "luz", "ventilador", "abajur"
                 }
             }
-            
-            return type
+            return "luz"
         } catch (e: Exception) {
-            return ""
+            return "luz"
         }
     }
 }
@@ -325,4 +422,10 @@ class IaFallbackStage : CommandStage {
         }
         return StageResult.StopPipeline
     }
+}
+
+// Extension function to remove accents
+fun String.removeAccents(): String {
+    val temp = Normalizer.normalize(this, Normalizer.Form.NFD)
+    return Regex("\\p{InCombiningDiacriticalMarks}+").replace(temp, "")
 }

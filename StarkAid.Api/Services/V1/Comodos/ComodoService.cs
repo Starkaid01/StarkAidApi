@@ -9,6 +9,8 @@ using StarkAid.Api.Hubs;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System.Text.Json.Serialization;
+using System.Text;
+using System.Globalization;
 
 namespace StarkAid.Api.Services.V1.Comodos
 {
@@ -364,6 +366,25 @@ namespace StarkAid.Api.Services.V1.Comodos
                 return new ComandoAmbienteResult { Sucesso = true, MensagemVoz = feedback, DispositivosAcionados = new List<Guid>() };
             }
 
+            // 2.2 Attempt to detect room explicitly in the original command text
+            var allUserComodos = await _context.Comodos.Where(c => c.UserId == userId).ToListAsync();
+            var matchedComodoInText = allUserComodos
+                .OrderByDescending(c => c.Nome.Length) // Longest first to avoid false positives (e.g. "Sala de Estar" vs "Sala")
+                .FirstOrDefault(c => commandLower.Contains(NormalizeComodoName(c.Nome)) || 
+                                    commandLower.Contains(c.Nome.ToLower().Trim()));
+
+            if (matchedComodoInText != null)
+            {
+                var roomDevs = candidates.Where(c => c.ComodoId == matchedComodoInText.Id).ToList();
+                if (roomDevs.Any())
+                {
+                    var feedback = await ExecuteDevices(userId, roomDevs, turnOn);
+                    await _escopoService.CriarOuRenovarEscopoAsync(userId, matchedComodoInText.Id);
+                    return new ComandoAmbienteResult { Sucesso = true, MensagemVoz = feedback };
+                }
+            }
+
+            // 2.3 Fallback to active Conversational Scope (last room used)
             var escopo = await _escopoService.GetEscopoAtivoAsync(userId);
             if (escopo != null)
             {
@@ -387,9 +408,9 @@ namespace StarkAid.Api.Services.V1.Comodos
         private string NormalizeComodoName(string name)
         {
             if (string.IsNullOrEmpty(name)) return "";
-            var n = name.ToLower().Trim();
+            var n = RemoveAccents(name.ToLower().Trim());
             
-            string[] prefixes = { "da ", "do ", "no ", "na ", "em ", "o ", "a ", "de " };
+            string[] prefixes = { "da ", "do ", "no ", "na ", "em ", "o ", "a ", "de ", "no(a) " };
             foreach (var p in prefixes)
             {
                 if (n.StartsWith(p))
@@ -399,6 +420,25 @@ namespace StarkAid.Api.Services.V1.Comodos
                 }
             }
             return n;
+        }
+
+        private string RemoveAccents(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return text;
+            
+            var normalizedString = text.Normalize(System.Text.NormalizationForm.FormD);
+            var stringBuilder = new System.Text.StringBuilder();
+
+            foreach (var c in normalizedString)
+            {
+                var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+
+            return stringBuilder.ToString().Normalize(System.Text.NormalizationForm.FormC);
         }
 
         public async Task<List<DeviceSelectionDto>> GetAvailableDevicesAsync(Guid userId)

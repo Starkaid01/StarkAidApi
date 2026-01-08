@@ -15,7 +15,6 @@ using StarkAid.Api.Services.V1.Devices;
 using StarkAid.Api.DTOs.Commands;
 using Newtonsoft.Json.Linq;
 using StarkAid.Api.Services.V1; // Added for ITokenUsageService
-using StarkAid.Api.Services.V1.Devices;
 
 namespace StarkAid.Api.Services.V1.Rotinas
 {

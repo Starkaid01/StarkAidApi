@@ -66,6 +66,14 @@ class StarkAidMessagingService : FirebaseMessagingService() {
             return
         }
 
+        if (tipo == "lembrete") {
+            // Se app visível, SignalR já tratou (fala). Se não, notifica.
+            if (!StarkAidApp.isAppVisible) {
+                mostrarNotificacaoLembrete(titulo, corpo, disparoId)
+            }
+            return
+        }
+
         if (StarkAidApp.isAppVisible) {
             // App tá aberto — chama diretamente a activity
             val intent = Intent(this, DisparoAlertActivity::class.java).apply {
@@ -122,5 +130,32 @@ class StarkAidMessagingService : FirebaseMessagingService() {
         val notificationId = 12345
 
         notificationManager.notify(notificationId, notification)
+    }
+
+    private fun mostrarNotificacaoLembrete(titulo: String, corpo: String, id: String?) {
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val canal = "starkaid_general_channel" 
+
+        val intent = Intent(this, com.starkaid.starkaidapp.ui.MainActivity::class.java).apply {
+            putExtra("lembreteId", id)
+            putExtra("texto", corpo)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this, id?.hashCode() ?: 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, canal)
+            .setSmallIcon(R.drawable.logo02) 
+            .setContentTitle(titulo)
+            .setContentText(corpo)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        notificationManager.notify((id?.hashCode() ?: 0), notification)
     }
 }

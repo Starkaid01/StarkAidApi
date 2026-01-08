@@ -256,6 +256,10 @@ Output: 'Não poderei comparecer à reunião.'"
             var promptTokens = usage.GetProperty("prompt_tokens").GetInt32();
             var completionTokens = usage.GetProperty("completion_tokens").GetInt32();
 
+            // Fallback Groq (embora Groq costume cobrar, melhor prevenir)
+            if (promptTokens == 0) promptTokens = (requestJson.Length / 4);
+            if (completionTokens == 0) completionTokens = ((texto ?? "").Length / 4);
+
             return new IaResultado
             {
                 Texto = texto ?? "",
@@ -415,11 +419,18 @@ Output: 'Não poderei comparecer à reunião.'"
 
             var usage = doc.RootElement.GetProperty("usage");
 
+            // Fallback de Tokens se a API retornar 0 (comum em modelos free/beta)
+            int pTokens = usage.GetProperty("prompt_tokens").GetInt32();
+            int cTokens = usage.GetProperty("completion_tokens").GetInt32();
+
+            if (pTokens == 0) pTokens = (requestJson.Length / 4);
+            if (cTokens == 0) cTokens = ((texto ?? "").Length / 4);
+
             return new IaResultado
             {
                 Texto = texto ?? "",
-                PromptTokens = usage.GetProperty("prompt_tokens").GetInt32(),
-                CompletionTokens = usage.GetProperty("completion_tokens").GetInt32(),
+                PromptTokens = pTokens,
+                CompletionTokens = cTokens,
                 Modelo = modelo
             };
         }
@@ -568,6 +579,24 @@ Output: 'Não poderei comparecer à reunião.'"
             }
 
             return new List<string>();
+        }
+        public async Task<string> ClassifyMusicIntent(string text)
+        {
+            var mensagens = new[]
+            {
+                new { role = "system", content = "Você é um classificador de intenção musical. O usuário dirá algo relacionado a música. Se ele estiver pedindo para tocar uma música específica, responda APENAS 'Emusica'. Se ele estiver pedindo para tocar um artista, banda ou cantor (para tocar várias músicas deles), responda APENAS 'Eartista'. Responda APENAS a flag." },
+                new { role = "user", content = text }
+            };
+
+            var resultado = await ChamarOpenRouter(mensagens, maxTokens: 10) ?? await ChamarGroq(mensagens, maxTokens: 10);
+            
+            if (resultado == null || string.IsNullOrWhiteSpace(resultado.Texto))
+                return "Emusica"; // Fallback seguro
+                
+            var content = resultado.Texto.Trim().Replace("\"", "").Replace("'", "");
+            
+            if (content.Contains("Eartista", StringComparison.OrdinalIgnoreCase)) return "Eartista";
+            return "Emusica";
         }
     }
 }

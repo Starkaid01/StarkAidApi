@@ -65,6 +65,7 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         var isAdShowing  = AtomicBoolean(false)
 
         var lastSpeak = ""
+        const val ACTION_START_LEMBRETE_FLOW = "START_LEMBRETE_FLOW"
     }
 
     private lateinit var audioManager: AudioManager
@@ -98,6 +99,11 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
     private var silenceStartTime = AtomicLong(0)
     private val lastTtsEndedAt = AtomicLong(0)
     private var speechEndValidationJob: Job? = null
+    
+    // Flags de Conversa
+    private var aguardandoRespostaHoraLembrete = AtomicBoolean(false)
+    private var lembreteTemporario: String? = null
+    private var timeoutJob: Job? = null
 
     private fun duckVolume() {
         if (isDucked) return
@@ -698,6 +704,20 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
             ACTION_UNDUCK -> {
                 unduckVolume()
             }
+            ACTION_START_LEMBRETE_FLOW -> {
+                Log.d(TAG, "⏰ Iniciando fluxo de lembrete (aguardando horário)")
+                aguardandoRespostaHoraLembrete.set(true)
+                lembreteTemporario = intent?.getStringExtra("texto")
+                timeoutJob?.cancel()
+                timeoutJob = commandScope.launch {
+                    delay(10 * 60 * 1000) // 10 min
+                    if (aguardandoRespostaHoraLembrete.get()) {
+                        aguardandoRespostaHoraLembrete.set(false)
+                        lembreteTemporario = null
+                        Log.d(TAG, "⏰ Timeout fluxo de lembrete")
+                    }
+                }
+            }
             else -> {
                 val text = intent?.getStringExtra("text") ?: return START_STICKY
                 speak(text)
@@ -848,6 +868,17 @@ class FullDuplexAssistantAdvancedService : Service(), TextToSpeech.OnInitListene
         }
 
         // Processar comando normalmente
+        if (aguardandoRespostaHoraLembrete.get() && !partial) {
+             aguardandoRespostaHoraLembrete.set(false)
+             timeoutJob?.cancel()
+             // Concatena o lembrete original com a resposta de horário
+             // Ex: "horario do lembrete Lembrar de comprar pão amanhã às 14h"
+             val finalText = "horario do lembrete ${lembreteTemporario ?: ""} $cleanText"
+             Log.d(TAG, "⏰ Resposta de horário recebida: combinando '$lembreteTemporario' + '$cleanText'")
+             broadcastSpeechResult(finalText)
+             return
+        }
+
         val resultText = if (partial) "parcial:$cleanText" else cleanText
         Log.d(TAG, "✅ Processando comando: '$cleanText'")
         broadcastSpeechResult(resultText)

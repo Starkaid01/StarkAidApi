@@ -55,6 +55,7 @@ using IEwelinkServiceV1 = StarkAid.Api.Services.V1.IEwelinkService;
 using EwelinkServiceV1 = StarkAid.Api.Services.V1.EwelinkService;
 using TranscribeProxyServiceV1 = StarkAid.Api.Services.V1.TranscribeProxyService;
 using WeeklyTokensResetService = StarkAid.Api.Services.WeeklyTokensResetService;
+using StarkAid.Api.Services.V1.Lembretes;
 
 try
 {
@@ -431,6 +432,7 @@ try
     }
     catch (Exception ex)
     {
+        Console.WriteLine($"🌍 Erro ao carregar domínio Cloudflare: {ex.Message}");
     }
 
 
@@ -441,6 +443,7 @@ try
     builder.Services.AddHostedService<AssinaturaStatusChecker>();
     builder.Services.AddHostedService<WeeklyTokensResetService>();
     builder.Services.AddHostedService<StarkAid.Api.Services.Background.CognitiveGarbageCollectorService>();
+    builder.Services.AddHostedService<StarkAid.Api.Services.Background.LembreteSchedulerService>();
     builder.Services.AddHostedService<RoutineSchedulerService>();
 
     builder.Services.AddSingleton<IMqttClientService, MqttClientService>();
@@ -570,6 +573,9 @@ try
     builder.Services.AddSingleton<StarkAid.Api.Services.V1.Suporte.ISupportQueueService, StarkAid.Api.Services.V1.Suporte.SupportQueueService>();
     builder.Services.AddScoped<StarkAid.Api.Services.V1.Suporte.ISupportIaService, StarkAid.Api.Services.V1.Suporte.SupportIaService>();
     builder.Services.AddScoped<StarkAid.Api.Services.V1.Suporte.ISuporteChatService, StarkAid.Api.Services.V1.Suporte.SuporteChatService>();
+    
+    // Lembretes Module
+    builder.Services.AddScoped<ILembreteService, LembreteService>();
 
     var app = builder.Build();
 

@@ -99,12 +99,12 @@ interface AssistantActions {
     suspend fun processAutomation(text: String): Boolean
     suspend fun processDevices(text: String): Boolean
     suspend fun processIaFallback(text: String): Boolean
-    
+
     // Gerenciamento de StarkCoins
     fun isStarkCoinsConfirmationPending(): Boolean
     fun setStarkCoinsConfirmationPending(pending: Boolean)
-    fun handleStarkCoinsResponse(positive: Boolean) 
-    
+    fun handleStarkCoinsResponse(positive: Boolean)
+
     // Wake Word e Estado
     fun getAssistantName(): String
     fun onWakeWordDetected()
@@ -112,9 +112,9 @@ interface AssistantActions {
     // Telemetria
     fun sendTelemetry(evento: String, categoria: String, metadata: Map<String, Any>? = null)
     fun sendAiTelemetry(
-        textoOriginal: String, 
-        resultado: String, 
-        latenciaMs: Int, 
+        textoOriginal: String,
+        resultado: String,
+        latenciaMs: Int,
         chamouIaExterna: Boolean = false,
         similarityScore: Double? = null,
         aprendizadoTipo: String? = null,
@@ -129,10 +129,21 @@ interface AssistantActions {
     fun nextMusic()
     fun setMusicVolume(up: Boolean)
     fun unduckMusic()
-    
+
     // Comodos
-    suspend fun processDeviceControl(text: String, deviceType: String?, isConfirmation: Boolean): Boolean
+    suspend fun processDeviceControl(
+        text: String,
+        deviceType: String?,
+        isConfirmation: Boolean
+    ): Boolean
+
     fun setRoomsConfirmationPending(pending: Boolean)
     fun isRoomsConfirmationPending(): Boolean
+
+    // Room Awareness
+    fun getComodos(): List<String>
+    fun getDevicesInRoom(room: String): List<Any> // Returns list of mixed device types
+    fun setActiveRoom(room: String)
+    fun getActiveRoom(): String?
 }
 

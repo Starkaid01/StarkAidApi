@@ -7,4 +7,5 @@ interface HubListener {
     fun onOpenUrl(url: String)
     fun onNotificationReceived(titulo: String, mensagem: String)
     fun onAssistantCommandReceived(comando: String)
+    fun onLembreteReceived(texto: String, lembreteId: String)
 }

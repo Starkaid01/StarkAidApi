@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using StarkAid.Api.DTOs.V1.Music;
 using StarkAid.Api.Entities;
+using StarkAid.Api.Services.V1.SuperIA;
 
 namespace StarkAid.Api.Services.V1.Music
 {
@@ -12,13 +13,15 @@ namespace StarkAid.Api.Services.V1.Music
         private readonly IExternalAudioResolver _audioResolver;
         private readonly ILogger<MusicIntentService> _logger;
         private readonly AppDbContext _context;
+        private readonly IaService _iaService;
 
-        public MusicIntentService(IYouTubeMusicService youtubeService, IExternalAudioResolver audioResolver, ILogger<MusicIntentService> logger, AppDbContext context)
+        public MusicIntentService(IYouTubeMusicService youtubeService, IExternalAudioResolver audioResolver, ILogger<MusicIntentService> logger, AppDbContext context, IaService iaService)
         {
             _youtubeService = youtubeService;
             _audioResolver = audioResolver;
             _logger = logger;
             _context = context;
+            _iaService = iaService;
         }
 
         public async Task<MusicResolveResponse> ResolveIntentAsync(string text)
@@ -52,12 +55,43 @@ namespace StarkAid.Api.Services.V1.Music
             if (string.IsNullOrEmpty(cleanText))
                 return new MusicResolveResponse { Type = "none", Tts = "" };
 
-            // Classificação: Artista vs Música
-            var kind = ClassifyIntent(cleanText);
-            _logger.LogInformation("Intenção Musical Classificada: {Kind} para '{Query}'", kind, cleanText);
+            // Normalização para comparar com banco (simples)
+            var normalizedCheck = MusicQueryNormalizer.Normalize(cleanText);
 
-            // Sempre usar YouTube (disfarçado de radio_two para o app)
-            _logger.LogInformation("Pesquisando YouTube para '{Query}'.", cleanText);
+            MusicKind kind = MusicKind.Song; // Default
+
+            // 1. Verificar se JÁ EXISTE no banco (Cache Exato)
+            // Se já temos esse termo salvo, usamos o mesmo Kind que foi salvo antes.
+            var existing = await _context.YouTubeMusicCaches
+                .Where(x => x.NormalizedQuery == normalizedCheck)
+                .OrderByDescending(x => x.LastUsedAt)
+                .FirstOrDefaultAsync();
+
+            if (existing != null)
+            {
+                kind = existing.Kind;
+                _logger.LogInformation("Cache Hit Local: '{Query}' já existe como {Kind}. Pulando IA.", cleanText, kind);
+            }
+            else
+            {
+                // 2. Não existe no banco -> Perguntar para a IA
+                _logger.LogInformation("Cache Miss: '{Query}' não encontrado. Solicitando classificação à IA...", cleanText);
+                
+                var iaClassification = await _iaService.ClassifyMusicIntent(cleanText);
+                
+                if (iaClassification == "Eartista")
+                {
+                    kind = MusicKind.Artist;
+                }
+                else
+                {
+                    kind = MusicKind.Song;
+                }
+                
+                _logger.LogInformation("IA Classificou como: {Result} -> {Kind}", iaClassification, kind);
+            }
+
+            _logger.LogInformation("Processando busca musical: Termo='{Query}', Tipo={Kind}", cleanText, kind);
 
             // 🎵 RESOLUÇÃO DE ARTISTA CANÔNICO 🎵
             // Se for Artista, tentamos mapear para o nome "oficial" (Canônico) para evitar duplicação de pools.
@@ -116,65 +150,11 @@ namespace StarkAid.Api.Services.V1.Music
             }
 
             // 2. Seed Hardcoded (Fallback/Legado)
-            // Seed inicial - Artistas Brasileiros
-            if (IsBias(normalized, "charlie brown jr", "charlie brown", "cbjr", "charlie brown junior", "charlie jr")) return "charlie brown jr";
-            if (IsBias(normalized, "legião urbana", "legiao urbana", "legiao", "legião")) return "legião urbana";
-            if (IsBias(normalized, "engenheiros do hawaii", "engenheiros", "engenheiros do havai", "engenheiros do hawai")) return "engenheiros do hawaii";
-            if (IsBias(normalized, "skank", "skank banda")) return "skank";
-            if (IsBias(normalized, "capital inicial", "capital")) return "capital inicial";
-            if (IsBias(normalized, "os paralamas do sucesso", "paralamas", "paralamas do sucesso", "os paralamas")) return "os paralamas do sucesso";
-            if (IsBias(normalized, "jorge & mateus", "jorge e mateus", "jorge mateus", "j&m")) return "jorge & mateus";
-            if (IsBias(normalized, "zezé di camargo & luciano", "zeze di camargo e luciano", "zeze di camargo & luciano", "zeze e luciano", "zezé e luciano", "zeze de camargo e luciano")) return "zezé di camargo & luciano";
-            if (IsBias(normalized, "henrique & juliano", "henrique e juliano", "henrique juliano")) return "henrique & juliano";
-
-            // Seed inicial - Artistas Internacionais
-            if (IsBias(normalized, "queen", "queen banda", "freddie mercury")) return "queen";
-            if (IsBias(normalized, "the beatles", "beatles")) return "the beatles";
-            if (IsBias(normalized, "linkin park", "linkin", "link park")) return "linkin park";
-            if (IsBias(normalized, "metallica", "metalica")) return "metallica";
-            if (IsBias(normalized, "nirvana", "nirvana banda")) return "nirvana";
-            if (IsBias(normalized, "michael jackson", "mj", "michael", "rei do pop")) return "michael jackson";
-            if (IsBias(normalized, "eminem", "slim shady")) return "eminem";
-            if (IsBias(normalized, "rihanna", "rihanna cantora")) return "rihanna";
-            if (IsBias(normalized, "taylor swift", "taylor")) return "taylor swift";
-
             return text;
         }
 
-        private MusicKind ClassifyIntent(string text)
-        {
-            var lower = text.ToLowerInvariant();
-            var tokens = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        // Método ClassifyIntent antigo removido em favor da IA
 
-            // 🧠 Regra de Ouro (Hierarquia de Decisão)
-
-            // 1. Palavras-chave de música (indicam versão específica ou formato)
-            if (Regex.IsMatch(text, @"\b(remix|live|ao vivo|acustico|acústico|unplugged|cover|versao|versão|karaoke|letra|lyric|oficial|video|clipe|audio)\b", RegexOptions.IgnoreCase))
-                return MusicKind.Song;
-
-            // 2. Conectores explícitos (indicam relação Música DE Artista)
-            if (Regex.IsMatch(text, @"\s(de|do|da|by|from|feat|ft\.|with)\s", RegexOptions.IgnoreCase) || text.Contains(" - "))
-                return MusicKind.Song;
-
-            // 3. Whitelist de Artistas (Match exato)
-            var knownArtists = new[] { 
-                "charlie brown jr", "charlie brown", "legiao urbana", "legião urbana", "engenheiros do hawaii",
-                "queen", "the beatles", "beatles", "djavan", "adele", "madonna", "coldplay", 
-                "u2", "metallica", "nirvana", "iron maiden", "pink floyd", "guns n roses", "ac/dc",
-                "linkin park", "red hot chili peppers", "foo fighters", "nickelback", "creed", "pearl jam"
-            };
-
-            // Heurística de Artista:
-            // - Se for apenas UMA palavra: Provavelmente artista (Banda)
-            // - Se estiver no whitelist exato (mesmo com várias palavras como "Guns N Roses")
-            if (tokens.Length == 1 || knownArtists.Any(a => lower == a)) 
-            {
-                return MusicKind.Artist;
-            }
-
-            // 4. Se não caiu nas regras acima, tratamos como MÚSICA específica (Pool unitário)
-            return MusicKind.Song;
-        }
 
         private MusicResolveResponse CreateControlResponse(string type, string tts)
         {

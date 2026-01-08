@@ -68,6 +68,7 @@ public class AppDbContext : DbContext
     public DbSet<Rotina> Rotinas => Set<Rotina>();
     public DbSet<RotinaGatilho> RotinaGatilhos => Set<RotinaGatilho>();
     public DbSet<RotinaAcao> RotinaAcoes => Set<RotinaAcao>();
+    public DbSet<Lembrete> Lembretes => Set<Lembrete>();
 
   
 
@@ -782,6 +783,20 @@ public class AppDbContext : DbContext
              entity.Property(e => e.Payload).IsRequired();
              entity.Property(e => e.OrdemExecucao).IsRequired();
              entity.Property(e => e.Tipo).IsRequired();
+         });
+
+         modelBuilder.Entity<Lembrete>(entity =>
+         {
+             entity.HasKey(e => e.Id);
+             entity.Property(e => e.Texto).IsRequired();
+             entity.Property(e => e.DispararEm).HasColumnType("datetimeoffset").IsRequired();
+             entity.Property(e => e.DataCriacao).HasColumnType("datetimeoffset").IsRequired();
+             entity.Property(e => e.Status).IsRequired().HasConversion<string>();
+
+             entity.HasOne<User>()
+                   .WithMany()
+                   .HasForeignKey(e => e.UserId)
+                   .OnDelete(DeleteBehavior.Cascade);
          });
 
 

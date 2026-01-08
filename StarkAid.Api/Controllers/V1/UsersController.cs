@@ -158,6 +158,13 @@ namespace StarkAid.Api.Controllers.V1
                 }
                 await _context.SaveChangesAsync();
             }
+            else if (!hasActivePremium && user.PlanType == UserPlanType.Premium)
+            {
+                _logger.LogInformation("🔄 [SuperIA] Rebaixando PlanType para Free (ExpiraEm check) - UserId: {UserId}", userId);
+                user.PlanType = UserPlanType.Free;
+                user.RemovalAds = "Desativado";
+                await _context.SaveChangesAsync();
+            }
 
         // 0. Processar via CommandRouter (Math, Piadas, Dispositivos, etc.)
         var commandRequest = new CommandRequestDto
@@ -448,9 +455,13 @@ namespace StarkAid.Api.Controllers.V1
             }
 
             var tokensUsados = Math.Max(0, resultado.PromptTokens) + Math.Max(0, resultado.CompletionTokens);
+            // Proteção final: Se usou IA generativa, MÍNIMO 50 tokens (evita loop gratuito se estimativa falhar)
+            if (tokensUsados < 50) tokensUsados = 50;
             var limite = _planoLimites.ObterLimiteTokensSemana(user);
 
             var consumo = _tokenUsage.ConsumeTokens(user, tokensUsados, request.UseStarkCoins);
+            _logger.LogInformation("💰 [TokenUsage] Consumo: Success={Success}, Tokens={Tokens}, Coins={Coins}, UserCoinsAfter={Balance}", 
+                consumo.Success, consumo.TokensCharged, consumo.StarkCoinsCharged, user.StarkCoins);
             if (!consumo.Success)
             {
                 return StatusCode(402, new { message = "Saldo insuficiente para tokens excedentes. Adicione StarkCoins ou aguarde o reset semanal.", requiredCoins = consumo.RequiredCoins });
@@ -615,13 +626,15 @@ namespace StarkAid.Api.Controllers.V1
                 var hasAnyActivePremium = await _context.Assinaturas
                     .AnyAsync(a => a.UserId == userId && 
                                   (a.Status == "ativa" || a.Status == "Ativa") && 
-                                  a.Valor == 10);
+                                  a.Valor == 10 &&
+                                  (!a.ExpiraEm.HasValue || a.ExpiraEm.Value > DateTimeOffset.UtcNow));
                 
                 if (!hasAnyActivePremium)
                 {
                     _logger.LogInformation("🔄 [GetMe] Rebaixando PlanType para Free - UserId: {UserId}", userId);
                     user.PlanType = UserPlanType.Free;
                     user.RemovalAds = "Desativado";
+                    await _context.SaveChangesAsync();
                 }
             }
 
