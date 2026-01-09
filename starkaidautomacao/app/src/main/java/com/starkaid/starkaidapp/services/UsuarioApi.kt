@@ -57,7 +57,7 @@ interface UsuarioApi {
         @Body resetRequest: ResetSenhaRequest
     ): Response<String>
 
-    @POST("api/v1/Users")
+    @POST("api/v1/Auth/register")
     suspend fun registerUser(@Body request: UserRegisterRequest): Response<UserRegisterResponse>
 
     // 'https://starkaid.vbweb.com.br/api/Users/musica/tocar'

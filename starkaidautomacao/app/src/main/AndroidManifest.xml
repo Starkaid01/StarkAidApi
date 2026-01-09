@@ -227,6 +227,7 @@
             android:exported="false" />
 
         <activity android:name="com.starkaid.starkaidapp.ui.RegisterActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false"/>
 
 

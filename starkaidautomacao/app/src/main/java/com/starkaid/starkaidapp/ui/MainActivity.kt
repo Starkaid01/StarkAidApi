@@ -849,17 +849,17 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                         true
                     }
                     R.id.nav_ewelink -> {
-                        Toast.makeText(this, "Acesso rápido EweLink", Toast.LENGTH_SHORT).show()
+                        startActivity(Intent(this, com.starkaid.starkaidapp.ewelink.EwelinkDevicesActivity::class.java))
                         drawerLayout.closeDrawer(GravityCompat.START)
                         true
                     }
                     R.id.nav_starkswitch -> {
-                        Toast.makeText(this, "Acesso rápido StarkSwitch", Toast.LENGTH_SHORT).show()
+                        startActivity(Intent(this, ConfigStarkSwitchActivity::class.java))
                         drawerLayout.closeDrawer(GravityCompat.START)
                         true
                     }
                     R.id.nav_planos -> {
-                        Toast.makeText(this, "Ver Meus Planos", Toast.LENGTH_SHORT).show()
+                        startActivity(Intent(this, PlanosActivity::class.java))
                         drawerLayout.closeDrawer(GravityCompat.START)
                         true
                     }
