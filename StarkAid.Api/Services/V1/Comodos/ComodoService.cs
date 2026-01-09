@@ -266,7 +266,7 @@ namespace StarkAid.Api.Services.V1.Comodos
         public async Task<ComandoAmbienteResult> ResolverComandoAmbienteAsync(Guid userId, string tipoDispositivo, string? originalCommand, string? comodoNomeConfirmado = null)
         {
             var tipoLower = tipoDispositivo.ToLower();
-            var commandLower = (originalCommand ?? string.Empty).ToLower();
+            var commandLower = RemoveAccents((originalCommand ?? string.Empty).ToLower());
             bool turnOn = !commandLower.Contains("apaga") && !commandLower.Contains("desliga");
             string acaoVoz = turnOn ? "ligar" : "desligar";
 
@@ -337,7 +337,79 @@ namespace StarkAid.Api.Services.V1.Comodos
                     return new ComandoAmbienteResult { Sucesso = false, MensagemVoz = "Não encontrei esse cômodo." };
                 }
 
+                // 2.1 Filter Candidates in this Room
+                // We use the 'candidates' list which is already filtered by type/role/name from step 1.
                 var validInRoom = candidates.Where(c => c.ComodoId == matched.Id).ToList();
+
+                // 2.1.1 Fallback: If strict type filtering returned nothing in this room,
+                // try to find ANY device in this room whose name contains the requested type.
+                // This fixes "portão" failing because it might not have 'papel=portao' but is named "Portão".
+                if (!validInRoom.Any())
+                {
+                    var allRoomDevices = associatedDevices.Where(cd => cd.ComodoId == matched.Id).ToList();
+                    
+                    // We need to resolve names for these devices because 'ComodoDispositivo' does not have 'Name'.
+                    // Optimization: We can reuse the memory lookup or just query needed ones.
+                    // For simplicity and safety in this fallback, we check against the DB or Memory lists we already loaded partially.
+                    
+                    // Let's load ALL user devices into memory to map names (it's usually small per user) or query specific.
+                    // Since specific query inside loop is bad, let's look at what we have.
+                    // The 'candidates' list earlier ONLY has filtered ones. We need mismatched ones.
+                    
+                    // Quick fix: Fetch the Name based on ID/Type for these room devices.
+                    var looseMatchesCandidate = new List<DeviceCandidate>();
+                    
+                    foreach (var cd in allRoomDevices)
+                    {
+                        string? deviceName = null;
+                        
+                        if (string.Equals(cd.Tipo, "Device", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var d = await _context.Devices.FirstOrDefaultAsync(x => x.Id.ToString() == cd.DispositivoId && x.UserId == userId);
+                            deviceName = d?.Name;
+                        }
+                        else if (string.Equals(cd.Tipo, "Esp", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var d = await _context.DispositivosEsp.FirstOrDefaultAsync(x => x.Id.ToString() == cd.DispositivoId && x.UserId == userId);
+                            deviceName = d?.Nome;
+                        }
+                        else if (string.Equals(cd.Tipo, "Ewelink", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var d = await _context.EwelinkDevices.FirstOrDefaultAsync(x => x.DeviceId == cd.DispositivoId && x.UserId == userId);
+                            deviceName = d?.Name;
+                        }
+
+                        if (!string.IsNullOrEmpty(deviceName) && RemoveAccents(deviceName.ToLower()).Contains(tipoLower))
+                        {
+                            looseMatchesCandidate.Add(new DeviceCandidate 
+                            { 
+                                Id = cd.DispositivoId,
+                                Type = cd.Tipo,
+                                ComodoId = cd.ComodoId,
+                                ComodoNome = cd.Comodo!.Nome,
+                                Name = deviceName
+                            });
+                        }
+                        else if (!string.IsNullOrEmpty(cd.Papel) && RemoveAccents(cd.Papel.ToLower()).Contains(tipoLower))
+                        {
+                             // Also allow if Papel matches (redundant but safe)
+                             looseMatchesCandidate.Add(new DeviceCandidate 
+                             {  
+                                Id = cd.DispositivoId,
+                                Type = cd.Tipo,
+                                ComodoId = cd.ComodoId,
+                                ComodoNome = cd.Comodo!.Nome,
+                                Name = deviceName ?? "Desconhecido"
+                             });
+                        }
+                    }
+
+                    if (looseMatchesCandidate.Any())
+                    {
+                        validInRoom.AddRange(looseMatchesCandidate);
+                    }
+                }
+
                 if (!validInRoom.Any())
                 {
                     return new ComandoAmbienteResult { Sucesso = false, MensagemVoz = $"Não encontrei {tipoDispositivo} em {matched.Nome}." };
@@ -369,13 +441,22 @@ namespace StarkAid.Api.Services.V1.Comodos
             // 2.2 Attempt to detect room explicitly in the original command text
             var allUserComodos = await _context.Comodos.Where(c => c.UserId == userId).ToListAsync();
             var matchedComodoInText = allUserComodos
-                .OrderByDescending(c => c.Nome.Length) // Longest first to avoid false positives (e.g. "Sala de Estar" vs "Sala")
+                .OrderByDescending(c => c.Nome.Length) 
                 .FirstOrDefault(c => commandLower.Contains(NormalizeComodoName(c.Nome)) || 
-                                    commandLower.Contains(c.Nome.ToLower().Trim()));
+                                    commandLower.Contains(RemoveAccents(c.Nome.ToLower().Trim())));
 
             if (matchedComodoInText != null)
             {
-                var roomDevs = candidates.Where(c => c.ComodoId == matchedComodoInText.Id).ToList();
+                var normalizedRoomName = NormalizeComodoName(matchedComodoInText.Nome);
+                
+                // Prioritize: 
+                // 1. Devices explicitly associated with this room.
+                // 2. Devices NOT associated with any room but whose name matches the target room.
+                var roomDevs = candidates.Where(c => 
+                    c.ComodoId == matchedComodoInText.Id || 
+                    (c.ComodoId == null && !string.IsNullOrEmpty(c.Name) && RemoveAccents(c.Name.ToLower()).Contains(normalizedRoomName))
+                ).ToList();
+
                 if (roomDevs.Any())
                 {
                     var feedback = await ExecuteDevices(userId, roomDevs, turnOn);

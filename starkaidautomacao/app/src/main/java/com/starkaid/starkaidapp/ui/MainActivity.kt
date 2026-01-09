@@ -3211,6 +3211,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     }
 
     var partialCount = 0
+    private var lastSpokenText: String = ""
     var iaativa = AtomicBoolean(false)
     private var resetJob: Job? = null
     var escutando = AtomicBoolean(false)
@@ -5336,6 +5337,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
 
     fun speakTextFromService(text: String) {
+        lastSpokenText = text // Track what is being spoken to avoid loops
         if (avatarEnabled) {
             sendAvatarBeat()
         }
@@ -7842,14 +7844,15 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             override suspend fun processDirect(text: String): Boolean = processDirectCommands(text)
             override suspend fun processAutomation(text: String): Boolean = execAutomacao(text)
             
-            override suspend fun processDevices(text: String): Boolean {
-                 // Tenta controlar dispositivos (cópia da lógica de processandoComandos)
-                 if (controlarDispositivoEsp(text)) return true
-                 if (controlarDispositivoEwelink(text)) return true
-                 return false
-            }
+
             
-            override suspend fun processIaFallback(text: String): Boolean = getIaResponse(text)
+            override suspend fun processIaFallback(text: String): Boolean {
+                if (!switchIa.isChecked) {
+                    Log.d("Pipeline", "IA desativada (switchIa=false), ignorando: $text")
+                    return false
+                }
+                return getIaResponse(text)
+            }
             
             override fun isStarkCoinsConfirmationPending() = aguardandoLiberarConsumoStarkcoins
             override fun setStarkCoinsConfirmationPending(pending: Boolean) { 
@@ -7974,53 +7977,19 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                 }
             }
             
-            override suspend fun processDeviceControl(text: String, deviceType: String?, isConfirmation: Boolean): Boolean {
-                val api = ApiClient.getClient(this@MainActivity).create(ComodosApi::class.java)
-                try {
-                    val actualType = if (isConfirmation) lastDeviceType ?: "luz" else deviceType ?: "luz"
-                    val comodoParam = if (isConfirmation) text else null
-                    
-                    // Determine intent
-                    val commandLower = text.lowercase()
-                    val currentTurnOn = if (isConfirmation) {
-                        lastTurnOnIntent
-                    } else {
-                        !commandLower.contains("apaga") && !commandLower.contains("desliga")
-                    }
-                    
-                    // We can pass a flag or the original command that had the intent
-                    // For simplicity, let's pass a synthetic command if it's a confirmation to preserve intent
-                    val commandToSend = if (isConfirmation) {
-                        if (lastTurnOnIntent) "ligar" else "desligar"
-                    } else {
-                        text
-                    }
-
-                    val response = api.resolverDispositivo(actualType, commandToSend, comodoParam)
-                    if (response.isSuccessful && response.body() != null) {
-                        val result = response.body()!!
-                        speakTextFromService(result.mensagemVoz)
-                        setRoomsConfirmationPending(result.requerConfirmacao)
-                        
-                        if (result.requerConfirmacao) {
-                             lastDeviceType = actualType
-                             lastTurnOnIntent = currentTurnOn
-                             // Force listening if waiting for answer
-                             escutando.set(true)
-                             runOnUiThread {
-                                 iniciarTimerDesativacaoEscutando()
-                                 updateAvatarSleepingState()
-                             }
-                        } else {
-                             lastDeviceType = null
-                        }
-                        return true
-                    }
-                } catch (e: Exception) {
-                    Log.e("DeviceControl", "Error", e)
-                }
+            @Deprecated("Use DeviceControlStage/executeDeviceCommand only")
+            override suspend fun processDevices(text: String): Boolean {
+                Log.e("Deprecated", "processDevices called! This method is deprecated and returns false.")
                 return false
             }
+            
+            @Deprecated("Use executeDeviceCommand via DeviceControlStage only")
+            override suspend fun processDeviceControl(text: String, deviceType: String?, isConfirmation: Boolean): Boolean {
+                // Prevent accidental usage of old logic
+                Log.e("Deprecated", "processDeviceControl called! Ignoring to prevent double logic.")
+                return false
+            }
+
 
             override fun setRoomsConfirmationPending(pending: Boolean) {
                 roomsConfirmationPending.set(pending)
@@ -8078,8 +8047,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             }
             
             // Room Awareness Implementation
-            private var comodoAtivo: String? = null
-            private var comodoAtivoJob: Job? = null
+            // Room Awareness Implementation
 
             override fun getComodos(): List<String> {
                 // Combine rooms from StarkSwitches (deviceList) and eWeLink (ewelinkDevices)
@@ -8129,34 +8097,74 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                 return commonRooms
             }
 
-            override fun getDevicesInRoom(room: String): List<Any> {
-                // Filter devices that "belong" to this room based on name convention
-                // e.g. "Luz da Sala" -> belongs to "Sala"
-                val filtered = mutableListOf<Any>()
-                
-                deviceList.forEach { if (it.name.lowercase().contains(room)) filtered.add(it) }
-                ewelinkDevices.forEach { if (it.name.lowercase().contains(room)) filtered.add(it) }
-                
-                return filtered
+            // Deterministic State Machine Implementation
+            
+            override fun getRoomState(): RoomState {
+                 val current = GlobalRoomState.active
+                 // Check TTL
+                 if (current != null && System.currentTimeMillis() > current.expiresAt) {
+                     GlobalRoomState.active = null
+                     Log.d("RoomState", "Contexto de comodo expirou.")
+                 }
+                 
+                 return object : RoomState {
+                     override val active = GlobalRoomState.active
+                     override val awaitingConfirmation = GlobalRoomState.awaitingConfirmation
+                     override val pendingCommand = GlobalRoomState.pendingCommand
+                 }
             }
 
-            override fun setActiveRoom(room: String) {
-                comodoAtivo = room
-                Log.d("RoomAwareness", "Comodo Ativo definido para: $room")
+            override fun updateActiveRoom(room: String) {
+                // 10 minutes TTL as requested
+                val expires = System.currentTimeMillis() + (10 * 60 * 1000L)
+                GlobalRoomState.active = RoomContext(room, expires)
+                Log.d("RoomState", "Contexto ATIVO atualizado: $room (expira em 10m)")
+            }
+
+            override fun setAwaitingConfirmation(awaiting: Boolean) {
+                GlobalRoomState.awaitingConfirmation = awaiting
+                if (!awaiting) {
+                    GlobalRoomState.pendingCommand = null
+                }
+                Log.d("RoomState", "AwaitingConfirmation: $awaiting")
                 
-                // Start 3 minute timer
-                comodoAtivoJob?.cancel()
-                comodoAtivoJob = lifecycleScope.launch(Dispatchers.Default) {
-                    delay(3 * 60 * 1000L)
-                    if (comodoAtivo == room) {
-                        comodoAtivo = null
-                        Log.d("RoomAwareness", "Comodo Ativo expirou.")
-                    }
+                // If waiting, force listening (user requirement to "ask")
+                if (awaiting) {
+                     escutando.set(true)
+                     runOnUiThread {
+                         iniciarTimerDesativacaoEscutando()
+                     }
                 }
             }
 
-            override fun getActiveRoom(): String? {
-                return comodoAtivo
+            override fun savePendingCommand(action: String, deviceType: String) {
+                GlobalRoomState.pendingCommand = PendingCommand(action, deviceType)
+            }
+
+            override suspend fun executeDeviceCommand(room: String, deviceType: String, action: String): Boolean {
+                try {
+                     val type = deviceType.ifEmpty { "luz" }
+                     // Map action to "ligar"/"desligar" expected by backend text parser 
+                     // OR rely on direct command passing. 
+                     // Command to send: "ligar" or "desligar"
+                     
+                     Log.d("RoomState", "EXECUTING: Room=$room, Device=$type, Action=$action")
+                     
+                     val api = ApiClient.getClient(this@MainActivity).create(com.starkaid.starkaidapp.services.ComodosApi::class.java)
+                     
+                     // We use the existing API method but pass the explicit room as the 3rd param (comodoConfirmado)
+                     // This triggers the specific lookup in backend we validated earlier.
+                     val response = api.resolverDispositivo(type, action, room) // Removed .execute()
+                     
+                     if (response.isSuccessful && response.body() != null) {
+                         val result = response.body()!!
+                         speakTextFromService(result.mensagemVoz)
+                         return true
+                     }
+                } catch (e: Exception) {
+                    Log.e("RoomState", "Erro ao executar comando", e)
+                }
+                return false
             }
         }
 
@@ -8185,13 +8193,18 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             return
         }
         
+        // CORRECTION: Add cooldown to handle echo/latency
+        val now = System.currentTimeMillis()
+        val isEffectivelySpeaking = isTtsSpeaking || (now - lastTtsEndTime < 1000)
+        
         val ctx = CommandContext.from(
             rawText = text,
             escutando = escutando,
             confirmContato = confirmContato,
             roomsConfirmationPending = roomsConfirmationPending,
-            isTtsSpeaking = isTtsSpeaking,
-            actions = pipelineActions
+            isTtsSpeaking = isEffectivelySpeaking,
+            actions = pipelineActions,
+            lastSystemMessage = lastSpokenText
         )
         
         // Executar pipeline

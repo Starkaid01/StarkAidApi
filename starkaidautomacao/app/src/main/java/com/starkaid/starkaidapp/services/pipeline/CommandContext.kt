@@ -16,7 +16,10 @@ data class CommandContext(
     var analysis: AnaliseTexto? = null,
     
     // Classificação do comando (Aprimoramento)
-    var kind: CommandKind = CommandKind.UNKNOWN
+    var kind: CommandKind = CommandKind.UNKNOWN,
+    
+    // Mensagem anterior do sistema (para evitar eco)
+    val lastSystemMessage: String = ""
 ) {
     companion object {
         fun from(
@@ -25,7 +28,8 @@ data class CommandContext(
             confirmContato: AtomicBoolean,
             roomsConfirmationPending: AtomicBoolean,
             isTtsSpeaking: Boolean,
-            actions: AssistantActions
+            actions: AssistantActions,
+            lastSystemMessage: String = ""
         ): CommandContext {
             val isPayment = rawText.lowercase().contains("parcial:")
             val isSpeaking = rawText.lowercase().contains("speaking:")
@@ -56,7 +60,8 @@ data class CommandContext(
                 input = inputState,
                 voice = voiceState,
                 session = sessionState,
-                actions = actions
+                actions = actions,
+                lastSystemMessage = lastSystemMessage
             )
         }
     }
@@ -88,7 +93,7 @@ enum class CommandKind {
     IA
 }
 
-interface AssistantActions {
+interface AssistantActions : LegacyAssistantActions {
     fun speak(text: String)
     fun stopSpeaking()
     fun updateAvatarSleepingState()
@@ -97,7 +102,6 @@ interface AssistantActions {
     suspend fun processSocial(text: String): Boolean
     suspend fun processDirect(text: String): Boolean
     suspend fun processAutomation(text: String): Boolean
-    suspend fun processDevices(text: String): Boolean
     suspend fun processIaFallback(text: String): Boolean
 
     // Gerenciamento de StarkCoins
@@ -140,10 +144,51 @@ interface AssistantActions {
     fun setRoomsConfirmationPending(pending: Boolean)
     fun isRoomsConfirmationPending(): Boolean
 
-    // Room Awareness
+    // Room Awareness State Machine
     fun getComodos(): List<String>
-    fun getDevicesInRoom(room: String): List<Any> // Returns list of mixed device types
-    fun setActiveRoom(room: String)
-    fun getActiveRoom(): String?
+    
+    // New Deterministic State Access
+    fun getRoomState(): RoomState
+    fun updateActiveRoom(room: String)
+    fun setAwaitingConfirmation(awaiting: Boolean)
+    fun savePendingCommand(action: String, deviceType: String)
+    
+    // Deterministic Execution
+    suspend fun executeDeviceCommand(room: String, deviceType: String, action: String): Boolean
 }
 
+// --- New State Classes ---
+data class RoomContext(
+    val room: String,
+    val expiresAt: Long
+)
+
+data class PendingCommand(
+    val action: String,
+    val deviceType: String
+)
+
+object GlobalRoomState {
+    @Volatile var active: RoomContext? = null
+    @Volatile var awaitingConfirmation: Boolean = false
+    @Volatile var pendingCommand: PendingCommand? = null
+    
+    fun reset() {
+        active = null
+        awaitingConfirmation = false
+        pendingCommand = null
+    }
+}
+
+// Typealias for easier usage in interface if needed, or stick to direct object access in implementation 
+// But interface allows mocking/isolation.
+interface RoomState {
+    val active: RoomContext?
+    val awaitingConfirmation: Boolean
+    val pendingCommand: PendingCommand?
+}
+
+
+interface LegacyAssistantActions {
+    suspend fun processDevices(text: String): Boolean
+}
