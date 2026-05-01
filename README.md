@@ -1,43 +1,75 @@
 # StarkAid
 
-Plataforma de automacao residencial e assistencia inteligente com backend central, cliente web, cliente desktop e aplicativo Android.
+StarkAid is a product-style automation platform built around a central `ASP.NET Core` backend, a `Blazor` web client, a Windows desktop client, and a `Kotlin` Android application.
 
-O repositorio concentra o ecossistema completo do produto, incluindo autenticacao, controle de dispositivos, comandos por voz, mensageria, integracoes de terceiros, cobranca e suporte em tempo real.
+This repository is useful as a public engineering sample because it shows more than isolated CRUD code. It demonstrates multi-client product architecture, realtime operator flows, connected-device orchestration, third-party integrations, monetization hooks, and the practical configuration work needed to move a private codebase toward a publishable state.
 
-## Modulos
+## Why this repository matters
+
+- multi-project solution with backend, web, desktop, and Android clients
+- authentication with `JWT`, refresh tokens, and runtime device credentials
+- realtime communication with `SignalR` and WebSocket-style flows
+- automation and IoT integrations for `ESP32`, `eWeLink`, and `Tuya / Thingclips`
+- support tooling and operator workflows instead of tutorial-only pages
+- payment and plan infrastructure with `Stripe`
+- environment cleanup work to separate public code from private credentials
+
+## Repository map
+
+```text
+StarkAid/
+├── StarkAid.Api/            # ASP.NET Core backend
+├── StarkAid.Web/            # Blazor web client
+├── StarkAid.WindowsForms/   # Windows desktop client
+├── StarkAid.AudioResolver/  # Audio helper service
+└── starkaidautomacao/       # Kotlin Android client
+```
+
+## What the system does
 
 ### `StarkAid.Api`
 
-Backend em `ASP.NET Core` responsavel por:
+The backend handles:
 
-- autenticacao JWT e refresh token
-- gerenciamento de usuarios e dispositivos
-- controle de dispositivos `ESP32`
-- integracao com `eWeLink`
-- integracao com `Tuya / Thingclips`
-- comandos sociais, rotinas e agendamentos
-- pagamentos e planos com `Stripe`
-- notificacoes push com `Firebase`
-- telemetria, IA e suporte em tempo real
-- `WebSocket` e `SignalR`
+- JWT authentication and refresh-token flows
+- user, device, and account management
+- `ESP32` and IoT command orchestration
+- `eWeLink` integration
+- `Tuya / Thingclips` integration
+- routines, scheduling, and remote command execution
+- support and operator messaging
+- payment and subscription flows
+- push notifications through `Firebase`
+- realtime communication with `SignalR`
 
 ### `StarkAid.Web`
 
-Front-end web em `.NET / Blazor` para operacao administrativa, paineis, suporte e recursos online do sistema.
+The web client is built with `Blazor` and focuses on:
+
+- admin and operational screens
+- support flows
+- online tools and product dashboards
+- browser-based interaction with the backend
 
 ### `StarkAid.WindowsForms`
 
-Cliente desktop em `.NET` para uso local e cenarios operacionais especificos.
+The desktop client supports local operational workflows that still matter in the product ecosystem.
 
 ### `starkaidautomacao`
 
-Aplicativo Android em `Kotlin` para automacao, controle por voz e operacao movel do ecossistema.
+The Android app is the mobile surface for:
+
+- device control
+- voice commands
+- automation routines
+- support chat
+- connected-service interactions
 
 ### `StarkAid.AudioResolver`
 
-Servico auxiliar para fluxos relacionados a audio e processamento de midia.
+This module acts as a focused helper around audio and media-related flows.
 
-## Stack principal
+## Main stack
 
 - `.NET 8`
 - `ASP.NET Core`
@@ -56,52 +88,49 @@ Servico auxiliar para fluxos relacionados a audio e processamento de midia.
 - `AWS Transcribe`
 - `Stripe`
 
-## Estrutura
+## What this repository proves technically
 
-```text
-StarkAid/
-├── StarkAid.Api/            # API principal
-├── StarkAid.Web/            # Front web / Blazor
-├── StarkAid.WindowsForms/   # Cliente desktop
-├── StarkAid.AudioResolver/  # Servico auxiliar de audio
-└── starkaidautomacao/       # App Android Kotlin
-```
+- product architecture across multiple clients, not just one web app
+- backend integration design for devices and third-party services
+- realtime operator tooling with stateful user flows
+- practical environment management for public publishing
+- public-facing documentation that explains private setup requirements clearly
 
-## Ordem recomendada para subir localmente
+## Local setup order
 
-1. Configurar e subir `StarkAid.Api`
-2. Configurar `StarkAid.Web` apontando para a API local
-3. Ajustar o app Android `starkaidautomacao`
-4. Validar SignalR, WebSocket, login e integracoes externas
+1. Configure and run `StarkAid.Api`
+2. Point `StarkAid.Web` to the local API
+3. Configure the Android app under `starkaidautomacao`
+4. Validate login, `SignalR`, device operations, and support flows
 
-## Requisitos gerais
+## Requirements
 
 - `.NET SDK 8`
 - `SQL Server`
 - `Android Studio`
 - `JDK 17`
-- `WebView2 Runtime` para o cliente Windows
+- `WebView2 Runtime` for the Windows client
 
-## Configuracao da API
+## API configuration
 
-O backend le configuracao de:
+The backend reads configuration from:
 
 - `appsettings.json`
 - `appsettings.{Environment}.json`
-- variaveis de ambiente
+- environment variables
 
-Arquivo de exemplo:
+Template file:
 
 - [StarkAid.Api/appsettings-template.json](StarkAid.Api/appsettings-template.json)
 
-### Passos
+### Bootstrap steps
 
-1. Copie `StarkAid.Api/appsettings-template.json` para `StarkAid.Api/appsettings.Development.json` ou use `dotnet user-secrets` / variaveis de ambiente.
-2. Ajuste a string de conexao SQL Server.
-3. Garanta que o caminho do arquivo de credenciais do Firebase exista na maquina.
-4. Rode migrations e suba a API.
+1. Copy `StarkAid.Api/appsettings-template.json` to `StarkAid.Api/appsettings.Development.json`, or use `dotnet user-secrets` and environment variables.
+2. Set the SQL Server connection string.
+3. Make sure the Firebase credentials file path exists on the local machine.
+4. Apply migrations and start the API.
 
-### Comandos uteis
+### Useful commands
 
 ```powershell
 dotnet restore
@@ -109,121 +138,128 @@ dotnet ef database update --project StarkAid.Api
 dotnet run --project StarkAid.Api
 ```
 
-### Variaveis de ambiente e chaves esperadas
+### Expected environment variables and keys
 
-Use nomes com `__` para mapear secoes JSON no .NET.
+Use `__` in environment variable names to map nested JSON sections in .NET.
 
-| Chave | Obrigatoria | Uso |
+| Key | Required | Purpose |
 | --- | --- | --- |
-| `ConnectionStrings__DefaultConnection` | Sim | Banco principal SQL Server |
-| `Jwt__Key` | Sim | Assinatura dos tokens JWT |
-| `Jwt__Issuer` | Sim | Emissor dos tokens |
-| `Jwt__Audience` | Sim | Audiencia dos tokens |
-| `Firebase__CredentialsPath` | Sim | Caminho do `firebase-adminsdk.json` |
-| `Tuya__AccessId` | Se usar Tuya | Credencial da API Tuya |
-| `Tuya__AccessSecret` | Se usar Tuya | Segredo da API Tuya |
-| `Tuya__BaseUrl` | Se usar Tuya | Base URL da API Tuya |
-| `Tuya__CountryCode` | Se usar Tuya | Codigo de pais usado na integracao |
-| `WppConnectOptions__BaseUrl` | Se usar WPP | Endpoint base do servico de WhatsApp |
-| `WppConnectOptions__TokenDeAutenticacao` | Se usar WPP | Token interno do servico WPP |
-| `WppConnectOptions__NovoDominio` | Opcional | Dominio alternativo para WPP |
-| `WppConnectOptions__UserId` | Opcional | Usuario tecnico do WPP |
-| `NlpConnectOptions__BaseUrl` | Se usar NLP externo | Endpoint base do servico NLP |
-| `NlpConnectOptions__TokenDeAutenticacao` | Se usar NLP externo | Token do servico NLP |
-| `NlpConnectOptions__NovoDominio` | Opcional | Dominio alternativo do NLP |
-| `NlpConnectOptions__UserId` | Opcional | Usuario tecnico do NLP |
-| `AiTelemetry__CostPer1KTokens` | Opcional | Custo de referencia para telemetria |
-| `AiTelemetry__DefaultTokensPerInteraction` | Opcional | Estimativa padrao de tokens |
-| `IaApiKeys__GroApiKey` | Se usar IA | Chave do provedor Groq |
-| `IaApiKeys__OpenRouterKEY` | Se usar IA | Chave do OpenRouter |
-| `AWS__AccessKey` | Se usar transcricao | Credencial AWS |
-| `AWS__SecretKey` | Se usar transcricao | Segredo AWS |
-| `AWS__Profile` | Opcional | Perfil AWS local |
-| `AWS__Region` | Se usar transcricao | Regiao AWS |
-| `Spotify__ClientId` | Se usar Spotify | Client ID do app Spotify |
-| `Spotify__ClientSecret` | Se usar Spotify | Client secret do app Spotify |
-| `Spotify__RedirectUri` | Se usar Spotify | Redirect URI do OAuth Spotify |
-| `StripeSettings__SecretKey` | Se usar cobranca | Secret key do Stripe |
-| `StripeSettings__PublishableKey` | Se usar cobranca | Publishable key do Stripe |
-| `StripeSettings__WebhookSecret` | Se usar cobranca | Secret do webhook do Stripe |
-| `StripeSettings__PriceIdNivel2` ate `StripeSettings__PriceIdNivel7` | Se usar cobranca | IDs dos produtos/precos |
-| `StripeSettings__CheckoutFrontendUrl` | Se usar cobranca | URL da tela de checkout |
-| `StripeSettings__AppDeepLink` | Opcional | Deep link do app Android |
-| `StripeSettings__SoftwareDeepLink` | Opcional | Deep link do cliente desktop |
-| `Mqtt__Broker` | Se usar ESP32/MQTT | Endereco do broker MQTT |
-| `Mqtt__Port` | Se usar ESP32/MQTT | Porta do broker MQTT |
-| `Mqtt__Username` | Se usar ESP32/MQTT | Usuario MQTT |
-| `Mqtt__Password` | Se usar ESP32/MQTT | Senha MQTT |
-| `EmailSettings__From` | Se usar email | Email remetente |
-| `EmailSettings__SmtpServer` | Se usar email | Servidor SMTP |
-| `EmailSettings__Port` | Se usar email | Porta SMTP |
-| `EmailSettings__Username` | Se usar email | Usuario SMTP |
-| `EmailSettings__Password` | Se usar email | Senha SMTP |
-| `Ewelink__ClientId` | Se usar eWeLink | Client ID eWeLink |
-| `Ewelink__ClientSecret` | Se usar eWeLink | Client secret eWeLink |
-| `Ewelink__RedirectUri` | Se usar eWeLink | Redirect URI eWeLink |
-| `YouTube__ApiKey` | Se usar busca de musica | Chave da API do YouTube |
+| `ConnectionStrings__DefaultConnection` | Yes | Main SQL Server database |
+| `Jwt__Key` | Yes | JWT signing key |
+| `Jwt__Issuer` | Yes | JWT issuer |
+| `Jwt__Audience` | Yes | JWT audience |
+| `Firebase__CredentialsPath` | Yes | Path to `firebase-adminsdk.json` |
+| `Tuya__AccessId` | If using Tuya | Tuya API credential |
+| `Tuya__AccessSecret` | If using Tuya | Tuya API secret |
+| `Tuya__BaseUrl` | If using Tuya | Tuya API base URL |
+| `Tuya__CountryCode` | If using Tuya | Country code used by the integration |
+| `WppConnectOptions__BaseUrl` | If using WPP | Base endpoint for the WhatsApp service |
+| `WppConnectOptions__TokenDeAutenticacao` | If using WPP | Internal token for the WPP service |
+| `WppConnectOptions__NovoDominio` | Optional | Alternate WPP domain |
+| `WppConnectOptions__UserId` | Optional | Technical user for WPP |
+| `NlpConnectOptions__BaseUrl` | If using external NLP | Base endpoint for the NLP service |
+| `NlpConnectOptions__TokenDeAutenticacao` | If using external NLP | NLP service token |
+| `NlpConnectOptions__NovoDominio` | Optional | Alternate NLP domain |
+| `NlpConnectOptions__UserId` | Optional | Technical user for NLP |
+| `AiTelemetry__CostPer1KTokens` | Optional | Reference cost for telemetry |
+| `AiTelemetry__DefaultTokensPerInteraction` | Optional | Default token estimate per interaction |
+| `IaApiKeys__GroApiKey` | If using AI provider | Groq API key |
+| `IaApiKeys__OpenRouterKEY` | If using AI provider | OpenRouter API key |
+| `AWS__AccessKey` | If using transcription | AWS access key |
+| `AWS__SecretKey` | If using transcription | AWS secret key |
+| `AWS__Profile` | Optional | Local AWS profile |
+| `AWS__Region` | If using transcription | AWS region |
+| `Spotify__ClientId` | If using Spotify | Spotify application client ID |
+| `Spotify__ClientSecret` | If using Spotify | Spotify application client secret |
+| `Spotify__RedirectUri` | If using Spotify | Spotify OAuth redirect URI |
+| `StripeSettings__SecretKey` | If using billing | Stripe secret key |
+| `StripeSettings__PublishableKey` | If using billing | Stripe publishable key |
+| `StripeSettings__WebhookSecret` | If using billing | Stripe webhook secret |
+| `StripeSettings__PriceIdNivel2` through `StripeSettings__PriceIdNivel7` | If using billing | Price and product IDs |
+| `StripeSettings__CheckoutFrontendUrl` | If using billing | Checkout frontend URL |
+| `StripeSettings__AppDeepLink` | Optional | Android deep link |
+| `StripeSettings__SoftwareDeepLink` | Optional | Desktop client deep link |
+| `Mqtt__Broker` | If using ESP32 or MQTT | MQTT broker address |
+| `Mqtt__Port` | If using ESP32 or MQTT | MQTT broker port |
+| `Mqtt__Username` | If using ESP32 or MQTT | MQTT username |
+| `Mqtt__Password` | If using ESP32 or MQTT | MQTT password |
+| `EmailSettings__From` | If using email | Sender address |
+| `EmailSettings__SmtpServer` | If using email | SMTP server |
+| `EmailSettings__Port` | If using email | SMTP port |
+| `EmailSettings__Username` | If using email | SMTP username |
+| `EmailSettings__Password` | If using email | SMTP password |
+| `Ewelink__ClientId` | If using eWeLink | eWeLink client ID |
+| `Ewelink__ClientSecret` | If using eWeLink | eWeLink client secret |
+| `Ewelink__RedirectUri` | If using eWeLink | eWeLink redirect URI |
+| `YouTube__ApiKey` | If using music search | YouTube API key |
 
-### Observacoes operacionais
+### Operational notes
 
-- O sistema trabalha com `JWT` e com `Api-Key` por usuario/dispositivo em tempo de execucao.
-- A `Api-Key` nao e uma credencial de build. Ela e gerada e devolvida pelo backend durante autenticacao/registro.
-- O projeto hoje ainda possui segredos em arquivos versionados e historico local. Antes de abrir o repositorio publicamente, o correto e rotacionar todas as credenciais reais.
+- The system uses `JWT` and a runtime `Api-Key` per user or device after authentication.
+- That `Api-Key` is not a build secret. It is generated by the backend during login or device registration.
+- Before any deeper public expansion, the right next step is credential rotation for every real provider that has ever been used by this product.
 
-## Configuracao do front web
+## Web client configuration
 
-Arquivo de exemplo:
+Template file:
 
 - [StarkAid.Web/wwwroot/appsettings-template.json](StarkAid.Web/wwwroot/appsettings-template.json)
 
-### Passos
+### Setup steps
 
-1. Copie `StarkAid.Web/wwwroot/appsettings-template.json` para `StarkAid.Web/wwwroot/appsettings.json`.
-2. Defina `Api:BaseUrl` apontando para a API que voce vai usar.
-3. Se o fluxo de eWeLink estiver habilitado no cliente, preencha `Ewelink:ClientId` e `Ewelink:ClientSecret`.
-4. Rode o front web.
+1. Copy `StarkAid.Web/wwwroot/appsettings-template.json` to `StarkAid.Web/wwwroot/appsettings.json`.
+2. Set `Api:BaseUrl` to the API you want the client to use.
+3. If the `eWeLink` browser flow is enabled, set `Ewelink:ClientId` and `Ewelink:ClientSecret`.
+4. Run the web client.
 
 ```powershell
 dotnet restore
 dotnet run --project StarkAid.Web
 ```
 
-### Observacao importante sobre segredos no Blazor WASM
+### Important note about secrets in Blazor WebAssembly
 
-`StarkAid.Web` roda no navegador. Qualquer valor colocado em `wwwroot/appsettings.json` fica visivel para o cliente final. Se `ClientSecret` de terceiros for realmente secreto, o ideal e mover esse fluxo para a API e nao expor o segredo no front.
+`StarkAid.Web` runs in the browser. Any secret placed in `wwwroot/appsettings.json` is visible to the client. If a provider value is truly secret, it should move to the backend instead of staying in the browser configuration.
 
-## Configuracao do Android
+## Android configuration
 
-O aplicativo Android tem documentacao propria aqui:
+The Android app has dedicated setup documentation here:
 
 - [starkaidautomacao/README.md](starkaidautomacao/README.md)
 
-Resumo do que precisa para subir:
+At a high level, local setup expects:
 
 - `google-services.json`
-- identificadores do `Thingclips / Tuya`
-- IDs de `AdMob` e `Unity Ads`
-- URLs do backend `REST`, `SignalR`, `WebSocket` e `Spotify callback`
-- credenciais do app Spotify se o fluxo continuar client-side
+- `Thingclips / Tuya` identifiers
+- `AdMob` and `Unity Ads` IDs
+- backend `REST`, `SignalR`, `WebSocket`, and Spotify callback URLs
+- Spotify application credentials if the flow remains client-side
 
-## Cliente Windows
+## Windows client
 
-O cliente Windows depende do backend ja configurado e do `WebView2 Runtime` instalado na maquina.
+The Windows client depends on the backend being configured and on `WebView2 Runtime` being installed locally.
 
 ## AudioResolver
 
-`StarkAid.AudioResolver` nao exige, neste momento, um arquivo de configuracao complexo. O `appsettings.json` atual carrega apenas niveis de log.
+`StarkAid.AudioResolver` currently has a lightweight configuration surface and mainly relies on logging settings.
 
-## Deploy publico atualmente apontado no codigo
+## Public deployment reference
 
-- Web/API: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
+- Web and API: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
 
-## Estado do repositorio
+## Repository status
 
-Este repositorio contem codigo real de produto e ainda precisa de saneamento tecnico antes de uma exposicao publica limpa. Os principais pontos pendentes estao resumidos em:
+This is real product code, not tutorial code. It has already gone through an initial sanitization pass for public exposure, but the long-term professionalization path still includes:
+
+- broader credential rotation
+- deeper cleanup of historic artifacts
+- tighter separation between client-safe and server-only configuration
+- clearer deployment automation
+
+Additional notes:
 
 - [GITHUB_CLEANUP_NOTES.md](GITHUB_CLEANUP_NOTES.md)
 
-## Licenca
+## License
 
-Ver arquivo `LICENSE`.
+See `LICENSE`.
