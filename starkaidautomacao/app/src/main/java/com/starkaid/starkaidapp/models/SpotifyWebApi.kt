@@ -2,23 +2,22 @@ package com.starkaid.starkaidapp.models
 
 import android.content.Context
 import android.util.Log
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.data.SessionManager
 import okhttp3.*
 import org.json.JSONObject
 
 object SpotifyWebApi {
     private const val TOKEN_URL = "https://accounts.spotify.com/api/token"
-    private const val DEFAULT_CLIENT_ID = "b777ae2408054cebafda44c36a80be31"
-    private const val DEFAULT_CLIENT_SECRET = "68ecca5ce10743919b003e732c999842"
 
     private val client = OkHttpClient()
 
     fun refreshToken(refreshToken: String, context: Context? = null): SpotifyTokens {
         val sessionManager = context?.let { SessionManager.getInstance(it) }
         
-        // Buscar credenciais do SessionManager ou usar padrão
-        val clientId = sessionManager?.fetchSpotifyClientId() ?: DEFAULT_CLIENT_ID
-        val clientSecret = sessionManager?.fetchSpotifyClientSecret() ?: DEFAULT_CLIENT_SECRET
+        // Buscar credenciais do SessionManager ou usar configuração do build
+        val clientId = sessionManager?.fetchSpotifyClientId() ?: ApiConfig.spotifyClientId
+        val clientSecret = sessionManager?.fetchSpotifyClientSecret() ?: ApiConfig.spotifyClientSecret
 
         val body = FormBody.Builder()
             .add("grant_type", "refresh_token")

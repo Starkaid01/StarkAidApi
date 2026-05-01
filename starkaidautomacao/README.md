@@ -74,55 +74,50 @@ Backend relacionado neste repositorio:
 
 ### 1. Firebase
 
-Voce precisa fornecer:
+Para recursos de `Firebase Messaging` e `Analytics`, forneca:
 
 - `app/google-services.json`
 
-Sem esse arquivo, recursos como `Firebase Messaging` e `Analytics` nao vao inicializar corretamente.
+Sem esse arquivo, o projeto ainda compila, mas o build desativa a etapa do Google Services e o app sobe sem inicializar Firebase.
 
-### 2. Thingclips / Tuya
+### 2. Configuracao local do app
 
-Hoje os identificadores estao declarados diretamente em:
+Copie:
 
-- `app/src/main/AndroidManifest.xml`
+- `starkaid.local.properties.example`
 
-Voce precisa revisar ou substituir:
+para:
 
-- `THING_SMART_APPKEY`
-- `THING_SMART_SECRET`
+- `starkaid.local.properties`
+
+Esse arquivo alimenta o `BuildConfig` e o `AndroidManifest` com:
+
+- `STARKAID_IS_DEVELOPMENT`
+- `STARKAID_DEV_API_BASE_URL`
+- `STARKAID_DEV_WEB_BASE_URL`
+- `STARKAID_PROD_API_BASE_URL`
+- `STARKAID_PROD_WEB_BASE_URL`
+- `STARKAID_SPOTIFY_CLIENT_ID`
+- `STARKAID_SPOTIFY_CLIENT_SECRET`
+- `STARKAID_SPOTIFY_REDIRECT_URI`
+- `ADMOB_APP_ID`
+- `UNITY_ADS_APP_ID`
 
 ### 3. AdMob e Unity Ads
 
-Tambem estao no `AndroidManifest.xml`:
-
-- `com.google.android.gms.ads.APPLICATION_ID`
-- `unityads.appid`
-
-Se voce nao usar monetizacao em ambiente local, pode manter placeholders ou desativar esses SDKs no seu fork.
+Os IDs de anuncios agora sao lidos por placeholder de manifesto. Se voce nao usar monetizacao em ambiente local, mantenha os placeholders do `starkaid.local.properties`.
 
 ### 4. URLs do backend
 
-O app hoje usa endpoints hardcoded em codigo-fonte. Para rodar com seu proprio backend, revise estes arquivos:
+As URLs principais saem de `BuildConfig` via:
 
-- `app/src/main/java/com/starkaid/starkaidapp/services/ApiClient.kt`
-  - URL base REST da API
-- `app/src/main/java/com/starkaid/starkaidapp/services/HubService.kt`
-  - URL do hub `SignalR`
-- `app/src/main/java/com/starkaid/starkaidapp/services/RefreshTokenInterceptor.kt`
-  - endpoint de refresh token
-- `app/src/main/java/com/starkaid/starkaidapp/services/WebSocketManager.kt`
-  - endpoint `WebSocket`
-- `app/src/main/java/com/starkaid/starkaidapp/ui/QrActivityWppConnect.kt`
-  - URL do fluxo QR / WPP
-- `app/src/main/java/com/starkaid/starkaidapp/ui/MainActivity.kt`
-  - URL de callback / troca de codigo do Spotify com backend
+- `app/src/main/java/com/starkaid/starkaidapp/config/ApiConfig.kt`
+
+Com isso, `ApiClient`, `HubService`, `RefreshTokenInterceptor`, `WebSocketManager`, `QrActivityWppConnect` e fluxos ligados ao backend passam a respeitar o ambiente configurado.
 
 ### 5. Spotify
 
-Hoje as credenciais do app Spotify aparecem em codigo-fonte. Revise:
-
-- `app/src/main/java/com/starkaid/starkaidapp/services/SpotifyService.kt`
-- `app/src/main/java/com/starkaid/starkaidapp/ui/MainActivity.kt`
+O fallback de Spotify agora vem do `starkaid.local.properties`, enquanto o backend ainda pode sobrescrever `clientId` e `clientSecret` em runtime pelo endpoint de configuracao.
 
 Voce vai precisar de:
 
@@ -143,11 +138,11 @@ sdk.dir=C:\\Users\\SeuUsuario\\AppData\\Local\\Android\\Sdk
 ## Passo a passo para subir
 
 1. Abra a pasta no Android Studio.
-2. Garanta que `app/google-services.json` exista.
-3. Ajuste as chaves do `Thingclips / Tuya` no `AndroidManifest.xml`.
-4. Revise IDs de anuncios no `AndroidManifest.xml`.
-5. Troque todas as URLs hardcoded para apontarem para sua API.
-6. Revise o fluxo do Spotify.
+2. Copie `starkaid.local.properties.example` para `starkaid.local.properties`.
+3. Ajuste URLs, Spotify e IDs de ads nesse arquivo.
+4. Se for usar Firebase, adicione `app/google-services.json`.
+5. Revise o fluxo do Spotify.
+6. Se precisar de integracoes adicionais, confira as configuracoes retornadas pelo backend em `api/v1/Config/app-config`.
 7. Gere o build e rode em emulador ou dispositivo fisico.
 
 ## Build

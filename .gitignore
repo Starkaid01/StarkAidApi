@@ -428,3 +428,11 @@ VARIAVEIS_AMBIENTE.md
 VARIAVEIS_MONSTERASP.txt
 configurar-variaveis-ambiente.ps1
 INSTRUCOES_VARIAVEIS_AMBIENTE_WINDOWS.md
+
+# Repo sanitation
+.temp_build/
+StarkAid.Api/DataProtection-Keys/
+StarkAid.Api/build_errors*.txt
+online_logs.txt
+starkaidautomacao/starkaid.local.properties
+starkaidautomacao/app/google-services.json

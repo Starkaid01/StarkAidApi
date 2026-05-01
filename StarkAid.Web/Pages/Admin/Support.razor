@@ -35,17 +35,23 @@
     {
         <div class="dashboard-grid">
             <!-- User Info & Status -->
-            <div class="card user-profile">
+            <div class="card user-profile full-width">
                 <div class="card-header">
                     <h3>Perfil do Usuário</h3>
-                    @if (userDashboard?.UsuarioOnline == true)
-                    {
-                        <span class="badge badge-success">Online</span>
-                    }
-                    else
-                    {
-                        <span class="badge badge-secondary">Offline</span>
-                    }
+                    <div class="status-container">
+                        @if (userDashboard?.UsuarioOnline == true)
+                        {
+                            <span class="badge badge-success">Online</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-secondary">Offline</span>
+                        }
+                        <button class="btn-refresh" @onclick="() => LoadUserDetails(selectedUser.Id)" title="Atualizar Status">
+                            <i class="fas fa-sync-alt @(isRefreshing ? "fa-spin" : "")"></i>
+                            <span class="refresh-text">Atualizar</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <p><strong>Nome:</strong> @selectedUser.Name</p>
@@ -100,11 +106,14 @@
                                <p><small>Local Acessado:</small> @(userDashboard?.ActivityApp?.UltimaUiAcessada ?? "N/A")</p>
                            </div>
                            <div class="btn-grid">
-                               <button class="btn btn-outline-danger btn-block" @onclick="() => LimparCacheApp()">Limpar Cache</button>
-                               <button class="btn btn-outline-danger btn-block" @onclick="() => LimparDadosApp()">Limpar Dados</button>
-                               <button class="btn btn-danger btn-block" @onclick="() => LogoutApp()">Deslogar</button>
-                               <button class="btn btn-info btn-block" @onclick="() => VerLogsApp()">Ver Logs App</button>
-                           </div>
+                                <button class="btn btn-outline-danger btn-block" @onclick="() => LimparCacheApp()">Limpar Cache</button>
+                                <button class="btn btn-outline-danger btn-block" @onclick="() => LimparDadosApp()">Limpar Dados</button>
+                                <button class="btn btn-outline-danger btn-block" @onclick="() => ReiniciarApp()">Reiniciar App</button>
+                                <button class="btn btn-outline-danger btn-block" @onclick="() => LimparBancoApp()">Limpar Banco Local</button>
+                                <button class="btn btn-danger btn-block" @onclick="() => LogoutApp()">Deslogar</button>
+                                <button class="btn btn-info btn-block" @onclick="() => VerLogsApp()">Ver Logs App</button>
+                                <button class="btn btn-primary btn-block" @onclick="() => EnviarAlertaApp()">Enviar Alerta</button>
+                            </div>
                        </div>
                    </div>
                </div>
@@ -294,18 +303,28 @@
                     <table class="table table-sm">
                         <thead>
                             <tr>
-                                <th>Data</th>
-                                <th>Mensagem</th>
-                                <th>Stack Trace</th>
+                                <th>Data/Hora</th>
+                                <th>Ação</th>
+                                <th>Último Comando</th>
+                                <th>Erro/Resposta</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach(var log in currentLogs)
                             {
                                 <tr>
-                                    <td>@log.CreatedAt.ToString("g")</td>
-                                    <td>@log.Message</td>
-                                    <td class="small-text">@log.StackTrace?.Substring(0, Math.Min(50, log.StackTrace?.Length ?? 0))...</td>
+                                    <td>@log.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="clickable-cell" 
+                                        title="Clique para ver detalhe da ação"
+                                        @onclick='() => VerDetalheLog("Ação Realizada", log.AcaoErro)'>
+                                        <span class="badge bg-danger">@log.AcaoErro</span>
+                                    </td>
+                                    <td>@log.UltimoComando</td>
+                                    <td class="small-text clickable-cell" 
+                                        title="Clique para ver o log completo"
+                                        @onclick='() => VerDetalheLog("Detalhes do Erro", log.ErroCompleto)'>
+                                        @(log.ErroCompleto?.Length > 80 ? log.ErroCompleto.Substring(0, 80) + "..." : log.ErroCompleto)
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -323,6 +342,21 @@
     </div>
 }
 
+@if (showLogDetailModal)
+{
+    <div class="modal-overlay" style="z-index: 1100;">
+        <div class="modal-content wide-modal">
+            <h3>@logDetailTitle</h3>
+            <div class="detail-container">
+                <pre class="full-log-text">@logDetailContent</pre>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" @onclick="() => showLogDetailModal = false">Fechar</button>
+            </div>
+        </div>
+    </div>
+}
+
 <style>
     .admin-support { padding: 2rem; color: var(--text-primary); }
     .header-section { margin-bottom: 2rem; }
@@ -332,6 +366,11 @@
     .card { background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; overflow: hidden; margin-bottom: 1rem; }
     .full-width { grid-column: 1 / -1; }
     .card-header { padding: 1rem 1.5rem; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+    .status-container { display: flex; align-items: center; gap: 0.75rem; }
+    .btn-refresh { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+    .btn-refresh:hover { background: rgba(255,255,255,0.1); color: #3ddc84; }
+    .btn-refresh i { font-size: 1rem; }
+    .refresh-text { font-size: 0.75rem; font-weight: bold; margin-left: 0.4rem; text-transform: uppercase; letter-spacing: 1px; }
     .card-body { padding: 1.5rem; }
     .actions-split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1rem; }
     .action-panel { background: rgba(0,0,0,0.2); border-radius: 8px; overflow: hidden; }
@@ -352,6 +391,10 @@
     .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; }
     .small-text { font-size: 0.8rem; color: #94a3b8; }
     .logs-container { max-height: 400px; overflow-y: auto; }
+    .clickable-cell { cursor: pointer; transition: background 0.2s; }
+    .clickable-cell:hover { background: rgba(255,255,255,0.1); border-radius: 4px; color: white !important; }
+    .detail-container { max-height: 500px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
+    .full-log-text { white-space: pre-wrap; word-break: break-all; color: #cbd5e1; font-family: 'Consolas', monospace; font-size: 0.9rem; margin-bottom: 0; }
 </style>
 
 @code {
@@ -379,6 +422,11 @@
 
     private bool showStarkSwitchModal = false;
     private DeviceDto editingStarkSwitch;
+
+    private bool showLogDetailModal = false;
+    private string logDetailContent;
+    private string logDetailTitle;
+    private bool isRefreshing = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -412,20 +460,24 @@
 
     private async Task LoadUserDetails(Guid userId)
     {
+        isRefreshing = true;
         try
         {
             userDashboard = await AdminService.GetUserDashboardAsync(userId, token, apiKey);
             devices = await AdminService.GetDispositivosManutencaoAsync(userId, token, apiKey);
             starkSwitchDevices = await AdminService.GetStarkSwitchDevicesAsync(userId, token, apiKey);
             socialCommands = await AdminService.GetComandosSociaisManutencaoAsync(userId, token, apiKey);
-            StateHasChanged();
         }
         catch(Exception ex)
         {
             Console.WriteLine($"Erro loading user details: {ex.Message}");
         }
+        finally
+        {
+            isRefreshing = false;
+            StateHasChanged();
+        }
     }
-
     // --- Command Actions ---
     private void OpenNewCommandModal()
     {
@@ -587,6 +639,13 @@
         showLogsModal = true;
     }
 
+    private void VerDetalheLog(string title, string content)
+    {
+        logDetailTitle = title;
+        logDetailContent = content;
+        showLogDetailModal = true;
+    }
+
     // --- Maintenance Actions ---
     private async Task IniciarManutencaoSoft()
     {
@@ -626,6 +685,24 @@
     {
         if (await ConfirmService.ConfirmAsync("Logout Remoto", "Deseja realmente deslogar o App Android remotamente?"))
             await ExecuteAction(AdminService.LogoutAppAsync(selectedUser.Id, token, apiKey));
+    }
+    private async Task ReiniciarApp() 
+    {
+        if (await ConfirmService.ConfirmAsync("Reiniciar App", "Deseja realmente reiniciar o App Android?"))
+            await ExecuteAction(AdminService.RestartAppAsync(selectedUser.Id, token, apiKey));
+    }
+    private async Task LimparBancoApp() 
+    {
+        if (await ConfirmService.ConfirmAsync("Limpar Banco", "Deseja realmente limpar o banco de dados local do App? Isso apagará dispositivos e configurações locais."))
+            await ExecuteAction(AdminService.DropDatabaseAsync(selectedUser.Id, token, apiKey));
+    }
+    private async Task EnviarAlertaApp() 
+    {
+        var msg = await JS.InvokeAsync<string>("prompt", "Digite a mensagem do alerta:");
+        if (!string.IsNullOrWhiteSpace(msg))
+        {
+            await ExecuteAction(AdminService.SendAlertAsync(selectedUser.Id, msg, token, apiKey));
+        }
     }
 
     private async Task ExecuteAction(Task<bool> action)

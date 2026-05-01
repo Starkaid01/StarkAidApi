@@ -68,11 +68,11 @@
         <!-- Reconfigures do AdMob -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-8791322668156076~4427534782"/>
+            android:value="${adMobAppId}"/>
 
         <meta-data
             android:name="unityads.appid"
-            android:value="5968464"/>
+            android:value="${unityAdsAppId}"/>
 
         <!-- Habilitate coleta de Advertising ID para Analytics -->
         <meta-data

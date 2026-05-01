@@ -188,7 +188,7 @@ import kotlinx.coroutines.async
 import java.text.Normalizer
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.jvm.java
-import com.unity3d.ads.BuildConfig
+import com.starkaid.starkaidapp.BuildConfig
 import com.starkaid.starkaidapp.services.pipeline.*
 import com.starkaid.starkaidapp.models.AnaliseTexto
 import com.starkaid.starkaidapp.models.MusicResolveRequest
@@ -265,7 +265,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     private var adRetryRunnable: Runnable? = null
     private val adHandler = Handler(Looper.getMainLooper())
 
-    private val UNITY_GAME_ID = "5921564"
+    private val UNITY_GAME_ID = ApiConfig.unityAdsGameId
 
     // Adicione estas variáveis na classe MainActivity
     private lateinit var deviceCountView: TextView
@@ -4152,7 +4152,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
 
         val uri = intent.data
-        if (uri != null && uri.toString().startsWith("starkaid://spotifycallback")) {
+        if (uri != null && uri.toString().startsWith(ApiConfig.spotifyRedirectUri)) {
             Log.d("SpotifyService", "Spotify callback recebido")
             val code = uri.getQueryParameter("code")
             if (code != null) {
@@ -4193,8 +4193,8 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
 
     private fun startSpotifyLogin() {
-        val clientId = "b777ae2408054cebafda44c36a80be31"
-        val redirectUri = "starkaid://spotifycallback"
+        val clientId = sessionManager.fetchSpotifyClientId() ?: ApiConfig.spotifyClientId
+        val redirectUri = ApiConfig.spotifyRedirectUri
         val scopes = "user-read-playback-state user-modify-playback-state user-read-private"
 
         val url = "https://accounts.spotify.com/authorize?" +

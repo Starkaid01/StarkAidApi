@@ -23,7 +23,13 @@ class StarkAidApp : Application(), Application.ActivityLifecycleCallbacks {
         super.onCreate()
         instance = this
         registerActivityLifecycleCallbacks(this)
-        FirebaseApp.initializeApp(this)
+        val googleAppIdResource = resources.getIdentifier("google_app_id", "string", packageName)
+        if (googleAppIdResource != 0) {
+            runCatching { FirebaseApp.initializeApp(this) }
+                .onFailure { Log.w("StarkAidApp", "Firebase não foi inicializado nesta build", it) }
+        } else {
+            Log.w("StarkAidApp", "google-services.json ausente; recursos do Firebase foram desativados para esta build.")
+        }
         NotificationHelper.criarCanais(this)
     }
 

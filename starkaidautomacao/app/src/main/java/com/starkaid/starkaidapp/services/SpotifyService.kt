@@ -8,6 +8,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
 import android.util.Log
+import com.starkaid.starkaidapp.config.ApiConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -34,12 +35,12 @@ class SpotifyService(private val context: Context) {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    // Usar credenciais do SessionManager ou valores padrão como fallback
+    // Usar credenciais do SessionManager ou valores configurados no build como fallback
     private val clientId: String
-        get() = sessionManager.fetchSpotifyClientId() ?: "b777ae2408054cebafda44c36a80be31"
+        get() = sessionManager.fetchSpotifyClientId() ?: ApiConfig.spotifyClientId
     
     private val clientSecret: String
-        get() = sessionManager.fetchSpotifyClientSecret() ?: "68ecca5ce10743919b003e732c999842"
+        get() = sessionManager.fetchSpotifyClientSecret() ?: ApiConfig.spotifyClientSecret
     
     private val tokenUrl = "https://accounts.spotify.com/api/token"
     private val TAG = "SpotifyService"

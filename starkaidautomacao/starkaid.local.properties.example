@@ -1,0 +1,19 @@
+# Ativa o modo local de desenvolvimento para o app Android.
+STARKAID_IS_DEVELOPMENT=false
+
+# URLs usadas quando STARKAID_IS_DEVELOPMENT=true
+STARKAID_DEV_API_BASE_URL=http://192.168.2.103:5000
+STARKAID_DEV_WEB_BASE_URL=http://192.168.2.103:5000
+
+# URLs usadas quando STARKAID_IS_DEVELOPMENT=false
+STARKAID_PROD_API_BASE_URL=https://starkaid.runasp.net
+STARKAID_PROD_WEB_BASE_URL=https://starkaid.runasp.net
+
+# Fallback local para OAuth Spotify. O backend/app-config pode sobrescrever em runtime.
+STARKAID_SPOTIFY_CLIENT_ID=your_spotify_client_id
+STARKAID_SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+STARKAID_SPOTIFY_REDIRECT_URI=starkaid://spotifycallback
+
+# IDs usados no AndroidManifest para ads.
+ADMOB_APP_ID=ca-app-pub-0000000000000000~0000000000
+UNITY_ADS_APP_ID=0000000

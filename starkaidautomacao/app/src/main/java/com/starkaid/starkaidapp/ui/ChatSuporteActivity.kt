@@ -9,9 +9,11 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.starkaid.starkaidapp.base.BaseActivity
 import android.content.Intent
 import com.microsoft.signalr.HubConnection
 import com.microsoft.signalr.HubConnectionBuilder
+import com.microsoft.signalr.HubConnectionState
 import com.starkaid.starkaidapp.R
 import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.data.SessionManager
@@ -21,9 +23,8 @@ import org.json.JSONObject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
-class ChatSuporteActivity : AppCompatActivity() {
+class ChatSuporteActivity : BaseActivity() {
     private lateinit var sessionManager: SessionManager
     private var hubConnection: HubConnection? = null
     private lateinit var chatMessagesContainer: LinearLayout
@@ -37,6 +38,7 @@ class ChatSuporteActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat_suporte)
+        supportActionBar?.hide()
 
         sessionManager = SessionManager(this)
 
@@ -84,67 +86,73 @@ class ChatSuporteActivity : AppCompatActivity() {
                 .build()
 
             // Event handlers
-            hubConnection?.on("QueuePosition", { data ->
+            hubConnection?.on("ChatSessionStarted", {
                 runOnUiThread {
-                    try {
-                        val json = JSONObject(data.toString())
-                        updateQueueStatus(json.toString())
-                    } catch (e: Exception) {
-                        updateQueueStatus(data.toString())
-                    }
+                    statusText.text = "Sessão Iniciada"
+                    statusText.setTextColor(0xFF00FF00.toInt())
+                    btnSend.isEnabled = true
                 }
-            }, Any::class.java)
+            })
 
-            hubConnection?.on("NextInQueue", { data ->
+            hubConnection?.on("ChatSessionEnded", {
                 runOnUiThread {
-                    try {
-                        val json = JSONObject(data.toString())
-                        updateQueueStatus(json.toString())
-                    } catch (e: Exception) {
-                        updateQueueStatus(data.toString())
-                    }
+                    statusText.text = "Sessão Finalizada"
+                    statusText.setTextColor(0xFFFFA500.toInt())
+                    btnSend.isEnabled = false
+                    addMessage("Sessão finalizada.", "system")
                 }
-            }, Any::class.java)
+            })
 
+            // Event handler - 1 Argumento (ChatMessage object or String)
             hubConnection?.on("ReceiveMessage", { data ->
                 runOnUiThread {
                     try {
-                        // O hub envia um objeto ChatMessageDto
-                        val json = JSONObject(data.toString())
-                        val message = json.optString("message", "")
-                        val sender = json.optString("sender", "ia")
-                        addMessage(message, sender)
+                        val strData = data.toString()
+                        // Evitar mensagens duplicadas do servidor se já foram mostradas (opcional)
+                        if (strData.startsWith("{")) {
+                            val json = JSONObject(strData)
+                            val message = json.optString("message", "")
+                            val sender = json.optString("sender", "ia")
+                            addMessage(message, sender)
+                        } else {
+                             addMessage(strData, "ia")
+                        }
                     } catch (e: Exception) {
-                        // Se falhar, tentar como string direta
                         addMessage(data.toString(), "ia")
                     }
                 }
             }, Any::class.java)
 
-            hubConnection?.on("Error", { error ->
+            hubConnection?.on("ChatError", { error ->
                 runOnUiThread {
                     Toast.makeText(this, "Erro: $error", Toast.LENGTH_SHORT).show()
                 }
             }, String::class.java)
 
-            hubConnection?.on("LimiteAtingido", {
+            // New: Handle Remote Actions from Support Agent
+            hubConnection?.on("ExecuteAction", { action ->
                 runOnUiThread {
-                    messageInput.isEnabled = false
-                    messageInput.hint = "Limite de contexto atingido. Preencha o formulário abaixo."
-                    btnSend.isEnabled = false
-                    mostrarFormularioLimite()
+                    com.starkaid.starkaidapp.maintenance.MaintenanceManager.executeAction(this, action.toString(), null)
+                    addMessage("[Executando Ação: $action...]", "system")
                 }
-            })
+            }, String::class.java)
 
             hubConnection?.start()?.blockingAwait()
+            
+            // Inicia sessão explicitamente uma única vez após conexão
+            try {
+                 hubConnection?.invoke("StartChatSession")
+            } catch(e: Exception) { Log.e("ChatSuporte", "Erro start session", e)}
 
             statusText.text = "Conectado"
             statusText.setTextColor(0xFF00FF00.toInt())
             btnConnect.isEnabled = false
             btnDisconnect.isEnabled = true
-            btnSend.isEnabled = true
-
-            addMessage("Conectado ao chat de suporte. Aguarde sua vez na fila...", "system")
+            
+            // Força habilitação para garantir que o usuário possa tentar enviar
+            btnSend.isEnabled = true 
+            messageInput.isEnabled = true
+            
         } catch (e: Exception) {
             Log.e("ChatSuporte", "Erro ao conectar", e)
             Toast.makeText(this, "Erro ao conectar: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -163,8 +171,7 @@ class ChatSuporteActivity : AppCompatActivity() {
             btnConnect.isEnabled = true
             btnDisconnect.isEnabled = false
             btnSend.isEnabled = false
-            queueStatusText.visibility = android.view.View.GONE
-
+            // queueStatusText.visibility = android.view.View.GONE
             addMessage("Desconectado do chat de suporte.", "system")
         } catch (e: Exception) {
             Log.e("ChatSuporte", "Erro ao desconectar", e)
@@ -177,54 +184,69 @@ class ChatSuporteActivity : AppCompatActivity() {
             return
         }
 
-        if (hubConnection == null || hubConnection?.connectionState?.name != "Connected") {
-            Toast.makeText(this, "Você precisa estar conectado", Toast.LENGTH_SHORT).show()
+        Log.d("ChatSuporte", "Tentando enviar mensagem: $message")
+
+        // Validação estrita de conexão
+        if (hubConnection == null) {
+             Toast.makeText(this, "Erro: Conexão nula", Toast.LENGTH_SHORT).show()
+             return
+        }
+        
+        if (hubConnection?.connectionState != HubConnectionState.CONNECTED) {
+            Toast.makeText(this, "Conexão instável (${hubConnection?.connectionState}). Reconectando...", Toast.LENGTH_SHORT).show()
+            Log.e("ChatSuporte", "Estado inválido para envio: ${hubConnection?.connectionState}")
             return
         }
 
-        try {
-            hubConnection?.invoke("SendMessage", message)
-            messageInput.setText("")
-            addMessage(message, "user")
-        } catch (e: Exception) {
-            Log.e("ChatSuporte", "Erro ao enviar mensagem", e)
-            Toast.makeText(this, "Erro ao enviar mensagem: ${e.message}", Toast.LENGTH_SHORT).show()
+        // Executar envio em background para não bloquear UI
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                Log.d("ChatSuporte", "Invocando SendMessage no hub...")
+                hubConnection?.invoke("SendMessage", message)
+                
+                Log.d("ChatSuporte", "Mensagem enviada com sucesso (invoke).")
+                runOnUiThread {
+                    messageInput.setText("")
+                    addMessage(message, "user")
+                }
+            } catch (e: Exception) {
+                Log.e("ChatSuporte", "EXCEÇÃO ao enviar mensagem", e)
+                runOnUiThread {
+                    Toast.makeText(this@ChatSuporteActivity, "Falha no envio: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
     private fun addMessage(message: String, sender: String) {
-        val timestamp = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+        val timestamp = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
             .format(java.util.Date())
 
-        val messageView = TextView(this).apply {
-            text = when (sender) {
-                "user" -> "[$timestamp] Você: $message"
-                "ia" -> "[$timestamp] Assistente: $message"
-                "support" -> "[$timestamp] Suporte: $message"
-                else -> "[$timestamp] $message"
+        if (sender == "system") {
+             val systemView = TextView(this)
+             systemView.text = message
+             systemView.setTextColor(0xFF888888.toInt())
+             systemView.textSize = 12f
+             systemView.gravity = android.view.Gravity.CENTER
+             systemView.setPadding(16, 8, 16, 8)
+             chatMessagesContainer.addView(systemView)
+        } else {
+            val layoutId = if (sender == "user") {
+                R.layout.item_chat_sent
+            } else {
+                R.layout.item_chat_received
             }
-            setTextColor(
-                when (sender) {
-                    "user" -> 0xFF87CEEB.toInt()
-                    "ia" -> 0xFF90EE90.toInt()
-                    "support" -> 0xFFFFFF00.toInt()
-                    else -> 0xFF888888.toInt()
-                }
-            )
-            textSize = 14f
-            setPadding(16, 8, 16, 8)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = 8
-            }
+
+            val messageView = layoutInflater.inflate(layoutId, chatMessagesContainer, false)
+            val messageBody = messageView.findViewById<TextView>(R.id.messageBody)
+            
+            messageBody.text = "$message   $timestamp"
+            
+            chatMessagesContainer.addView(messageView)
         }
 
-        chatMessagesContainer.addView(messageView)
-
         // Scroll para o final
-        val scrollView = chatMessagesContainer.parent as? ScrollView
+        val scrollView = findViewById<ScrollView>(R.id.messageScrollView)
         scrollView?.post {
             scrollView.fullScroll(android.view.View.FOCUS_DOWN)
         }
@@ -250,9 +272,10 @@ class ChatSuporteActivity : AppCompatActivity() {
     }
 
     private fun mostrarFormularioLimite() {
-        val formularioLayout = findViewById<LinearLayout>(R.id.formulario_limite_layout)
-        if (formularioLayout != null) {
-            formularioLayout.visibility = android.view.View.VISIBLE
+        // ID formulario_limite_layout é um ScrollView no XML, não LinearLayout
+        val formularioScrollView = findViewById<ScrollView>(R.id.formulario_limite_layout)
+        if (formularioScrollView != null) {
+            formularioScrollView.visibility = android.view.View.VISIBLE
             val btnEnviar = findViewById<Button>(R.id.btnEnviarFormulario)
             btnEnviar?.setOnClickListener {
                 CoroutineScope(Dispatchers.IO).launch {
@@ -284,7 +307,7 @@ class ChatSuporteActivity : AppCompatActivity() {
                 if (response.isSuccessful) {
                     Toast.makeText(this, "Formulário enviado com sucesso!", Toast.LENGTH_LONG).show()
                     mensagemInput?.setText("")
-                    findViewById<LinearLayout>(R.id.formulario_limite_layout)?.visibility = android.view.View.GONE
+                    findViewById<ScrollView>(R.id.formulario_limite_layout)?.visibility = android.view.View.GONE
                 } else {
                     Toast.makeText(this, "Erro ao enviar formulário", Toast.LENGTH_SHORT).show()
                 }
