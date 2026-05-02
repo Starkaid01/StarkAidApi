@@ -8,6 +8,22 @@ This repository is the flagship public sample because it shows a real product pr
 
 ![StarkAid live web surface](docs/images/live-home.png)
 
+## Public history note
+
+The public commit history is shorter than the actual product history.
+
+This matters because the system was originally developed as a private product codebase and only later prepared for public review. That means recent public commits overrepresent:
+
+- sanitization and secret removal
+- documentation and setup cleanup
+- reviewability improvements
+- CI and public build validation
+
+So the right way to read this repository is:
+
+- older product depth is visible in the solution shape and runtime surfaces
+- newer public commits show the effort to make that work reviewable, reproducible, and safer to publish
+
 ## What problem this solves
 
 Home automation products usually fragment fast:
@@ -38,6 +54,15 @@ It demonstrates:
 - support and maintenance workflows that go beyond user-facing CRUD
 - real-world configuration cleanup to separate public code from private credentials
 
+## Technical decisions
+
+- `JWT` was chosen because the product has multiple clients (`Blazor`, Android, desktop, connected-device flows) and needed stateless auth that does not depend on a single server-side session model.
+- a runtime `Api-Key` is layered on top of authenticated flows because devices and product surfaces need a second boundary for command and device-related requests after login.
+- `SignalR` was chosen for realtime support and operator feedback because maintenance, support chat, and command status are user-facing flows where polling would add friction and latency.
+- `MQTT`, UDP, and multiple vendor integrations exist together because the real problem is heterogeneous automation, not one perfect device protocol.
+- `EF Core` with `SQL Server` was chosen because auth, billing, devices, support, and scheduled work all need transactional persistence in the same product boundary.
+- hosted services were used because schedules, reminder processing, token resets, and automation-related background work are part of the product itself, not external cron-only concerns.
+
 ## Proof in under 30 seconds
 
 If you only have a minute, use this order:
@@ -54,6 +79,20 @@ If you only have a minute, use this order:
 - multi-project solution with backend, web, desktop, Android, and helper service
 - green solution build from the public codebase
 - public documentation for environment setup and secret boundaries
+
+## Production and runtime signals
+
+The repository already contains concrete production-oriented decisions:
+
+- structured JSON logging with `Serilog`
+- `JWT` auth with support for websocket and `SignalR` token transport
+- rate limiting by IP and authenticated user
+- `EF Core` retry behavior and SQL command timeout configuration
+- background services for schedules, reminders, subscription checks, and periodic maintenance
+- middleware for runtime `Api-Key` enforcement and command throttling
+- realtime hubs for devices, ESP flows, avatar interactions, and support
+
+These are not placeholders in the README; they are wired in the application bootstrap.
 
 ## Architecture snapshot
 
@@ -139,6 +178,13 @@ This repository now includes a public GitHub Actions workflow that validates the
 Workflow file:
 
 - [.github/workflows/ci.yml](.github/workflows/ci.yml)
+
+## Engineering notes
+
+Deeper review docs:
+
+- [docs/ENGINEERING_DECISIONS.md](docs/ENGINEERING_DECISIONS.md)
+- [docs/EVOLUTION_NOTES.md](docs/EVOLUTION_NOTES.md)
 
 ## Local setup order
 
