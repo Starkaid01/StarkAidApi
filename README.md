@@ -148,44 +148,6 @@ What this shows:
 
 ![StarkAid developer docs](docs/images/system-walkthrough/docs-desenvolvedores-playwright.png)
 
-## Android app walkthrough
-
-The screenshots below were captured from the installed Android client on `2026-05-02`.
-
-They were trimmed to remove device chrome and avoid exposing incidental personal context from the test handset while still showing the real UI.
-
-### 1. Launch / brand splash
-
-What this shows:
-
-- the Android client ships with its own branded startup flow
-- the mobile app is not a placeholder wrapper around the web surface
-- the public repository maps to a running mobile build, not only backend code
-
-![StarkAid Android splash](docs/images/mobile-walkthrough/android-splash.png)
-
-### 2. Main automation dashboard
-
-What this shows:
-
-- runtime toggles for voice, WhatsApp, Spotify, and assistant features
-- direct user actions for optimization, cache cleanup, refresh, and product credits
-- dashboard metrics and plan messaging coming from the current mobile product surface
-
-This capture was intentionally cropped before the weather/location section to keep the portfolio view focused on the product UI.
-
-![StarkAid Android dashboard](docs/images/mobile-walkthrough/android-home-overview.png)
-
-### 3. Mobile monetization flow
-
-What this shows:
-
-- the Android app includes its own purchase surface instead of delegating everything to the browser
-- the product already models in-app credit packs and pricing presentation
-- monetization concerns are part of the shipped client, not just backend placeholders
-
-![StarkAid Android StarkCoins screen](docs/images/mobile-walkthrough/android-starkcoins.png)
-
 ## Architecture snapshot
 
 ```mermaid
