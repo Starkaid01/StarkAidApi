@@ -6,7 +6,7 @@
 
 This repository is the flagship public sample because it shows a real product problem being solved: device control, support, account flows, scheduling, monetization, and operational tooling across more than one client.
 
-![StarkAid live web surface](docs/images/live-home.png)
+![StarkAid live web surface](docs/images/system-walkthrough/home-playwright-cli.png)
 
 ## Public history note
 
@@ -79,6 +79,72 @@ If you only have a minute, use this order:
 - multi-project solution with backend, web, desktop, Android, and helper service
 - green solution build from the public codebase
 - public documentation for environment setup and secret boundaries
+
+## Live system walkthrough
+
+The screenshots below were captured from the live public surface on `2026-05-02`.
+
+This walkthrough intentionally stays on public routes. It proves that the product is deployed and reviewable without forcing authenticated actions against a production environment.
+
+### 1. Public landing surface
+
+Route: [`/`](https://starkaidautomacao.runasp.net/)
+
+What this shows:
+
+- the product is live and not just a local-only sample
+- the public web surface already communicates the automation use case
+- navigation exists for downloads, authentication, solution pages, and docs
+
+![StarkAid landing page](docs/images/system-walkthrough/home-playwright-cli.png)
+
+### 2. Automation solution page
+
+Route: [`/solutions/automacao`](https://starkaidautomacao.runasp.net/solutions/automacao)
+
+What this shows:
+
+- the repo is attached to a specific business problem instead of a generic portfolio page
+- the public site explains device automation, voice control, and command-driven routines
+- the product framing matches the backend scope shown in the solution
+
+![StarkAid automation solution page](docs/images/system-walkthrough/solutions-automacao-playwright.png)
+
+### 3. Authentication entry point
+
+Route: [`/login`](https://starkaidautomacao.runasp.net/login)
+
+What this shows:
+
+- the system exposes a real authentication surface instead of mock-only navigation
+- account entry is already wired into the public product flow
+- this is the boundary where the mobile, desktop, and web clients converge on the same auth model
+
+![StarkAid login page](docs/images/system-walkthrough/login-playwright.png)
+
+### 4. Software distribution surface
+
+Route: [`/download`](https://starkaidautomacao.runasp.net/download)
+
+What this shows:
+
+- the product includes real installation and distribution concerns
+- the public surface already references deliverables beyond the browser client
+- this supports the multi-client story shown in the repository layout
+
+![StarkAid download page](docs/images/system-walkthrough/download-playwright.png)
+
+### 5. Developer integration docs
+
+Route: [`/docs/desenvolvedores`](https://starkaidautomacao.runasp.net/docs/desenvolvedores)
+
+What this shows:
+
+- the product is not only user-facing; it also exposes an integration story
+- the public docs already describe auth and supported protocols such as `REST`, `MQTT`, and `UDP`
+- this matches the heterogeneous device and automation scope in the backend
+
+![StarkAid developer docs](docs/images/system-walkthrough/docs-desenvolvedores-playwright.png)
 
 ## Production and runtime signals
 
