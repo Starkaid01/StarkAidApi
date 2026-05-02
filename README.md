@@ -68,14 +68,14 @@ It demonstrates:
 If you only have a minute, use this order:
 
 1. Open the live surface: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
-2. Watch the short product video: [YouTube demo](https://www.youtube.com/watch?v=rk1JtP94b-E)
+2. Watch the product video: [YouTube demo](https://www.youtube.com/watch?v=Iexo9cl87lk)
 3. Scan the architecture snapshot below
 4. Jump to the API surfaces table to see the breadth of the backend
 
 ## What is already working
 
 - public live web surface: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
-- public short demo video: [YouTube](https://www.youtube.com/watch?v=rk1JtP94b-E)
+- public product demo video: [YouTube](https://www.youtube.com/watch?v=Iexo9cl87lk)
 - multi-project solution with backend, web, desktop, Android, and helper service
 - green solution build from the public codebase
 - public documentation for environment setup and secret boundaries
@@ -329,7 +329,7 @@ At a high level, local setup expects:
 ## Public references
 
 - live web and API surface: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
-- short demo video: [YouTube](https://www.youtube.com/watch?v=rk1JtP94b-E)
+- product demo video: [YouTube](https://www.youtube.com/watch?v=Iexo9cl87lk)
 - Android repo: [starkaidautomacao](https://github.com/Starkaid01/starkaidautomacao)
 
 ## Repository status
