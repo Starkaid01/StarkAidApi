@@ -19,8 +19,8 @@ public static class ApiConfig
     // ============================================
     // URLs DE DESENVOLVIMENTO
     // ============================================
-    private const string DevApiBaseUrl = "http://192.168.2.103:5000/api";
-    private const string DevWebBaseUrl = "http://192.168.2.103:5000";
+    private const string DevApiBaseUrl = "http://localhost:5000/api";
+    private const string DevWebBaseUrl = "http://localhost:5000";
     
     // ============================================
     // URLs DE PRODUÇÃO

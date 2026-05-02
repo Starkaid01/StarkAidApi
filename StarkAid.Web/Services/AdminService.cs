@@ -163,74 +163,54 @@ namespace StarkAid.Web.Services
 
         public async Task<bool> ClearCacheAppAsync(Guid userId, string token, string apiKey)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/manutencao/app/limpar-cache");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            request.Headers.Add("Api-Key", apiKey);
-             request.Content = JsonContent.Create(new { UserId = userId });
-
-            var response = await _http.SendAsync(request);
-            return response.IsSuccessStatusCode;
+            return await SendAppMaintenanceCommandAsync(userId, "clearCache", null, token, apiKey);
         }
 
          public async Task<bool> ClearDataAppAsync(Guid userId, string token, string apiKey)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/manutencao/app/limpar-dados");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            request.Headers.Add("Api-Key", apiKey);
-             request.Content = JsonContent.Create(new { UserId = userId });
-
-            var response = await _http.SendAsync(request);
-            return response.IsSuccessStatusCode;
+            return await SendAppMaintenanceCommandAsync(userId, "clearData", null, token, apiKey);
         }
 
         public async Task<bool> LogoutAppAsync(Guid userId, string token, string apiKey)
         {
-             var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/manutencao/app/logout");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            request.Headers.Add("Api-Key", apiKey);
-             request.Content = JsonContent.Create(new { UserId = userId });
-
-            var response = await _http.SendAsync(request);
-            return response.IsSuccessStatusCode;
+             return await SendAppMaintenanceCommandAsync(userId, "logout", null, token, apiKey);
         }
 
         public async Task<bool> RestartAppAsync(Guid userId, string token, string apiKey)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/manutencao/app/reiniciar");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            request.Headers.Add("Api-Key", apiKey);
-            request.Content = JsonContent.Create(new { UserId = userId });
-
-            var response = await _http.SendAsync(request);
-            return response.IsSuccessStatusCode;
+            return await SendAppMaintenanceCommandAsync(userId, "restartApp", null, token, apiKey);
         }
 
         public async Task<bool> DropDatabaseAsync(Guid userId, string token, string apiKey)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/manutencao/app/limpar-banco");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            request.Headers.Add("Api-Key", apiKey);
-            request.Content = JsonContent.Create(new { UserId = userId });
-
-            var response = await _http.SendAsync(request);
-            return response.IsSuccessStatusCode;
+            return await SendAppMaintenanceCommandAsync(userId, "dropLocalDatabase", null, token, apiKey);
         }
 
         public async Task<bool> SendAlertAsync(Guid userId, string message, string token, string apiKey)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/manutencao/app/enviar-alerta");
+            return await SendAppMaintenanceCommandAsync(userId, "showAlert", message, token, apiKey);
+        }
+
+        private async Task<bool> SendAppMaintenanceCommandAsync(Guid userId, string action, string? payload, string token, string apiKey)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/websocket/send-maintenance");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             request.Headers.Add("Api-Key", apiKey);
-            request.Content = JsonContent.Create(new
-            {
+            request.Content = JsonContent.Create(new 
+            { 
                 UserId = userId,
-                Message = message
+                Action = action,
+                Payload = payload
             });
 
             var response = await _http.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[AdminService] Erro ao enviar comando: {response.StatusCode} - {error}");
+            }
             return response.IsSuccessStatusCode;
         }
-
         public async Task<bool> CreateComandoSocialAsync(ComandoSocialDto comando, string token, string apiKey)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/Admin/comandos-sociais");

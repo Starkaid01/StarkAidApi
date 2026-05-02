@@ -155,6 +155,12 @@ interface AssistantActions : LegacyAssistantActions {
     
     // Deterministic Execution
     suspend fun executeDeviceCommand(room: String, deviceType: String, action: String): Boolean
+    // Atividade do Usuário (Sincronização com Backend)
+    fun updateActivity(
+        tipo: String, // "IA", "SOCIAL", "ESP", "EWELINK", "STARKSWITCH"
+        comando: String,
+        resposta: String? = null
+    )
 }
 
 // --- New State Classes ---

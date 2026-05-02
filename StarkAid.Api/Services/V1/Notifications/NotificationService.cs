@@ -11,7 +11,7 @@ public class NotificationService
     private readonly AppDbContext _context;
     private readonly IEmailService _emailService;
     private readonly ILogger<NotificationService> _logger;
-    private const string ADMIN_EMAIL = "starkaid24@gmail.com";
+    private const string ADMIN_EMAIL = "admin@example.com";
 
     public NotificationService(AppDbContext context, IEmailService emailService, ILogger<NotificationService> logger)
     {

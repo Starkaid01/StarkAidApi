@@ -49,6 +49,7 @@ public class AppDbContext : DbContext
     public DbSet<AprendizadoResposta> AprendizadoRespostas => Set<AprendizadoResposta>();
     public DbSet<Telemetria> Telemetrias => Set<Telemetria>();
     public DbSet<AiInteractionEvent> AiInteractionEvents => Set<AiInteractionEvent>();
+    public DbSet<SupportLearning> SupportLearnings => Set<SupportLearning>();
 
     public DbSet<YouTubeMusicCache> YouTubeMusicCaches => Set<YouTubeMusicCache>();
     public DbSet<MusicArtistAlias> MusicArtistAliases => Set<MusicArtistAlias>();
@@ -797,7 +798,24 @@ public class AppDbContext : DbContext
                    .WithMany()
                    .HasForeignKey(e => e.UserId)
                    .OnDelete(DeleteBehavior.Cascade);
-         });
+        });
+
+        // Configurações de SupportLearning
+        modelBuilder.Entity<SupportLearning>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserEntradaTxt).IsRequired();
+            entity.Property(e => e.IAResponseTxt).IsRequired();
+            entity.Property(e => e.ContextTitle).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ConfidenceScore).IsRequired();
+            entity.Property(e => e.UsageCount).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+
+            entity.HasOne<User>()
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
 
 
      }

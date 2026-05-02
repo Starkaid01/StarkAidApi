@@ -56,6 +56,11 @@ using EwelinkServiceV1 = StarkAid.Api.Services.V1.EwelinkService;
 using TranscribeProxyServiceV1 = StarkAid.Api.Services.V1.TranscribeProxyService;
 using WeeklyTokensResetService = StarkAid.Api.Services.WeeklyTokensResetService;
 using StarkAid.Api.Services.V1.Lembretes;
+using StarkAid.Api.Services.V1.Support.Agents;
+using StarkAid.Api.Services.V1.Support.Learning;
+using StarkAid.Api.Services.V1.Support.Heuristics;
+using StarkAid.Api.Services.V1.Support.SignalR;
+using StarkAid.Api.Services.V1.Support.BackgroundServices;
 
 try
 {
@@ -378,6 +383,13 @@ try
     // builder.Services.AddScoped<ICommandHandler, IaCommandHandler>();
     builder.Services.AddScoped<IAprendizadoService, AprendizadoService>();
 
+    // Novos Serviços de Suporte Inteligente (Agente Operacional)
+    builder.Services.AddScoped<ISupportLearningService, SupportLearningService>();
+    builder.Services.AddScoped<ISupportHeuristicService, SupportHeuristicService>();
+    builder.Services.AddScoped<ISupportActionExecutor, SupportActionExecutor>();
+    builder.Services.AddScoped<ISupportMessageRouter, SupportMessageRouter>();
+
+
     // 🔍 Diagnóstico do Banco de Dados
     try
     {
@@ -444,6 +456,7 @@ try
     builder.Services.AddHostedService<StarkAid.Api.Services.Background.CognitiveGarbageCollectorService>();
     builder.Services.AddHostedService<StarkAid.Api.Services.Background.LembreteSchedulerService>();
     builder.Services.AddHostedService<RoutineSchedulerService>();
+    builder.Services.AddHostedService<SupportCognitiveGarbageCollector>();
 
     builder.Services.AddSingleton<IMqttClientService, MqttClientService>();
 
@@ -606,11 +619,14 @@ try
     app.MapControllers();
     app.MapHub<StarkAid.Api.Hubs.DeviceHub>("/hubs/device");
     app.MapHub<StarkAid.Api.Hubs.DispositivoEspHub>("/hubs/dispositivo-esp");
-    app.MapHub<StarkAid.Api.Hubs.SupportChatHub>("/hubs/support-chat");
+    // Mapeando para o novo ChatHub mantendo a rota antiga para compatibilidade do cliente ou alterando se necessário
+    // User pediu ChatHub.cs. Vou mapear a rota existente para o novo Hub.
+    app.MapHub<StarkAid.Api.Hubs.ChatHub>("/hubs/support-chat");
+    app.MapHub<StarkAid.Api.Hubs.SupportAgentHub>("/hubs/intelligent-support");
     app.MapHub<StarkAid.Api.Hubs.AvatarHub>("/hubs/avatar");
 
     // Swagger disponível em Development
-    // IMPORTANTE: Para acessar via IP (ex: http://192.168.2.106:5000/swagger),
+    // IMPORTANTE: Para acessar via host local ou IP da sua rede (ex: http://localhost:5000/swagger),
     // certifique-se de que ASPNETCORE_ENVIRONMENT=Development
     if (app.Environment.IsDevelopment())
     {

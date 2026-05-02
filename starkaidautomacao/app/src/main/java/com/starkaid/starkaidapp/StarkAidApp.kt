@@ -19,26 +19,22 @@ class StarkAidApp : Application(), Application.ActivityLifecycleCallbacks {
         fun getAppContext(): Context = instance.applicationContext
     }
 
+    private var activityReferences = 0
+    private var isActivityChangingConfigurations = false
+
     override fun onCreate() {
         super.onCreate()
         instance = this
         registerActivityLifecycleCallbacks(this)
-        val googleAppIdResource = resources.getIdentifier("google_app_id", "string", packageName)
-        if (googleAppIdResource != 0) {
-            runCatching { FirebaseApp.initializeApp(this) }
-                .onFailure { Log.w("StarkAidApp", "Firebase não foi inicializado nesta build", it) }
-        } else {
-            Log.w("StarkAidApp", "google-services.json ausente; recursos do Firebase foram desativados para esta build.")
-        }
+        FirebaseApp.initializeApp(this)
         NotificationHelper.criarCanais(this)
     }
-
 
     override fun onActivityResumed(activity: Activity) {
         isAppVisible = true
         currentActivity = activity
     }
- 
+
     override fun onActivityPaused(activity: Activity) {
         isAppVisible = false
         if (currentActivity == activity) {
@@ -46,8 +42,21 @@ class StarkAidApp : Application(), Application.ActivityLifecycleCallbacks {
         }
     }
 
-    override fun onActivityStarted(activity: Activity) {}
-    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivityStarted(activity: Activity) {
+        if (++activityReferences == 1 && !isActivityChangingConfigurations) {
+            // App entrou em foreground -> Esconder botão flutuante
+            com.starkaid.starkaidapp.services.FloatingButtonService.FloatingButtonServiceInstance?.hideButton()
+        }
+    }
+
+    override fun onActivityStopped(activity: Activity) {
+        isActivityChangingConfigurations = activity.isChangingConfigurations
+        if (--activityReferences == 0 && !isActivityChangingConfigurations) {
+            // App foi para background -> Mostrar botão flutuante (se o serviço estiver rodando)
+            com.starkaid.starkaidapp.services.FloatingButtonService.FloatingButtonServiceInstance?.showButton()
+        }
+    }
+
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
     override fun onActivityDestroyed(activity: Activity) {}

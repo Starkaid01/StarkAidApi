@@ -10,11 +10,17 @@ namespace StarkAid.Api.Controllers.V1;
 [Authorize]
 [ApiVersion("1.0")]
 [ApiController]
-[Route("api/v{version:apiVersion}/[controller]")]
-public class WebsocketController : ControllerBase
+[Route("api/v{version:apiVersion}/websocket")]
+public class WebSocketController : ControllerBase
 {
+    private readonly ILogger<WebSocketController> _logger;
     private static readonly ConcurrentDictionary<string, WebSocket> _connections =
-        new ConcurrentDictionary<string, WebSocket>(StringComparer.Ordinal);
+        new ConcurrentDictionary<string, WebSocket>(StringComparer.OrdinalIgnoreCase);
+
+    public WebSocketController(ILogger<WebSocketController> logger)
+    {
+        _logger = logger;
+    }
 
     // GET api/websocket/connect/{userId}
     [HttpGet("connect/{userId}")]
@@ -38,6 +44,7 @@ public class WebsocketController : ControllerBase
 
         var socket = await HttpContext.WebSockets.AcceptWebSocketAsync();
         _connections.AddOrUpdate(userId, socket, (_, __) => socket);
+        _logger.LogInformation("🔌 [WebSocket] Usuário '{UserId}' conectado.", userId);
         await SendAsync(socket, "CONNECTED");
 
         try
@@ -69,6 +76,7 @@ public class WebsocketController : ControllerBase
         finally
         {
             _connections.TryRemove(userId, out _);
+            _logger.LogInformation("🔌 [WebSocket] Usuário '{UserId}' desconectado.", userId);
             if (socket.State == WebSocketState.Open || socket.State == WebSocketState.CloseReceived || socket.State == WebSocketState.CloseSent)
             {
                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
@@ -76,17 +84,34 @@ public class WebsocketController : ControllerBase
         }
     }
 
-    // POST api/websocket/broadcast  (admin only)
-    [HttpPost("broadcast")]
-    [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> Broadcast([FromBody] BroadcastModel model)
+    // POST api/v1/websocket/send-maintenance (admin only)
+    [HttpPost("send-maintenance")]
+    [Authorize(Policy = "AdministradorOnly")]
+    public async Task<IActionResult> SendMaintenanceCommand([FromBody] MaintenanceCommandModel model)
     {
-        foreach (var kv in _connections)
+        if (_connections.TryGetValue(model.UserId.ToString(), out var socket) && socket.State == WebSocketState.Open)
         {
-            if (kv.Value.State == WebSocketState.Open)
-                await SendAsync(kv.Value, model.Message);
+            // Formato JSON para o app
+            var json = System.Text.Json.JsonSerializer.Serialize(new 
+            {
+                type = "maintenance",
+                action = model.Action,
+                payload = model.Payload
+            });
+            
+            _logger.LogInformation("🛠️ [WebSocket] Enviando comando '{Action}' para usuário '{UserId}'", model.Action, model.UserId);
+            await SendAsync(socket, json);
+            return Ok(new { message = "Comando enviado com sucesso." });
         }
-        return Ok(new { result = "Enviado" });
+        
+        _logger.LogWarning("⚠️ [WebSocket] Tentativa de enviar comando para usuário '{UserId}', mas ele NÃO está conectado.", model.UserId);
+        return NotFound(new { message = $"Usuário '{model.UserId}' não está conectado ao WebSocket no momento." });
+    }
+
+
+    public static bool IsUserConnected(string userId)
+    {
+        return _connections.TryGetValue(userId, out var socket) && socket.State == WebSocketState.Open;
     }
 
     private static async Task SendToUser(string userId, string message)
@@ -107,4 +132,11 @@ public class WebsocketController : ControllerBase
     {
         public string Message { get; set; } = string.Empty;
     }
+}
+
+public class MaintenanceCommandModel
+{
+    public Guid UserId { get; set; }
+    public string Action { get; set; } = string.Empty;
+    public string? Payload { get; set; }
 }

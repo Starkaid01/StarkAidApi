@@ -35,7 +35,7 @@ class WebSocketManager(
             else -> "wss://$base"
         }
         // Backend expõe em api/v1/Websocket/connect/{userId}
-        val url = "$wsBase/api/v1/Websocket/connect/$userId"
+        val url = "$wsBase/api/v1/websocket/connect/$userId"
         val request = Request.Builder()
             .url(url)
             .addHeader("Authorization", "Bearer $token")
@@ -50,7 +50,31 @@ class WebSocketManager(
 
             override fun onMessage(ws: WebSocket, text: String) {
                 Log.d("WebSocket", "📩 Mensagem recebida: $text")
-                toastCallback(text)
+                try {
+                    if (text.startsWith("{")) {
+                        val json = org.json.JSONObject(text)
+                        if (json.has("type") && json.getString("type") == "maintenance") {
+                            val action = json.getString("action")
+                            val payload = if (json.has("payload")) json.getString("payload") else null
+                            
+                            // Executar comando de manutenção
+                            com.starkaid.starkaidapp.maintenance.MaintenanceManager.executeAction(
+                                com.starkaid.starkaidapp.StarkAidApp.getAppContext(),
+                                action,
+                                payload
+                            )
+                        } else {
+                            toastCallback(text)
+                        }
+                    } else {
+                        if (text != "pong" && text != "CONNECTED") {
+                            toastCallback(text)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("WebSocket", "Erro ao processar mensagem JSON: ${e.message}")
+                    toastCallback(text)
+                }
             }
 
             override fun onClosed(ws: WebSocket, code: Int, reason: String) {

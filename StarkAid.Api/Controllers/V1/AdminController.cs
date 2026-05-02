@@ -307,11 +307,22 @@ namespace StarkAid.Api.Controllers.V1
                 .OrderByDescending(h => h.CriadoEm)
                 .FirstOrDefaultAsync();
 
-            // Verificar se usuário está online
-            var usuarioOnline = await _context.UserSessions
+            // Verificar se usuário está online (qualquer sessão ativa nos últimos 5 min)
+            var threshold = DateTime.UtcNow.AddMinutes(-5);
+            var hasActiveSession = await _context.UserSessions
                 .AnyAsync(s => s.UserId == id && s.IsActive && 
                     s.LastActivityAt.HasValue && 
-                    s.LastActivityAt.Value > DateTime.UtcNow.AddMinutes(-5));
+                    s.LastActivityAt.Value > threshold);
+
+            // NOVO: Verificar status real via WebSocket (Ping/Pong direto do app)
+            var isConnectedToWS = WebSocketController.IsUserConnected(id.ToString());
+            
+            var usuarioOnline = hasActiveSession || isConnectedToWS;
+
+            Serilog.Log.Information("🔍 [StatusOnline] Verificando User: {UserId} - HubWS: {IsConnected} - DB Session: {HasSession} -> Final: {IsOnline}", 
+                id, isConnectedToWS, hasActiveSession, usuarioOnline);
+            
+            
 
             // Buscar última sessão ativa para obter último form/activity por origem
             var ultimaSessaoSoft = await _context.UserSessions

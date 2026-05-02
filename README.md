@@ -1,84 +1,86 @@
-# StarkAid
-
 [![CI](https://github.com/Starkaid01/StarkAidApi/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Starkaid01/StarkAidApi/actions/workflows/ci.yml)
 
-`StarkAid` is a multi-client automation platform built around a central `ASP.NET Core` backend, a `Blazor` web surface, a Windows desktop client, and a `Kotlin` Android application.
+# StarkAid
 
-This repository is the flagship public sample because it shows a real product problem being solved: device control, support, account flows, scheduling, monetization, and operational tooling across more than one client.
+`StarkAid` is a real multi-client automation product built around a central `ASP.NET Core` backend, a `Blazor WebAssembly` front-end, a Windows desktop client, an Android app in `Kotlin`, and supporting runtime services for audio, support, scheduling, and device orchestration.
 
-![StarkAid live web surface](docs/images/system-walkthrough/home-playwright-cli.png)
+This repository is the public code review surface for the current product line, not a tutorial sample. It exists to show a real system that already had live users, runtime integrations, and multi-surface delivery before the public cleanup work started.
 
-## Public history note
+## Current live map
 
-The public commit history is shorter than the actual product history.
-
-This matters because the system was originally developed as a private product codebase and only later prepared for public review. That means recent public commits overrepresent:
-
-- sanitization and secret removal
-- documentation and setup cleanup
-- reviewability improvements
-- CI and public build validation
-
-So the right way to read this repository is:
-
-- older product depth is visible in the solution shape and runtime surfaces
-- newer public commits show the effort to make that work reviewable, reproducible, and safer to publish
+- public web surface: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
+- API base currently consumed by the web client: `https://starkaid.runasp.net`
+- product demo video: [YouTube demo](https://www.youtube.com/watch?v=Iexo9cl87lk)
 
 ## What problem this solves
 
 Home automation products usually fragment fast:
 
-- one app controls devices
-- another surface handles support
-- admin and operational flows live somewhere else
-- credentials, billing, and scheduling become separate concerns
+- one client controls devices
+- another handles support
+- schedules and routines live elsewhere
+- account, billing, and notifications drift into separate tools
 
-`StarkAid` centralizes that into one product stack:
+`StarkAid` centralizes that into one product boundary:
 
 - authenticated user and device management
 - automation commands across connected devices
 - browser admin and support tooling
 - Android and desktop clients connected to the same backend
-- realtime operator and support flows
+- realtime support and operator flows
 - subscriptions, push notifications, and scheduled actions
+
+## What is already working
+
+- live public web surface
+- current backend and current web client in the same monorepo
+- Android app wired to the same API family
+- desktop and audio helper projects still build from the public tree
+- public setup templates for API, web, and Android configuration
 
 ## Why this repo is worth reviewing
 
-This is not a tutorial repository and not a single CRUD app.
+This is not a single CRUD sample and not a generated portfolio shell.
 
 It demonstrates:
 
 - backend architecture with `ASP.NET Core`, `EF Core`, `JWT`, `SignalR`, and SQL-backed state
-- cross-surface delivery with API, web, desktop, and Android clients
-- connected-device orchestration for `ESP32`, `eWeLink`, and `Tuya / Thingclips`
-- support and maintenance workflows that go beyond user-facing CRUD
-- real-world configuration cleanup to separate public code from private credentials
+- cross-surface delivery with API, web, desktop, Android, and helper-service code in one codebase
+- connected-device orchestration for `ESP32`, `MQTT`, `eWeLink`, and `Tuya / Thingclips`
+- support and maintenance workflows that go beyond simple user CRUD
+- public-hardening work to separate real code from private credentials and local-only assumptions
 
 ## Technical decisions
 
-- `JWT` was chosen because the product has multiple clients (`Blazor`, Android, desktop, connected-device flows) and needed stateless auth that does not depend on a single server-side session model.
-- a runtime `Api-Key` is layered on top of authenticated flows because devices and product surfaces need a second boundary for command and device-related requests after login.
-- `SignalR` was chosen for realtime support and operator feedback because maintenance, support chat, and command status are user-facing flows where polling would add friction and latency.
-- `MQTT`, UDP, and multiple vendor integrations exist together because the real problem is heterogeneous automation, not one perfect device protocol.
-- `EF Core` with `SQL Server` was chosen because auth, billing, devices, support, and scheduled work all need transactional persistence in the same product boundary.
-- hosted services were used because schedules, reminder processing, token resets, and automation-related background work are part of the product itself, not external cron-only concerns.
+- `JWT` was chosen because the product has multiple clients and needed stateless auth across web, Android, desktop, and realtime flows.
+- a runtime `Api-Key` is layered on top of authenticated flows because device and command traffic needed a second operational boundary after login.
+- `SignalR` was chosen for support and operator feedback because maintenance, support chat, and remote command status are realtime user-facing flows.
+- `MQTT`, UDP, and vendor-specific integrations coexist because the real product problem is heterogeneous automation, not one ideal protocol.
+- `EF Core` with `SQL Server` fits the same boundary owning auth, devices, schedules, support, telemetry, and plans.
+- hosted services exist because reminders, schedule processing, token resets, and recurring work are part of the product runtime.
+
+## Public history note
+
+The public commit graph is shorter than the actual product history.
+
+This matters because the codebase lived privately first and only later went through public cleanup. Recent public commits overrepresent:
+
+- secret removal
+- configuration externalization
+- documentation cleanup
+- CI visibility
+- reviewability work
+
+That is publicization work, not proof that the product only started recently.
 
 ## Proof in under 30 seconds
 
 If you only have a minute, use this order:
 
-1. Open the live surface: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
-2. Watch the product video: [YouTube demo](https://www.youtube.com/watch?v=Iexo9cl87lk)
-3. Scan the architecture snapshot below
-4. Jump to the API surfaces table to see the breadth of the backend
-
-## What is already working
-
-- public live web surface: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
-- public product demo video: [YouTube](https://www.youtube.com/watch?v=Iexo9cl87lk)
-- multi-project solution with backend, web, desktop, Android, and helper service
-- green solution build from the public codebase
-- public documentation for environment setup and secret boundaries
+1. Open the live web surface: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
+2. Watch the product demo: [YouTube](https://www.youtube.com/watch?v=Iexo9cl87lk)
+3. Scan the public walkthrough below
+4. Jump to the repository map and key runtime surfaces
 
 ## Live system walkthrough
 
@@ -118,7 +120,7 @@ What this shows:
 
 - the system exposes a real authentication surface instead of mock-only navigation
 - account entry is already wired into the public product flow
-- this is the boundary where the mobile, desktop, and web clients converge on the same auth model
+- mobile, desktop, and web clients converge on the same auth model
 
 ![StarkAid login page](docs/images/system-walkthrough/login-playwright.png)
 
@@ -128,7 +130,7 @@ Route: [`/download`](https://starkaidautomacao.runasp.net/download)
 
 What this shows:
 
-- the product includes real installation and distribution concerns
+- the product includes installation and distribution concerns
 - the public surface already references deliverables beyond the browser client
 - this supports the multi-client story shown in the repository layout
 
@@ -145,20 +147,6 @@ What this shows:
 - this matches the heterogeneous device and automation scope in the backend
 
 ![StarkAid developer docs](docs/images/system-walkthrough/docs-desenvolvedores-playwright.png)
-
-## Production and runtime signals
-
-The repository already contains concrete production-oriented decisions:
-
-- structured JSON logging with `Serilog`
-- `JWT` auth with support for websocket and `SignalR` token transport
-- rate limiting by IP and authenticated user
-- `EF Core` retry behavior and SQL command timeout configuration
-- background services for schedules, reminders, subscription checks, and periodic maintenance
-- middleware for runtime `Api-Key` enforcement and command throttling
-- realtime hubs for devices, ESP flows, avatar interactions, and support
-
-These are not placeholders in the README; they are wired in the application bootstrap.
 
 ## Architecture snapshot
 
@@ -177,7 +165,7 @@ flowchart LR
     Api --> Devices["ESP32 / MQTT / eWeLink / Tuya"]
     Api --> Firebase["Firebase Push"]
     Api --> Stripe["Stripe Billing"]
-    Api --> Ai["AI / NLP / AWS Transcribe"]
+    Api --> Audio["Audio Resolver / Media Helpers"]
 ```
 
 ## Repository map
@@ -185,44 +173,52 @@ flowchart LR
 ```text
 StarkAid/
 ├── StarkAid.Api/            # ASP.NET Core backend
-├── StarkAid.Web/            # Blazor web client
+├── StarkAid.Web/            # Blazor WebAssembly client
 ├── StarkAid.WindowsForms/   # Windows desktop client
-├── StarkAid.AudioResolver/  # Audio helper service
+├── StarkAid.AudioResolver/  # Audio and media helper service
+├── starkaid-avatar/         # Shared avatar / visual assets
 └── starkaidautomacao/       # Kotlin Android client
 ```
 
-## Product surfaces
+## Build scope
 
-| Surface | What it does |
-| --- | --- |
-| `StarkAid.Api` | authentication, device orchestration, schedules, support, subscriptions, telemetry, notifications |
-| `StarkAid.Web` | browser-based admin, support, dashboards, and operator tooling |
-| `StarkAid.WindowsForms` | desktop operational surface within the same product ecosystem |
-| `starkaidautomacao` | Android app for device control, voice-related flows, routines, and support |
-| `StarkAid.AudioResolver` | helper service for audio and media-related flows |
+- `StarkAid.sln` currently builds `StarkAid.Api` and `StarkAid.Web`
+- `StarkAid.WindowsForms` builds separately from its own project file
+- `StarkAid.AudioResolver` builds separately from its own project file
+- `starkaidautomacao` builds through the Android Gradle wrapper
 
-## Key API surfaces
-
-These are the backend areas that make the repository useful for technical review:
+## Key backend surfaces
 
 | Surface | Route group | What it shows |
 | --- | --- | --- |
 | Authentication | `api/v1/Auth` | JWT login, refresh-token flow, user auth lifecycle |
 | Device management | `api/v1/Devices` | user devices, command-driven automation, persisted device model |
-| ESP32 devices | `api/v1/DispositivosEsp` | UDP/ESP device registration, update, and ping flows |
+| ESP32 devices | `api/v1/DispositivosEsp` | UDP / ESP device registration, update, and ping flows |
 | Social commands | `api/v1/ComandosSociais` | command-response customization and operator-managed interactions |
-| Maintenance | `api/v1/manutencao` | remote support, cache/data actions, app/software maintenance flows |
-| Support | `api/v1/Suporte` and `/hubs/support-chat` | realtime support chat and operator-facing support routing |
-| Billing | `api/v1/Checkout`, `api/v1/StripeWebhook` | subscriptions and monetization hooks with Stripe |
+| Maintenance | `api/v1/manutencao` | remote support, cache/data actions, and software maintenance flows |
+| Support | `api/v1/Suporte` and realtime hubs | operator-facing support routing and realtime chat |
+| Billing | `api/v1/Checkout`, `api/v1/StripeWebhook` | subscriptions and monetization hooks |
 | Notifications | `api/v1/Notifications`, `api/v1/Notificacoes` | push and admin notification flows |
 | Scheduling | `api/v1/Agendamentos`, `api/v1/Rotinas` | delayed and recurring automation |
 | Telemetry | `api/v1/Telemetry` | AI/event and operational telemetry surfaces |
+
+## Production and runtime signals
+
+The repository already contains concrete production-oriented decisions:
+
+- structured JSON logging with `Serilog`
+- `JWT` auth with websocket and `SignalR` token transport
+- rate limiting by IP and authenticated user
+- `EF Core` retry behavior and SQL command timeout configuration
+- background services for schedules, reminders, subscription checks, and periodic maintenance
+- middleware for runtime `Api-Key` enforcement and command throttling
+- realtime hubs for devices, avatar flows, and support
 
 ## Main stack
 
 - `.NET 8`
 - `ASP.NET Core`
-- `Blazor`
+- `Blazor WebAssembly`
 - `Entity Framework Core`
 - `SQL Server`
 - `SignalR`
@@ -239,7 +235,7 @@ These are the backend areas that make the repository useful for technical review
 
 ## CI
 
-This repository now includes a public GitHub Actions workflow that validates the published solution with `restore` + `build`.
+Public CI validates the current source tree on GitHub Actions.
 
 Workflow file:
 
@@ -254,14 +250,16 @@ Deeper review docs:
 
 ## Local setup order
 
-1. Configure and run `StarkAid.Api`
-2. Point `StarkAid.Web` to the local API
-3. Configure the Android app under `starkaidautomacao`
-4. Validate login, `SignalR`, device operations, and support flows
+1. Configure `StarkAid.Api`
+2. Point `StarkAid.Web` to the API you want to use
+3. Configure `starkaidautomacao`
+4. Build `StarkAid.WindowsForms` and `StarkAid.AudioResolver` if you want the full local product surface
+5. Validate login, realtime flows, support, and device operations
 
 ## Requirements
 
 - `.NET SDK 8`
+- `.NET SDK 9` for `StarkAid.AudioResolver`
 - `SQL Server`
 - `Android Studio`
 - `JDK 17`
@@ -295,122 +293,38 @@ dotnet build StarkAid.sln -v minimal
 dotnet run --project StarkAid.Api
 ```
 
-### Expected environment variables and keys
-
-Use `__` in environment variable names to map nested JSON sections in .NET.
-
-| Key | Required | Purpose |
-| --- | --- | --- |
-| `ConnectionStrings__DefaultConnection` | Yes | Main SQL Server database |
-| `Jwt__Key` | Yes | JWT signing key |
-| `Jwt__Issuer` | Yes | JWT issuer |
-| `Jwt__Audience` | Yes | JWT audience |
-| `Firebase__CredentialsPath` | Yes | Path to `firebase-adminsdk.json` |
-| `Tuya__AccessId` | If using Tuya | Tuya API credential |
-| `Tuya__AccessSecret` | If using Tuya | Tuya API secret |
-| `Tuya__BaseUrl` | If using Tuya | Tuya API base URL |
-| `Tuya__CountryCode` | If using Tuya | Country code used by the integration |
-| `WppConnectOptions__BaseUrl` | If using WPP | Base endpoint for the WhatsApp service |
-| `WppConnectOptions__TokenDeAutenticacao` | If using WPP | Internal token for the WPP service |
-| `WppConnectOptions__NovoDominio` | Optional | Alternate WPP domain |
-| `WppConnectOptions__UserId` | Optional | Technical user for WPP |
-| `NlpConnectOptions__BaseUrl` | If using external NLP | Base endpoint for the NLP service |
-| `NlpConnectOptions__TokenDeAutenticacao` | If using external NLP | NLP service token |
-| `NlpConnectOptions__NovoDominio` | Optional | Alternate NLP domain |
-| `NlpConnectOptions__UserId` | Optional | Technical user for NLP |
-| `AiTelemetry__CostPer1KTokens` | Optional | Reference cost for telemetry |
-| `AiTelemetry__DefaultTokensPerInteraction` | Optional | Default token estimate per interaction |
-| `IaApiKeys__GroApiKey` | If using AI provider | Groq API key |
-| `IaApiKeys__OpenRouterKEY` | If using AI provider | OpenRouter API key |
-| `AWS__AccessKey` | If using transcription | AWS access key |
-| `AWS__SecretKey` | If using transcription | AWS secret key |
-| `AWS__Profile` | Optional | Local AWS profile |
-| `AWS__Region` | If using transcription | AWS region |
-| `Spotify__ClientId` | If using Spotify | Spotify application client ID |
-| `Spotify__ClientSecret` | If using Spotify | Spotify application client secret |
-| `Spotify__RedirectUri` | If using Spotify | Spotify OAuth redirect URI |
-| `StripeSettings__SecretKey` | If using billing | Stripe secret key |
-| `StripeSettings__PublishableKey` | If using billing | Stripe publishable key |
-| `StripeSettings__WebhookSecret` | If using billing | Stripe webhook secret |
-| `StripeSettings__PriceIdNivel2` through `StripeSettings__PriceIdNivel7` | If using billing | Price and product IDs |
-| `StripeSettings__CheckoutFrontendUrl` | If using billing | Checkout frontend URL |
-| `StripeSettings__AppDeepLink` | Optional | Android deep link |
-| `StripeSettings__SoftwareDeepLink` | Optional | Desktop client deep link |
-| `Mqtt__Broker` | If using ESP32 or MQTT | MQTT broker address |
-| `Mqtt__Port` | If using ESP32 or MQTT | MQTT broker port |
-| `Mqtt__Username` | If using ESP32 or MQTT | MQTT username |
-| `Mqtt__Password` | If using ESP32 or MQTT | MQTT password |
-| `EmailSettings__From` | If using email | Sender address |
-| `EmailSettings__SmtpServer` | If using email | SMTP server |
-| `EmailSettings__Port` | If using email | SMTP port |
-| `EmailSettings__Username` | If using email | SMTP username |
-| `EmailSettings__Password` | If using email | SMTP password |
-| `Ewelink__ClientId` | If using eWeLink | eWeLink client ID |
-| `Ewelink__ClientSecret` | If using eWeLink | eWeLink client secret |
-| `Ewelink__RedirectUri` | If using eWeLink | eWeLink redirect URI |
-| `YouTube__ApiKey` | If using music search | YouTube API key |
-
-### Operational notes
-
-- The system uses `JWT` and a runtime `Api-Key` per user or device after authentication.
-- That `Api-Key` is not a build secret. It is generated by the backend during login or device registration.
-- Before any deeper public expansion, the right next step is credential rotation for every real provider that has ever been used by this product.
-
-## Web client configuration
+## Web configuration
 
 Template file:
 
 - [StarkAid.Web/wwwroot/appsettings-template.json](StarkAid.Web/wwwroot/appsettings-template.json)
 
-### Setup steps
+For the browser client, keep in mind:
 
-1. Copy `StarkAid.Web/wwwroot/appsettings-template.json` to `StarkAid.Web/wwwroot/appsettings.json`.
-2. Set `Api:BaseUrl` to the API you want the client to use.
-3. If the `eWeLink` browser flow is enabled, set `Ewelink:ClientId` and `Ewelink:ClientSecret`.
-4. Run the web client.
-
-```powershell
-dotnet restore
-dotnet run --project StarkAid.Web
-```
-
-### Important note about secrets in Blazor WebAssembly
-
-`StarkAid.Web` runs in the browser. Any secret placed in `wwwroot/appsettings.json` is visible to the client. If a provider value is truly secret, it should move to the backend instead of staying in the browser configuration.
+- anything in `wwwroot/appsettings.json` is visible to the browser
+- third-party secrets should stay in the API whenever possible
+- the current public website points to `https://starkaid.runasp.net`
 
 ## Android configuration
 
-The Android app has dedicated setup documentation here:
+The Android app has its own setup guide:
 
 - [starkaidautomacao/README.md](starkaidautomacao/README.md)
 
-At a high level, local setup expects:
+At minimum, the app expects:
 
+- `starkaid.local.properties`
 - `google-services.json`
-- `Thingclips / Tuya` identifiers
-- `AdMob` and `Unity Ads` IDs
-- backend `REST`, `SignalR`, `WebSocket`, and Spotify callback URLs
-- Spotify application credentials if the flow remains client-side
+- API and web base URLs
+- Spotify fallback credentials if the client-side fallback remains enabled
+- eWeLink client credentials if the mobile flow remains client-side
+- ads IDs and any vendor-specific identifiers you actually use
 
-## Public references
+## Windows and helper services
 
-- live web and API surface: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
-- product demo video: [YouTube](https://www.youtube.com/watch?v=Iexo9cl87lk)
-- Android repo: [starkaidautomacao](https://github.com/Starkaid01/starkaidautomacao)
+The desktop client and the audio helper service are still part of the public tree even though they are not in `StarkAid.sln` today:
 
-## Repository status
+- [StarkAid.WindowsForms](StarkAid.WindowsForms)
+- [StarkAid.AudioResolver](StarkAid.AudioResolver)
 
-This is real product code and has already gone through an initial public sanitization pass. The professionalization path from here is still clear:
-
-- rotate any historic provider credentials that were ever used privately
-- tighten nullability and warning cleanup across `StarkAid.Web`
-- keep separating client-safe configuration from true backend secrets
-- expand CI beyond build validation once the public test strategy is stable
-
-Additional notes:
-
-- [GITHUB_CLEANUP_NOTES.md](GITHUB_CLEANUP_NOTES.md)
-
-## License
-
-See `LICENSE`.
+They build separately and are kept public because they are part of the actual product surface, not dead folders added for portfolio inflation.

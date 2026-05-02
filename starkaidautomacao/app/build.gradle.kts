@@ -4,38 +4,50 @@ import java.util.Properties
 // Top-level variable for Room version
 val room_version = "2.7.2"
 
-val starkaidLocalProperties = Properties().apply {
-    val localFile = rootProject.file("starkaid.local.properties")
-    if (localFile.exists()) {
-        localFile.inputStream().use(::load)
+val starkAidLocalProperties = Properties().apply {
+    val configFile = rootProject.file("starkaid.local.properties")
+    if (configFile.exists()) {
+        configFile.inputStream().use(::load)
     }
 }
 
-fun stringConfig(name: String, defaultValue: String): String {
-    val gradleValue = providers.gradleProperty(name).orNull
-    val envValue = providers.environmentVariable(name).orNull
-    return gradleValue ?: envValue ?: starkaidLocalProperties.getProperty(name, defaultValue)
+fun configValue(name: String, defaultValue: String = ""): String {
+    return starkAidLocalProperties.getProperty(name)
+        ?: (findProperty(name) as String?)
+        ?: System.getenv(name)
+        ?: defaultValue
 }
 
-fun booleanConfig(name: String, defaultValue: Boolean): Boolean =
-    stringConfig(name, defaultValue.toString()).toBooleanStrictOrNull() ?: defaultValue
+fun escapeBuildConfig(value: String): String {
+    return value
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+}
 
-val hasGoogleServices = file("google-services.json").exists()
+val starkAidIsDevelopment = configValue("STARKAID_IS_DEVELOPMENT", "false").equals("true", ignoreCase = true)
+val starkAidDevApiBaseUrl = configValue("STARKAID_DEV_API_BASE_URL", "http://localhost:5000")
+val starkAidDevWebBaseUrl = configValue("STARKAID_DEV_WEB_BASE_URL", "http://localhost:5001")
+val starkAidProdApiBaseUrl = configValue("STARKAID_PROD_API_BASE_URL", "https://starkaid.runasp.net")
+val starkAidProdWebBaseUrl = configValue("STARKAID_PROD_WEB_BASE_URL", "https://starkaidautomacao.runasp.net")
+val starkAidSpotifyClientId = configValue("STARKAID_SPOTIFY_CLIENT_ID", "CHANGE_ME")
+val starkAidSpotifyClientSecret = configValue("STARKAID_SPOTIFY_CLIENT_SECRET", "CHANGE_ME")
+val starkAidEwelinkClientId = configValue("STARKAID_EWELINK_CLIENT_ID", "CHANGE_ME")
+val starkAidEwelinkClientSecret = configValue("STARKAID_EWELINK_CLIENT_SECRET", "CHANGE_ME")
+val admobAppId = configValue("ADMOB_APP_ID", "ca-app-pub-0000000000000000~0000000000")
+val unityAdsAppId = configValue("UNITY_ADS_APP_ID", "0000000")
+val hasGoogleServicesJson = project.file("google-services.json").exists()
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.google.services)
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.25"
     id("com.google.devtools.ksp") version "1.9.25-1.0.20"
 }
 
-tasks.configureEach {
-    if (name.startsWith("process") && name.endsWith("GoogleServices")) {
-        onlyIf("google-services.json present") {
-            hasGoogleServices
-        }
-    }
+if (hasGoogleServicesJson) {
+    apply(plugin = "com.google.gms.google-services")
+} else {
+    logger.lifecycle("google-services.json not found. Building without Firebase resource generation.")
 }
 
 
@@ -43,42 +55,31 @@ android {
     namespace = "com.starkaid.starkaidapp"
     compileSdk = 36
 
-    val isDevelopment = booleanConfig("STARKAID_IS_DEVELOPMENT", false)
-    val devApiBaseUrl = stringConfig("STARKAID_DEV_API_BASE_URL", "http://192.168.2.103:5000")
-    val devWebBaseUrl = stringConfig("STARKAID_DEV_WEB_BASE_URL", "http://192.168.2.103:5000")
-    val prodApiBaseUrl = stringConfig("STARKAID_PROD_API_BASE_URL", "https://starkaid.runasp.net")
-    val prodWebBaseUrl = stringConfig("STARKAID_PROD_WEB_BASE_URL", "https://starkaid.runasp.net")
-    val spotifyClientId = stringConfig("STARKAID_SPOTIFY_CLIENT_ID", "your_spotify_client_id")
-    val spotifyClientSecret = stringConfig("STARKAID_SPOTIFY_CLIENT_SECRET", "your_spotify_client_secret")
-    val spotifyRedirectUri = stringConfig("STARKAID_SPOTIFY_REDIRECT_URI", "starkaid://spotifycallback")
-    val adMobAppId = stringConfig("ADMOB_APP_ID", "ca-app-pub-0000000000000000~0000000000")
-    val unityAdsAppId = stringConfig("UNITY_ADS_APP_ID", "0000000")
-
     defaultConfig {
         applicationId = "com.starkaid.starkaidapp"
         minSdk = 26
         targetSdk = 35
-        versionCode = 61
-        versionName = "6.1"
+        versionCode = 63
+        versionName = "6.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
 
         manifestPlaceholders += mutableMapOf(
             "redirectSchemeName" to "starkaid",
-            "redirectHostName"   to "callback",
-            "adMobAppId"         to adMobAppId,
-            "unityAdsAppId"      to unityAdsAppId
+            "redirectHostName" to "callback",
+            "admobAppId" to admobAppId,
+            "unityAdsAppId" to unityAdsAppId
         )
 
-        buildConfigField("boolean", "STARKAID_IS_DEVELOPMENT", isDevelopment.toString())
-        buildConfigField("String", "STARKAID_DEV_API_BASE_URL", "\"$devApiBaseUrl\"")
-        buildConfigField("String", "STARKAID_DEV_WEB_BASE_URL", "\"$devWebBaseUrl\"")
-        buildConfigField("String", "STARKAID_PROD_API_BASE_URL", "\"$prodApiBaseUrl\"")
-        buildConfigField("String", "STARKAID_PROD_WEB_BASE_URL", "\"$prodWebBaseUrl\"")
-        buildConfigField("String", "SPOTIFY_CLIENT_ID", "\"$spotifyClientId\"")
-        buildConfigField("String", "SPOTIFY_CLIENT_SECRET", "\"$spotifyClientSecret\"")
-        buildConfigField("String", "SPOTIFY_REDIRECT_URI", "\"$spotifyRedirectUri\"")
-        buildConfigField("String", "UNITY_ADS_GAME_ID", "\"$unityAdsAppId\"")
+        buildConfigField("boolean", "STARKAID_IS_DEVELOPMENT", starkAidIsDevelopment.toString())
+        buildConfigField("String", "STARKAID_DEV_API_BASE_URL", "\"${escapeBuildConfig(starkAidDevApiBaseUrl)}\"")
+        buildConfigField("String", "STARKAID_DEV_WEB_BASE_URL", "\"${escapeBuildConfig(starkAidDevWebBaseUrl)}\"")
+        buildConfigField("String", "STARKAID_PROD_API_BASE_URL", "\"${escapeBuildConfig(starkAidProdApiBaseUrl)}\"")
+        buildConfigField("String", "STARKAID_PROD_WEB_BASE_URL", "\"${escapeBuildConfig(starkAidProdWebBaseUrl)}\"")
+        buildConfigField("String", "STARKAID_SPOTIFY_CLIENT_ID", "\"${escapeBuildConfig(starkAidSpotifyClientId)}\"")
+        buildConfigField("String", "STARKAID_SPOTIFY_CLIENT_SECRET", "\"${escapeBuildConfig(starkAidSpotifyClientSecret)}\"")
+        buildConfigField("String", "STARKAID_EWELINK_CLIENT_ID", "\"${escapeBuildConfig(starkAidEwelinkClientId)}\"")
+        buildConfigField("String", "STARKAID_EWELINK_CLIENT_SECRET", "\"${escapeBuildConfig(starkAidEwelinkClientSecret)}\"")
     }
 
     buildTypes {

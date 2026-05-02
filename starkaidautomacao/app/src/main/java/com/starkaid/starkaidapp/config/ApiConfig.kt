@@ -1,26 +1,43 @@
 package com.starkaid.starkaidapp.config
 
-import com.starkaid.starkaidapp.BuildConfig
-
 /**
  * Configuração centralizada da API.
- * O build injeta os valores via BuildConfig, com fallback configurável em starkaid.local.properties.
+ * Valores padrão vêm do BuildConfig gerado a partir de starkaid.local.properties.
  */
 object ApiConfig {
-    private val isDevelopment: Boolean
-        get() = BuildConfig.STARKAID_IS_DEVELOPMENT
+    private fun normalizeBaseUrl(value: String): String {
+        return value.trim().trimEnd('/')
+    }
 
+    private val isDevelopment: Boolean
+        get() = com.starkaid.starkaidapp.BuildConfig.STARKAID_IS_DEVELOPMENT
+
+    private val devApiBaseUrl: String
+        get() = normalizeBaseUrl(com.starkaid.starkaidapp.BuildConfig.STARKAID_DEV_API_BASE_URL)
+
+    private val devWebBaseUrl: String
+        get() = normalizeBaseUrl(com.starkaid.starkaidapp.BuildConfig.STARKAID_DEV_WEB_BASE_URL)
+
+    private val prodApiBaseUrl: String
+        get() = normalizeBaseUrl(com.starkaid.starkaidapp.BuildConfig.STARKAID_PROD_API_BASE_URL)
+
+    private val prodWebBaseUrl: String
+        get() = normalizeBaseUrl(com.starkaid.starkaidapp.BuildConfig.STARKAID_PROD_WEB_BASE_URL)
+
+    // ============================================
+    // PROPRIEDADES PÚBLICAS
+    // ============================================
     /**
      * URL base da API (com /api no final)
      */
     val apiBaseUrl: String
-        get() = if (isDevelopment) BuildConfig.STARKAID_DEV_API_BASE_URL else BuildConfig.STARKAID_PROD_API_BASE_URL
+        get() = if (isDevelopment) devApiBaseUrl else prodApiBaseUrl
 
     /**
      * URL base da web (sem /api)
      */
     val webBaseUrl: String
-        get() = if (isDevelopment) BuildConfig.STARKAID_DEV_WEB_BASE_URL else BuildConfig.STARKAID_PROD_WEB_BASE_URL
+        get() = if (isDevelopment) devWebBaseUrl else prodWebBaseUrl
 
     /**
      * URL base da API com barra final (para compatibilidade com Retrofit)
@@ -41,15 +58,19 @@ object ApiConfig {
         get() = "$apiBaseUrl/api/v1/Config/app-config"
 
     val spotifyClientId: String
-        get() = BuildConfig.SPOTIFY_CLIENT_ID
+        get() = com.starkaid.starkaidapp.BuildConfig.STARKAID_SPOTIFY_CLIENT_ID
 
     val spotifyClientSecret: String
-        get() = BuildConfig.SPOTIFY_CLIENT_SECRET
+        get() = com.starkaid.starkaidapp.BuildConfig.STARKAID_SPOTIFY_CLIENT_SECRET
 
-    val spotifyRedirectUri: String
-        get() = BuildConfig.SPOTIFY_REDIRECT_URI
+    val ewelinkClientId: String
+        get() = com.starkaid.starkaidapp.BuildConfig.STARKAID_EWELINK_CLIENT_ID
 
-    val unityAdsGameId: String
-        get() = BuildConfig.UNITY_ADS_GAME_ID
+    val ewelinkClientSecret: String
+        get() = com.starkaid.starkaidapp.BuildConfig.STARKAID_EWELINK_CLIENT_SECRET
+
+    const val spotifyRedirectUri: String = "starkaid://spotifycallback"
+    const val spotifyAuthorizeUrl: String = "https://accounts.spotify.com/authorize"
+    const val spotifyTokenUrl: String = "https://accounts.spotify.com/api/token"
 }
 

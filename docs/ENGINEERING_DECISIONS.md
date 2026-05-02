@@ -1,12 +1,12 @@
 # StarkAid Engineering Decisions
 
-This file exists to make the repository look like what it is: a product codebase with explicit tradeoffs, not an accidental pile of framework defaults.
+This file exists to make the repository readable as what it is: a product codebase with explicit tradeoffs, not an accidental pile of framework defaults.
 
 ## Why JWT
 
 `StarkAid` has more than one client surface:
 
-- `Blazor` web
+- `Blazor WebAssembly`
 - Android
 - desktop
 - realtime device-related communication
@@ -26,7 +26,7 @@ Support and automation are not purely request-response problems.
 The platform needed:
 
 - feedback after remote commands
-- support/operator communication
+- support and operator communication
 - synchronized client updates
 - fast state propagation without heavy polling
 
@@ -38,7 +38,7 @@ The product problem is heterogeneous home automation.
 
 That means the backend had to coexist with:
 
-- `ESP32` / UDP style device flows
+- `ESP32` and UDP style device flows
 - `MQTT`
 - `eWeLink`
 - `Tuya / Thingclips`

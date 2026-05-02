@@ -1,6 +1,7 @@
 package com.starkaid.starkaidapp.ewelink
 
 import android.util.Log
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.ewelink.models.EwelinkDevice
 import com.starkaid.starkaidapp.ewelink.models.EwelinkTokens
 import com.starkaid.starkaidapp.security.SecureStorageManager
@@ -14,8 +15,8 @@ import javax.crypto.spec.SecretKeySpec
 
 class EwelinkDeviceService(private val secureStorage: SecureStorageManager) {
 
-    private val clientId = "qPNNDkWlhKwh4xn41bteq2qD02aiGs3D"
-    private val clientSecret = "kdG0r5OPddNB90tPKvarWyMWmpppIX9s"
+    private val clientId = ApiConfig.ewelinkClientId
+    private val clientSecret = ApiConfig.ewelinkClientSecret
 
     // 🔄 Função para refresh token
     fun refreshTokens(onSuccess: (EwelinkTokens) -> Unit, onError: (String) -> Unit) {

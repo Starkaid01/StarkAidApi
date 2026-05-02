@@ -1,11 +1,10 @@
+using System;
+
 namespace StarkAid.Web.DTOs
 {
     public class ErrorLogDto
     {
         public int Id { get; set; }
-        public string? Source { get; set; }
-        public string? Message { get; set; }
-        public string? StackTrace { get; set; }
         public string? UltimoComando { get; set; }
         public string? UltimaResposta { get; set; }
         public string? UltimoDispositivoAcionado { get; set; }
@@ -13,7 +12,11 @@ namespace StarkAid.Web.DTOs
         public string? CodigoDeErro { get; set; }
         public string? DataErro { get; set; }
         public string? HoraErro { get; set; }
-        public string AcaoErro { get; set; } = string.Empty;
+        public string? AcaoErro { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
+
+        // Mapeamentos para compatibilidade com o Support.razor atual se necessário
+        public string? Message => AcaoErro ?? ErroCompleto;
+        public string? StackTrace => ErroCompleto;
     }
 }

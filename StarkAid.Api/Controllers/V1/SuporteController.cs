@@ -79,7 +79,7 @@ Detalhes adicionais:
 
         try
         {
-            await _emailService.SendAsync("starkaid24@gmail.com", assunto, corpo);
+            await _emailService.SendAsync("support@example.com", assunto, corpo);
             return Ok(new { message = "Formulário enviado com sucesso. Você receberá instruções por email em breve." });
         }
         catch (Exception ex)

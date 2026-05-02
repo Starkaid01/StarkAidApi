@@ -93,7 +93,7 @@ else
     <div class="dashboard-card p-0 overflow-hidden shadow-sm border-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
-                <thead class="bg-light">
+                <thead class="table-dark-header">
                     <tr>
                         <th style="width: 22%;">Texto (Comando)</th>
                         <th style="width: 10%;">Tipo</th>
@@ -109,7 +109,7 @@ else
                 <tbody>
                     @foreach (var item in FilteredAprendizados)
                     {
-                        <tr class="@(item.EmQuarentena ? "table-warning" : (!item.Ativo ? "table-secondary text-muted" : ""))">
+                        <tr class="@(item.EmQuarentena ? "table-row-quarantine" : (!item.Ativo ? "table-row-inactive" : "table-row-standard"))">
                             <td>
                                 <div class="text-truncate fw-500" style="max-width: 250px;" title="@item.Texto">
                                     @if (!item.Ativo) { <i class="bi bi-slash-circle me-1" title="Inativo"></i> }
@@ -167,23 +167,23 @@ else
                                 <div class="btn-group shadow-sm">
                                     @if (item.Tipo == "Usuario")
                                     {
-                                        <button @onclick="() => Promote(item.Id)" class="btn btn-light btn-sm text-success" title="Promover a Global">
+                                        <button @onclick="() => Promote(item.Id)" class="btn btn-outline-secondary btn-sm text-success" title="Promover a Global">
                                             <i class="bi bi-arrow-up-circle-fill"></i>
                                         </button>
                                     }
                                     else if (item.Tipo == "Global")
                                     {
-                                        <button @onclick="() => Demote(item.Id)" class="btn btn-light btn-sm text-warning" title="Rebaixar a Privado">
+                                        <button @onclick="() => Demote(item.Id)" class="btn btn-outline-secondary btn-sm text-warning" title="Rebaixar a Privado">
                                             <i class="bi bi-arrow-down-circle"></i>
                                         </button>
                                     }
-                                    <button @onclick="() => ToggleQuarantine(item.Id)" class="btn btn-light btn-sm @(item.EmQuarentena ? "text-danger" : "text-muted")" title="Alternar Quarentena">
+                                    <button @onclick="() => ToggleQuarantine(item.Id)" class="btn btn-outline-secondary btn-sm @(item.EmQuarentena ? "text-danger" : "text-muted")" title="Alternar Quarentena">
                                         <i class="bi bi-shield-exclamation"></i>
                                     </button>
-                                    <button @onclick="() => OpenModal(item)" class="btn btn-light btn-sm text-primary" title="Editar">
+                                    <button @onclick="() => OpenModal(item)" class="btn btn-outline-secondary btn-sm text-primary" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <button @onclick="() => Delete(item.Id)" class="btn btn-light btn-sm text-danger" title="Excluir">
+                                    <button @onclick="() => Delete(item.Id)" class="btn btn-outline-secondary btn-sm text-danger" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -570,17 +570,24 @@ else
         display: flex;
         align-items: center;
         gap: 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.05);
         transition: transform 0.2s;
     }
     
     .stats-card:hover { transform: translateY(-3px); }
-    .stats-card.highlight { border-color: var(--bs-warning); background: rgba(255, 193, 7, 0.05); }
+    .stats-card.highlight { border-color: #f59e0b; background: rgba(245, 158, 11, 0.05); }
     
     .glass {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        background: rgba(30, 41, 59, 0.5);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    .dashboard-card {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
     }
 
     .stats-icon {
@@ -593,27 +600,37 @@ else
         font-size: 1.5rem;
     }
 
-    .bg-primary-soft { background: #e0e7ff; color: #4f46e5; }
-    .bg-success-soft { background: #dcfce7; color: #16a34a; }
-    .bg-info-soft { background: #e0f2fe; color: #0284c7; }
-    .bg-warning-soft { background: #fef3c7; color: #d97706; }
+    .bg-primary-soft { background: rgba(79, 70, 229, 0.1); color: #818cf8; }
+    .bg-success-soft { background: rgba(22, 163, 74, 0.1); color: #4ade80; }
+    .bg-info-soft { background: rgba(2, 132, 199, 0.1); color: #38bdf8; }
+    .bg-warning-soft { background: rgba(217, 119, 6, 0.1); color: #fbbf24; }
 
-    .stats-label { display: block; font-size: 0.75rem; color: #64748b; font-weight: 500; }
-    .stats-value { display: block; font-size: 1.25rem; font-weight: 700; color: #1e293b; }
+    .stats-label { display: block; font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
+    .stats-value { display: block; font-size: 1.25rem; font-weight: 700; color: #f8fafc; }
 
-    .fw-500 { font-weight: 500; }
+    .fw-500 { font-weight: 500; color: #e2e8f0; }
     .btn-icon { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
 
+    .table { color: #cbd5e1; }
+    .table-dark-header { background: rgba(0, 0, 0, 0.3); }
     .table th {
         font-weight: 600;
         text-transform: uppercase;
         font-size: 0.75rem;
         letter-spacing: 0.5px;
-        color: #64748b;
+        color: #94a3b8;
         padding: 1rem 0.75rem;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.05);
     }
     
-    .table td { vertical-align: middle; font-size: 0.85rem; padding: 0.75rem; }
+    .table td { vertical-align: middle; font-size: 0.85rem; padding: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+
+    .table-row-standard:hover { background: rgba(255, 255, 255, 0.02); }
+    .table-row-quarantine { background: rgba(245, 158, 11, 0.05); }
+    .table-row-quarantine:hover { background: rgba(245, 158, 11, 0.1); }
+    .table-row-inactive { opacity: 0.6; background: rgba(0, 0, 0, 0.1); }
+
+    .badge.bg-light { background-color: rgba(255, 255, 255, 0.05) !important; color: #94a3b8 !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; }
 
     .loading-container {
         display: flex;
@@ -621,13 +638,14 @@ else
         align-items: center;
         justify-content: center;
         padding: 5rem;
+        color: #94a3b8;
     }
 
     .spinner {
         width: 40px;
         height: 40px;
         border: 4px solid rgba(99, 102, 241, 0.1);
-        border-top: 4px solid #4f46e5;
+        border-top: 4px solid #6366f1;
         border-radius: 50%;
         animation: spin 1s linear infinite;
         margin-bottom: 1rem;

@@ -420,6 +420,14 @@ startup*.log
 *.temp
 *.backup
 *.bak
+*.csproj.user
+build_*.txt
+build*.txt
+*errors*.txt
+*output*.txt
+*detailed*.txt
+construcao-front-end
+migration_output*.txt
 *Backup*.tmp
 *Backup*.csproj
 
@@ -428,11 +436,29 @@ VARIAVEIS_AMBIENTE.md
 VARIAVEIS_MONSTERASP.txt
 configurar-variaveis-ambiente.ps1
 INSTRUCOES_VARIAVEIS_AMBIENTE_WINDOWS.md
+verificar-variaveis-ambiente.ps1
 
-# Repo sanitation
-.temp_build/
+# Codex / editor / internal workspace files
+.continue/
+.vscode/
+
+# Internal deployment and debug leftovers
+installer/*.exe
 StarkAid.Api/DataProtection-Keys/
-StarkAid.Api/build_errors*.txt
-online_logs.txt
-starkaidautomacao/starkaid.local.properties
-starkaidautomacao/app/google-services.json
+StarkAid.Api/appsettings.Development.json
+StarkAid.Api/appsettings.Production.json
+StarkAid.Api/firebase_path_debug.txt
+StarkAid.Api/msbuild.log
+StarkAid.Api/output.xml
+StarkAid.Api/Program.cs.backup
+StarkAid.Api/config-data-others-context.txt
+StarkAid.Api/contexto-controllers.txt
+StarkAid.Api/contexto-frontend-html.txt
+StarkAid.Api/contexto-service.txt
+StarkAid.Api/ewelink-config-patch.json
+StarkAid.Api/add-ewelink-config.ps1
+starkaidautomacao/app/src/main/java/clear_all.txt
+starkaidautomacao/app/src/main/java/clear_search.txt
+starkaidautomacao/app/src/main/java/clear_search_2.txt
+starkaidautomacao/app/src/main/java/com/starkaid/starkaidapp/ui/main_clear.txt
+starkaidautomacao/app/src/main/java/com/starkaid/starkaidapp/ui/MainActivity.kt.Backup

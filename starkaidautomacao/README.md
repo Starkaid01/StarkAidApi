@@ -1,20 +1,19 @@
 # StarkAid Automacao
 
-Aplicativo Android em `Kotlin` para automacao residencial, assistencia por voz e controle de dispositivos conectados.
+Aplicativo Android em `Kotlin` para automacao residencial, assistencia por voz, integracao com dispositivos e operacao movel do ecossistema StarkAid.
 
-O app funciona como cliente movel do ecossistema StarkAid e depende de um backend compativel para login, sincronizacao, dispositivos, suporte, planos e servicos online.
+Este subprojeto vive dentro do monorepo principal e conversa com a `StarkAid.Api` para autenticacao, sincronizacao, dispositivos, suporte, pagamentos e servicos online.
 
-## O que o app faz
+## O que o app cobre
 
-- controla dispositivos `ESP32`
-- integra dispositivos `eWeLink`
-- integra dispositivos `Tuya / Thingclips`
-- executa comandos por voz
-- envia comandos sociais e automacoes personalizadas
-- gerencia rotinas, agendamentos e disparos
-- exibe notificacoes e alertas
-- integra recursos de audio, Spotify e midia
-- suporta chat e suporte em tempo real
+- controle de dispositivos `ESP32`
+- integracao com `eWeLink`
+- assistente por voz
+- rotinas, lembretes e agendamentos
+- suporte em tempo real
+- Spotify e recursos de audio
+- notificacoes push com `Firebase`
+- SignalR e WebSocket
 
 ## Stack
 
@@ -29,40 +28,23 @@ O app funciona como cliente movel do ecossistema StarkAid e depende de um backen
 - `SignalR Client`
 - `AWS Transcribe Streaming`
 - `ExoPlayer`
-- `Thingclips / Tuya SDK`
-
-## Estrutura principal
-
-```text
-app/src/main/java/com/starkaid/starkaidapp
-├── adapters/        # adapters e listas de dispositivos
-├── data/            # banco local e sessao
-├── iot/tuya/        # integracao com dispositivos Tuya
-├── models/          # DTOs, entidades e modelos de dominio do app
-├── services/        # voz, websocket, APIs, Spotify, notificacoes, IA
-├── ui/              # activities e telas principais
-├── util/            # utilitarios e helpers
-└── viewmodels/      # view models e factories
-```
 
 ## Dependencia de backend
-
-Este aplicativo depende de um backend StarkAid compativel para:
-
-- login
-- cadastro
-- renovacao de token
-- sincronizacao de usuario
-- comandos remotos
-- suporte
-- planos e licenciamento
-- telemetria e servicos online
 
 Backend relacionado neste repositorio:
 
 - [StarkAid.Api](../StarkAid.Api)
 
-## Requisitos para abrir localmente
+O app usa a API para:
+
+- login e refresh token
+- leitura de configuracao remota
+- dispositivos e comandos
+- suporte e telemetria
+- planos, checkout e saldo
+- integracoes de terceiros
+
+## Requisitos
 
 - `Android Studio`
 - `JDK 17`
@@ -70,15 +52,17 @@ Backend relacionado neste repositorio:
 - `Gradle Wrapper`
 - backend StarkAid funcional
 
-## Arquivos e chaves obrigatorias
+## Arquivos locais obrigatorios
 
 ### 1. Firebase
 
-Para recursos de `Firebase Messaging` e `Analytics`, forneca:
+Forneca:
 
 - `app/google-services.json`
 
-Sem esse arquivo, o projeto ainda compila, mas o build desativa a etapa do Google Services e o app sobe sem inicializar Firebase.
+Sem esse arquivo, `Firebase Messaging` e partes do Analytics nao inicializam corretamente.
+
+No repositorio publico, o build continua compilando sem esse arquivo. Nesse caso, o plugin `google-services` nao e aplicado e a geracao de recursos do Firebase fica desativada.
 
 ### 2. Configuracao local do app
 
@@ -90,60 +74,58 @@ para:
 
 - `starkaid.local.properties`
 
-Esse arquivo alimenta o `BuildConfig` e o `AndroidManifest` com:
+Esse arquivo e lido pelo build e preenche os defaults do `BuildConfig`.
+
+## Chaves e variaveis de configuracao
+
+### Ambiente
 
 - `STARKAID_IS_DEVELOPMENT`
 - `STARKAID_DEV_API_BASE_URL`
 - `STARKAID_DEV_WEB_BASE_URL`
 - `STARKAID_PROD_API_BASE_URL`
 - `STARKAID_PROD_WEB_BASE_URL`
-- `STARKAID_SPOTIFY_CLIENT_ID`
-- `STARKAID_SPOTIFY_CLIENT_SECRET`
-- `STARKAID_SPOTIFY_REDIRECT_URI`
-- `ADMOB_APP_ID`
-- `UNITY_ADS_APP_ID`
 
-### 3. AdMob e Unity Ads
-
-Os IDs de anuncios agora sao lidos por placeholder de manifesto. Se voce nao usar monetizacao em ambiente local, mantenha os placeholders do `starkaid.local.properties`.
-
-### 4. URLs do backend
-
-As URLs principais saem de `BuildConfig` via:
+Esses valores alimentam:
 
 - `app/src/main/java/com/starkaid/starkaidapp/config/ApiConfig.kt`
 
-Com isso, `ApiClient`, `HubService`, `RefreshTokenInterceptor`, `WebSocketManager`, `QrActivityWppConnect` e fluxos ligados ao backend passam a respeitar o ambiente configurado.
+`ApiConfig` define as URLs default de API e web. Depois do login, o app ainda pode carregar configuracao remota do backend e salvar no `SessionManager`.
 
-### 5. Spotify
+### Spotify
 
-O fallback de Spotify agora vem do `starkaid.local.properties`, enquanto o backend ainda pode sobrescrever `clientId` e `clientSecret` em runtime pelo endpoint de configuracao.
+- `STARKAID_SPOTIFY_CLIENT_ID`
+- `STARKAID_SPOTIFY_CLIENT_SECRET`
 
-Voce vai precisar de:
+Esses valores sao fallback local. Se o backend devolver configuracao atualizada pelo endpoint de app-config, o app persiste isso em runtime.
 
-- `Spotify Client ID`
-- `Spotify Client Secret`
-- `Redirect URI` compativel com o scheme do app
+Redirect URI atual do app:
 
-O caminho mais seguro e mover esse fluxo para o backend e evitar segredo em app cliente.
+- `starkaid://spotifycallback`
 
-### 6. local.properties
+O aplicativo cadastrado no Spotify precisa aceitar esse retorno.
 
-Crie ou ajuste o `local.properties` na raiz do projeto com o caminho do Android SDK:
+### eWeLink
 
-```properties
-sdk.dir=C:\\Users\\SeuUsuario\\AppData\\Local\\Android\\Sdk
-```
+- `STARKAID_EWELINK_CLIENT_ID`
+- `STARKAID_EWELINK_CLIENT_SECRET`
 
-## Passo a passo para subir
+Esses valores sao usados pelo fluxo mobile de autenticacao eWeLink. No estado atual, eles entram no `BuildConfig` a partir de `starkaid.local.properties`. Para um endurecimento maior, o ideal e mover esse fluxo totalmente para a API.
 
-1. Abra a pasta no Android Studio.
-2. Copie `starkaid.local.properties.example` para `starkaid.local.properties`.
-3. Ajuste URLs, Spotify e IDs de ads nesse arquivo.
-4. Se for usar Firebase, adicione `app/google-services.json`.
-5. Revise o fluxo do Spotify.
-6. Se precisar de integracoes adicionais, confira as configuracoes retornadas pelo backend em `api/v1/Config/app-config`.
-7. Gere o build e rode em emulador ou dispositivo fisico.
+### Ads
+
+- `ADMOB_APP_ID`
+- `UNITY_ADS_APP_ID`
+
+Esses valores sao injetados no `AndroidManifest.xml` via `manifestPlaceholders`.
+
+## Fluxo de configuracao
+
+1. O build gera defaults locais a partir de `starkaid.local.properties`.
+2. `ApiConfig` expõe as URLs e fallbacks do app.
+3. `ApiClient` pode buscar configuracao remota em `/api/v1/Config/app-config`.
+4. `SessionManager` salva overrides dinamicos como base URL, Spotify e eWeLink.
+5. Os servicos usam primeiro a configuracao salva em runtime e depois caem no fallback local.
 
 ## Build
 
@@ -153,26 +135,25 @@ No Windows:
 .\gradlew.bat assembleDebug
 ```
 
-Ou para release:
+Ou release:
 
 ```powershell
 .\gradlew.bat assembleRelease
 ```
 
-## Autenticacao em runtime
+## Passo a passo para subir
 
-Depois do login, o app trabalha com:
+1. Abra a pasta `starkaidautomacao` no Android Studio.
+2. Se for usar notificacoes push e analytics reais, garanta que `app/google-services.json` exista.
+3. Copie `starkaid.local.properties.example` para `starkaid.local.properties`.
+4. Preencha as URLs de ambiente, os fallbacks do Spotify e os IDs de ads.
+5. Se for usar desenvolvimento local, ajuste `STARKAID_IS_DEVELOPMENT=true` e as URLs `DEV`.
+6. Rode sync do Gradle.
+7. Gere o build e execute em emulador ou dispositivo fisico.
 
-- `JWT` no header `Authorization`
-- `Api-Key` devolvida pelo backend e persistida em sessao
-- `FCM token` para notificacoes push
+## Observacoes
 
-Esses dados sao gerados/obtidos em runtime. Eles nao substituem as chaves de build e integracoes de terceiros listadas acima.
-
-## Observacao importante
-
-Este projeto ainda possui IDs e segredos embutidos no cliente. Para uma publicacao mais profissional no GitHub, o ideal e:
-
-1. mover configuracoes sensiveis para `gradle.properties`, `local.properties`, `BuildConfig` ou backend
-2. remover artefatos de build e arquivos gerados
-3. rotacionar credenciais reais ja usadas
+- Este subprojeto ja usa configuracao remota do backend; o arquivo local serve como base segura e previsivel para bootstrap.
+- O `google-services.json` e opcional para compilar o projeto publico, mas necessario para recursos reais de `Firebase Messaging` e Analytics.
+- O fluxo do Spotify ainda depende de segredo no cliente como fallback. O ideal de longo prazo e mover isso 100% para o backend.
+- O `README` anterior deste subprojeto estava desalinhado com o codigo real. Este documento reflete o fluxo atual do monorepo.

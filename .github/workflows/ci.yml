@@ -15,13 +15,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore solution
         run: dotnet restore StarkAid.sln
 
-      - name: Build
+      - name: Build current solution
         run: dotnet build StarkAid.sln --configuration Release --no-restore
+
+      - name: Build Windows client
+        run: dotnet build StarkAid.WindowsForms/StarkAid.WindowsForms.csproj --configuration Release
+
+      - name: Build audio helper
+        run: dotnet build StarkAid.AudioResolver/StarkAid.AudioResolver.csproj --configuration Release

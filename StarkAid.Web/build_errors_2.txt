@@ -1,8 +1,0 @@
-e:\projetos\StarkaidAPI\StarkAid\StarkAid.Web\Pages\ComandosSociais.razor(48,52): error CS1503: Argumento 1: n├úo ├® poss├¡vel converter de "System.Guid" para "string" [e:\projetos\StarkaidAPI\StarkAid\StarkAid.Web\StarkAid.Web.csproj]
-e:\projetos\StarkaidAPI\StarkAid\StarkAid.Web\Pages\ComandosSociais.razor(106,25): error CS0029: N├úo ├® poss├¡vel converter implicitamente tipo "System.Guid" em "string" [e:\projetos\StarkaidAPI\StarkAid\StarkAid.Web\StarkAid.Web.csproj]
-
-FALHA da compila├º├úo.
-    53 Aviso(s)
-    2 Erro(s)
-
-Tempo Decorrido 00:00:04.87

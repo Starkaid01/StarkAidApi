@@ -30,8 +30,8 @@ import javax.crypto.spec.SecretKeySpec
 
 class EwelinkLoginActivity : AppCompatActivity() {
 
-    private val clientId = "qPNNDkWlhKwh4xn41bteq2qD02aiGs3D"
-    private val clientSecret = "kdG0r5OPddNB90tPKvarWyMWmpppIX9s"
+    private val clientId = ApiConfig.ewelinkClientId
+    private val clientSecret = ApiConfig.ewelinkClientSecret
     private val redirectUrl = "${ApiConfig.webBaseUrl}/auth/ewelink/calback/callback.html"
 
     private lateinit var secureStorage: SecureStorageManager

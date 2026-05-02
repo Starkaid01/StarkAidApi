@@ -8,14 +8,12 @@ import okhttp3.*
 import org.json.JSONObject
 
 object SpotifyWebApi {
-    private const val TOKEN_URL = "https://accounts.spotify.com/api/token"
-
     private val client = OkHttpClient()
 
     fun refreshToken(refreshToken: String, context: Context? = null): SpotifyTokens {
         val sessionManager = context?.let { SessionManager.getInstance(it) }
         
-        // Buscar credenciais do SessionManager ou usar configuração do build
+        // Buscar credenciais do SessionManager ou usar padrão
         val clientId = sessionManager?.fetchSpotifyClientId() ?: ApiConfig.spotifyClientId
         val clientSecret = sessionManager?.fetchSpotifyClientSecret() ?: ApiConfig.spotifyClientSecret
 
@@ -25,7 +23,7 @@ object SpotifyWebApi {
             .build()
 
         val request = Request.Builder()
-            .url(TOKEN_URL)
+            .url(ApiConfig.spotifyTokenUrl)
             .post(body)
             .addHeader(
                 "Authorization",

@@ -35,14 +35,14 @@ class SpotifyService(private val context: Context) {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    // Usar credenciais do SessionManager ou valores configurados no build como fallback
+    // Usar credenciais do SessionManager ou valores padrão como fallback
     private val clientId: String
         get() = sessionManager.fetchSpotifyClientId() ?: ApiConfig.spotifyClientId
     
     private val clientSecret: String
         get() = sessionManager.fetchSpotifyClientSecret() ?: ApiConfig.spotifyClientSecret
     
-    private val tokenUrl = "https://accounts.spotify.com/api/token"
+    private val tokenUrl = ApiConfig.spotifyTokenUrl
     private val TAG = "SpotifyService"
 
     // ---------------------------

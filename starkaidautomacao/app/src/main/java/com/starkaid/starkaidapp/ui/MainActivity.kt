@@ -20,8 +20,6 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.media.AudioManager
-import com.starkaid.starkaidapp.util.AppState
-import com.starkaid.starkaidapp.services.LembretesApi
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
@@ -44,6 +42,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.animation.AccelerateInterpolator
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -51,11 +53,6 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-
-import android.webkit.JavascriptInterface
-import android.webkit.WebChromeClient
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.appcompat.widget.SwitchCompat
 import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
@@ -83,9 +80,12 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
+import com.microsoft.signalr.HubConnection
+import com.microsoft.signalr.HubConnectionBuilder
 import com.starkaid.starkaidapp.R
 import com.starkaid.starkaidapp.adapters.DeviceAdapter
 import com.starkaid.starkaidapp.base.BaseActivity
+import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.data.AppDatabase
 import com.starkaid.starkaidapp.data.SessionManager
 import com.starkaid.starkaidapp.ewelink.EwelinkDeviceService
@@ -94,21 +94,36 @@ import com.starkaid.starkaidapp.ewelink.EwelinkVoiceControl
 import com.starkaid.starkaidapp.ewelink.adapter.DeviceEwelinkAdapter
 import com.starkaid.starkaidapp.ewelink.models.EwelinkDevice
 import com.starkaid.starkaidapp.extensions.createHoverEffect
-import com.starkaid.starkaidapp.config.ApiConfig
 import com.starkaid.starkaidapp.models.ComandoSocialDao
 import com.starkaid.starkaidapp.models.ComandoSocialEntity
+import com.starkaid.starkaidapp.models.ContatoEntity
 import com.starkaid.starkaidapp.models.Device
-import com.starkaid.starkaidapp.models.HubListener
+import com.starkaid.starkaidapp.models.DispositivoEsp
 import com.starkaid.starkaidapp.models.EconomicPayload
+import com.starkaid.starkaidapp.models.EnviarComandoRequest
+import com.starkaid.starkaidapp.models.HubListener
+import com.starkaid.starkaidapp.models.IaRequest
+import com.starkaid.starkaidapp.models.MusicResolveRequest
+import com.starkaid.starkaidapp.models.MusicaDto
+import com.starkaid.starkaidapp.models.RespostasAleatoriasDto
+import com.starkaid.starkaidapp.security.SecureStorageManager
+import com.starkaid.starkaidapp.services.AddNameRequest
+import com.starkaid.starkaidapp.services.AnalizaTexto
 import com.starkaid.starkaidapp.services.ApiClient
+import com.starkaid.starkaidapp.services.AssinaturasApi
 import com.starkaid.starkaidapp.services.AuthService
 import com.starkaid.starkaidapp.services.CommandApi
 import com.starkaid.starkaidapp.services.CommandRequest
+import com.starkaid.starkaidapp.services.CriarSessaoRequest
 import com.starkaid.starkaidapp.services.DeviceApi
 import com.starkaid.starkaidapp.services.DeviceOptimizationService
-import com.starkaid.starkaidapp.services.DeviceResponse
 import com.starkaid.starkaidapp.services.DeviceStatus
 import com.starkaid.starkaidapp.services.DisparoApi
+import com.starkaid.starkaidapp.services.DispositivosEspApi
+import com.starkaid.starkaidapp.services.EnviarMensagemRequest
+import com.starkaid.starkaidapp.services.ErrorCodes
+import com.starkaid.starkaidapp.services.ErrorLogSyncService
+import com.starkaid.starkaidapp.services.ErrorLoggerService
 import com.starkaid.starkaidapp.services.FloatingButtonService
 import com.starkaid.starkaidapp.services.FloatingButtonService.Companion.FloatingButtonServiceInstance
 import com.starkaid.starkaidapp.services.FullDuplexAssistantAdvancedService
@@ -116,31 +131,49 @@ import com.starkaid.starkaidapp.services.FullDuplexAssistantAdvancedService.Comp
 import com.starkaid.starkaidapp.services.HealthApi
 import com.starkaid.starkaidapp.services.HealthCheckApi
 import com.starkaid.starkaidapp.services.HubService
+import com.starkaid.starkaidapp.services.ListarContatosRequest
+import com.starkaid.starkaidapp.services.MusicApi
+import com.starkaid.starkaidapp.services.NlpApi
+import com.starkaid.starkaidapp.services.NlpExtractRequest
+import com.starkaid.starkaidapp.services.RadioPlayerService
+import com.starkaid.starkaidapp.services.SpotifyService
 import com.starkaid.starkaidapp.services.StatusApi
+import com.starkaid.starkaidapp.services.StatusSessaoRequest
 import com.starkaid.starkaidapp.services.UsersApi
-import com.starkaid.starkaidapp.services.EwelinkApi
-import com.starkaid.starkaidapp.services.AssinaturasApi
-import com.starkaid.starkaidapp.services.DispositivosEspApi
-import com.starkaid.starkaidapp.models.DispositivoEsp
-import com.starkaid.starkaidapp.models.EnviarComandoRequest
-import com.microsoft.signalr.HubConnection
-import com.microsoft.signalr.HubConnectionBuilder
-import com.starkaid.starkaidapp.models.ExternalAudioStreamResult
-import io.reactivex.rxjava3.core.Single
-import com.starkaid.starkaidapp.services.PlanoAtivoResponse
+import com.starkaid.starkaidapp.services.UsuarioApi
 import com.starkaid.starkaidapp.services.VoiceSynthesizer
 import com.starkaid.starkaidapp.services.WebSocketManager
-import com.starkaid.starkaidapp.services.ErrorLoggerService
-import com.starkaid.starkaidapp.services.ErrorLogSyncService
-import com.starkaid.starkaidapp.services.ErrorCodes
+import com.starkaid.starkaidapp.services.WhatsappApi
+import com.starkaid.starkaidapp.services.pipeline.AnalyzeTextStage
+import com.starkaid.starkaidapp.services.pipeline.AssistantActions
+import com.starkaid.starkaidapp.services.pipeline.AvatarStage
+import com.starkaid.starkaidapp.services.pipeline.CommandContext
+import com.starkaid.starkaidapp.services.pipeline.DeviceControlStage
+import com.starkaid.starkaidapp.services.pipeline.GlobalRoomState
+import com.starkaid.starkaidapp.services.pipeline.IaFallbackStage
+import com.starkaid.starkaidapp.services.pipeline.MusicStage
+import com.starkaid.starkaidapp.services.pipeline.PendingCommand
+import com.starkaid.starkaidapp.services.pipeline.PipelineEngine
+import com.starkaid.starkaidapp.services.pipeline.ProcessCommandStage
+import com.starkaid.starkaidapp.services.pipeline.RoomContext
+import com.starkaid.starkaidapp.services.pipeline.RoomState
+import com.starkaid.starkaidapp.services.pipeline.SleepModeStage
+import com.starkaid.starkaidapp.services.pipeline.StarkCoinsStage
+import com.starkaid.starkaidapp.services.pipeline.StopListeningStage
+import com.starkaid.starkaidapp.services.pipeline.StopTalkingStage
+import com.starkaid.starkaidapp.services.pipeline.WhatsappConfirmationStage
 import com.starkaid.starkaidapp.util.NotificationUtils
 import com.starkaid.starkaidapp.util.SessionExpiredHandler
+import com.starkaid.starkaidapp.utils.StringUtils
 import com.unity3d.ads.IUnityAdsInitializationListener
 import com.unity3d.ads.UnityAds
+import io.reactivex.rxjava3.core.Single
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -156,45 +189,18 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
+import java.io.File
 import java.io.IOException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.SocketTimeoutException
-import java.io.File
 import java.net.URLEncoder
+import java.text.Normalizer
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import com.starkaid.starkaidapp.models.ContatoEntity
-import com.starkaid.starkaidapp.models.IaRequest
-import com.starkaid.starkaidapp.models.MusicaDto
-import com.starkaid.starkaidapp.models.RespostasAleatoriasDto
-import com.starkaid.starkaidapp.security.SecureStorageManager
-import com.starkaid.starkaidapp.services.AddNameRequest
-import com.starkaid.starkaidapp.services.SpotifyService
-import com.starkaid.starkaidapp.services.AnalizaTexto
-import com.starkaid.starkaidapp.services.CriarSessaoRequest
-import com.starkaid.starkaidapp.services.EnviarMensagemRequest
-import com.starkaid.starkaidapp.services.ListarContatosRequest
-import com.starkaid.starkaidapp.services.NlpApi
-import com.starkaid.starkaidapp.services.NlpExtractRequest
-import com.starkaid.starkaidapp.services.StatusSessaoRequest
-import com.starkaid.starkaidapp.services.UsuarioApi
-import com.starkaid.starkaidapp.services.WhatsappApi
-import com.starkaid.starkaidapp.utils.StringUtils
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import java.text.Normalizer
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.jvm.java
-import com.starkaid.starkaidapp.BuildConfig
-import com.starkaid.starkaidapp.services.pipeline.*
-import com.starkaid.starkaidapp.models.AnaliseTexto
-import com.starkaid.starkaidapp.models.MusicResolveRequest
-import com.starkaid.starkaidapp.services.ComodosApi
-import com.starkaid.starkaidapp.services.MusicApi
-import com.starkaid.starkaidapp.services.RadioPlayerService
 
 class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubListener {
 
@@ -265,7 +271,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
     private var adRetryRunnable: Runnable? = null
     private val adHandler = Handler(Looper.getMainLooper())
 
-    private val UNITY_GAME_ID = ApiConfig.unityAdsGameId
+    private val UNITY_GAME_ID = "5921564"
 
     // Adicione estas variáveis na classe MainActivity
     private lateinit var deviceCountView: TextView
@@ -489,6 +495,10 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                 // Marcar usuário como online
                 lifecycleScope.launch(Dispatchers.IO) {
                     setUserOnline()
+                }
+                // Sincronizar logs de erro
+                lifecycleScope.launch(Dispatchers.IO) {
+                    com.starkaid.starkaidapp.services.ErrorLogSyncService(this@MainActivity).syncLogsToBackend()
                 }
             } else {
                 // Offline: verifica se temos dados locais
@@ -1009,9 +1019,6 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             } else {
                 Log.d("EWE_MAIN", "❌ Usuário não logado no eWeLink")
             }
-
-//            try {
-
 
 
         } catch (e: Exception) {
@@ -1603,7 +1610,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
             .url(url)
             .get()
             .addHeader("Authorization", "Bearer $accessToken")
-            .addHeader("X-CK-Appid", "qPNNDkWlhKwh4xn41bteq2qD02aiGs3D")
+            .addHeader("X-CK-Appid", ApiConfig.ewelinkClientId)
             .addHeader("X-CK-Nonce", nonce)
             .addHeader("X-CK-Timestamp", timestamp.toString())
             .build()
@@ -4197,7 +4204,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         val redirectUri = ApiConfig.spotifyRedirectUri
         val scopes = "user-read-playback-state user-modify-playback-state user-read-private"
 
-        val url = "https://accounts.spotify.com/authorize?" +
+        val url = ApiConfig.spotifyAuthorizeUrl + "?" +
                 "client_id=$clientId" +
                 "&response_type=code" +
                 "&redirect_uri=$redirectUri" +
@@ -4852,6 +4859,9 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                 Log.d("ComandosSociais", "Resposta escolhida: $resposta")
 
                 speakTextFromService(resposta)
+                
+                // Sincronizar atividade
+                pipelineActions.updateActivity("SOCIAL", comando, resposta)
             }
         }
         return passouSocial
@@ -5787,9 +5797,13 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                     val response = api.criarLembrete(req)
                     
                     if (response.isSuccessful && response.body()?.success == true) {
-                        speakTextFromService("Lembrete criado para ${response.body()?.texto ?: "o horário solicitado"}")
+                        val resp = "Lembrete criado para ${response.body()?.texto ?: "o horário solicitado"}"
+                        speakTextFromService(resp)
+                        pipelineActions.updateActivity("SOCIAL", cleanComand, resp)
                     } else if (response.body()?.code == "MISSING_TIME") {
-                        speakTextFromService("Para quando quer o lembrete?")
+                        val resp = "Para quando quer o lembrete?"
+                        speakTextFromService(resp)
+                        pipelineActions.updateActivity("SOCIAL", cleanComand, resp)
                         // Iniciar fluxo no service
                         val intent = Intent(this@MainActivity, FullDuplexAssistantAdvancedService::class.java).apply {
                             action = FullDuplexAssistantAdvancedService.ACTION_START_LEMBRETE_FLOW
@@ -5831,7 +5845,9 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                                 lastDirectCommandTime = currentTime
 
                                 Handler(Looper.getMainLooper()).post {
-                                    speakTextFromService("Bom dia!")
+                                    val resp = "Bom dia!"
+                                    speakTextFromService(resp)
+                                    pipelineActions.updateActivity("SOCIAL", cleanComand, resp)
                                 }
                                 true
                             }
@@ -5841,6 +5857,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                                 val responseCorrection = "você está adiantado, agora são ${horaAtual} da manhã. Bom dia!"
                                 Handler(Looper.getMainLooper()).post {
                                     speakTextFromService(responseCorrection)
+                                    pipelineActions.updateActivity("SOCIAL", cleanComand, responseCorrection)
                                 }
                                 runOnUiThread {
                                     showEmojiBaloes("\uD83D\uDE01\uD83E\uDD23")
@@ -6291,9 +6308,12 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
                         val textoParaFalar = resposta.removeEmojis()
                         val emojisParaMostrar = resposta.extractEmojis()
-                        ultimaRespostaIA = textoParaFalar
-                        speakTextFromService(textoParaFalar)
-
+                        ultimaRespostaIA = resposta
+                        speakTextFromService(resposta)
+                        
+                        // Sincronizar atividade
+                        pipelineActions.updateActivity("IA", pergunta, resposta)
+                        
                         // Mostra os emojis com efeito na tela
                         if (emojisParaMostrar.isNotEmpty()) {
                             runOnUiThread {
@@ -6310,7 +6330,7 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                             }
                         }
 
-                        true
+                        return true
                     }
                 } else {
                     Log.d("TestandoIA","Resposta vazia da API")
@@ -7020,20 +7040,17 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
 
         val totalTime = System.currentTimeMillis() - startupTime
         Log.d("Perf", "Activity lifetime: $totalTime ms")
-        FloatingButtonServiceInstance?.showButton()
+        // Controlado pelo StarkAidApp agora
+        // FloatingButtonServiceInstance?.showButton()
     }
 
 
     override fun onDestroy() {
         super.onDestroy()
 
-        // Fechar conexão do Hub de dispositivos ESP
-        try {
-            espHubConnection?.stop()?.blockingAwait()
-            espHubConnection = null
-            Log.d("ESP_HUB_MAIN", "HubConnection de dispositivos ESP fechado")
-        } catch (e: Exception) {
-            Log.e("ESP_HUB_MAIN", "Erro ao fechar HubConnection", e)
+        // Marcar offline
+        lifecycleScope.launch(Dispatchers.IO) {
+            setUserOffline()
         }
 
         LocalBroadcastManager.getInstance(this).unregisterReceiver(recogReceiver)
@@ -8159,6 +8176,10 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                      if (response.isSuccessful && response.body() != null) {
                          val result = response.body()!!
                          speakTextFromService(result.mensagemVoz)
+                         
+                         // Sincronizar atividade
+                         updateActivity("STARKSWITCH", "${action} ${type} na ${room}", result.mensagemVoz)
+                         
                          return true
                      }
                 } catch (e: Exception) {
@@ -8166,17 +8187,29 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
                 }
                 return false
             }
+
+            override fun updateActivity(tipo: String, comando: String, resposta: String?) {
+                val request = when (tipo.uppercase()) {
+                    "IA" -> com.starkaid.starkaidapp.services.UpdateUltimoComandoRequest(ultimoComandoIA = comando, ultimaRespostaIA = resposta)
+                    "SOCIAL" -> com.starkaid.starkaidapp.services.UpdateUltimoComandoRequest(ultimoComandoSocial = comando, ultimaRespostaSocial = resposta)
+                    "ESP" -> com.starkaid.starkaidapp.services.UpdateUltimoComandoRequest(ultimoComandoEsp = comando)
+                    "EWELINK" -> com.starkaid.starkaidapp.services.UpdateUltimoComandoRequest(ultimoComandoEwelink = comando)
+                    "STARKSWITCH" -> com.starkaid.starkaidapp.services.UpdateUltimoComandoRequest(ultimoComandoStarkSwitch = comando)
+                    else -> com.starkaid.starkaidapp.services.UpdateUltimoComandoRequest(ultimoComandoIA = comando, ultimaRespostaIA = resposta)
+                }
+                updateActivityApp(request)
+            }
         }
 
         val stages = listOf(
             StopTalkingStage(),
             StopListeningStage(),
-            StarkCoinsStage(), // Check before Sleep Mode (Priority)
+            StarkCoinsStage(), 
             AvatarStage(),
             SleepModeStage(),
             MusicStage(),
-            WhatsappConfirmationStage(), // Requires listening
-            DeviceControlStage(), // Enhanced Room Control Stage
+            WhatsappConfirmationStage(), 
+            DeviceControlStage(), 
             AnalyzeTextStage(analizaTexto),
             ProcessCommandStage(),
             IaFallbackStage()
@@ -8185,6 +8218,21 @@ class MainActivity : BaseActivity(), DeviceAdapter.OnDeviceClickListener, HubLis
         commandPipeline = PipelineEngine(stages)
         Log.d("Pipeline", "Pipeline inicializado com ${stages.size} stages.")
     }
+
+    private fun updateActivityApp(request: com.starkaid.starkaidapp.services.UpdateUltimoComandoRequest) {
+        if (!isOnline()) return
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val retrofit = ApiClient.getClient(this@MainActivity)
+                val api = retrofit.create(com.starkaid.starkaidapp.services.UsuarioApi::class.java)
+                api.updateUserActivityApp(request)
+                Log.d("Activity", "Atividade sincronizada: $request")
+            } catch (e: Exception) {
+                Log.e("Activity", "Erro ao sincronizar atividade", e)
+            }
+        }
+    }
+
 
     private suspend fun processCommandViaPipeline(text: String) {
          if (!::commandPipeline.isInitialized) {

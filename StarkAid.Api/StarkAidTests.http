@@ -3,8 +3,8 @@ POST https://localhost:7181/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "admin@starkaid.com",
-  "password": "StarkAdmin2024@"
+  "email": "admin@example.com",
+  "password": "CHANGE_ME"
 }
 
 ###
@@ -32,7 +32,7 @@ Content-Type: application/json
 {
   "name": "João Tester",
   "email": "joao@tester.com",
-  "password": "SenhaF0rte!"
+  "password": "CHANGE_ME"
 }
 
 ###

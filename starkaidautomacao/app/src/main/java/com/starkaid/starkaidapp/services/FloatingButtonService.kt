@@ -82,6 +82,11 @@ class FloatingButtonService : Service() {
 
     // Mostrar botão
     fun showButton() {
+        // Se a app estiver visível, não mostrar o botão
+        if (com.starkaid.starkaidapp.StarkAidApp.isAppVisible) {
+            return
+        }
+
         if (!isButtonVisible && floatingView?.windowToken == null) {
             val layoutParams = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -94,8 +99,12 @@ class FloatingButtonService : Service() {
             layoutParams.x = 30
             layoutParams.y = 100
 
-            windowManager?.addView(floatingView, layoutParams)
-            isButtonVisible = true
+            try {
+                windowManager?.addView(floatingView, layoutParams)
+                isButtonVisible = true
+            } catch (e: Exception) {
+               // Log error if needed
+            }
         }
     }
 

@@ -1,7 +1,0 @@
-{
-    "Ewelink": {
-        "ClientId": "qPNNDkWlhKwh4xn41bteq2qD02aiGs3D",
-        "ClientSecret": "kdG0r5OPddNB90tPKvarWyMWmpppIX9s",
-        "RedirectUri": "https://starkaidautomacao.runasp.net/auth/ewelink/callback.html"
-    }
-}

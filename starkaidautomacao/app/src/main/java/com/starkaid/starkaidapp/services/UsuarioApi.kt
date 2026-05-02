@@ -82,6 +82,11 @@ interface UsuarioApi {
     suspend fun setUserOffline(
         @Body request: SetUserOfflineRequest
     ): Response<SetUserOfflineResponse>
+
+    @POST("api/v1/Users/activity/app/update")
+    suspend fun updateUserActivityApp(
+        @Body request: UpdateUltimoComandoRequest
+    ): Response<Unit>
 }
 
 data class SenhaRequest(
@@ -114,5 +119,15 @@ data class SetUserOfflineRequest(
 
 data class SetUserOfflineResponse(
     val message: String
+)
+
+data class UpdateUltimoComandoRequest(
+    val ultimoComandoEsp: String? = null,
+    val ultimoComandoEwelink: String? = null,
+    val ultimoComandoStarkSwitch: String? = null,
+    val ultimoComandoSocial: String? = null,
+    val ultimaRespostaSocial: String? = null,
+    val ultimoComandoIA: String? = null,
+    val ultimaRespostaIA: String? = null
 )
 

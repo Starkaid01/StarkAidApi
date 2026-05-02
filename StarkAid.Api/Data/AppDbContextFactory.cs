@@ -15,8 +15,8 @@ namespace StarkAid.Api
                 .AddJsonFile("appsettings.json")
                 .Build();
 
-            var connectionString = "Server=db37440.public.databaseasp.net,1433; Database=db37440; User Id=db37440; Password=8r?JhW3@P=o9; Encrypt=True; TrustServerCertificate=True; MultipleActiveResultSets=True;";
-
+            var connectionString = configuration.GetConnectionString("DefaultConnection")
+                ?? "Server=localhost,1433;Database=StarkAidDb;User Id=sa;Password=YourStrongPassword123!;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True";
 
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
             optionsBuilder.UseSqlServer(connectionString);

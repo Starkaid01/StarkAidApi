@@ -68,7 +68,7 @@
         <!-- Reconfigures do AdMob -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="${adMobAppId}"/>
+            android:value="${admobAppId}"/>
 
         <meta-data
             android:name="unityads.appid"
@@ -206,6 +206,7 @@
         <activity
             android:name="com.starkaid.starkaidapp.ui.ChatSuporteActivity"
             android:exported="false"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.StarkAid" />
 
         <activity

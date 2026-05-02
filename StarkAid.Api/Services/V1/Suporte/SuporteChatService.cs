@@ -5,22 +5,28 @@ using StarkAid.Api.Entities;
 using StarkAid.Api.Services;
 using System.Text.Json;
 
+using StarkAid.Api.Services.V1.Support.Agents;
+using StarkAid.Api.DTOs.V1.Support;
+
 namespace StarkAid.Api.Services.V1.Suporte;
 
 public class SuporteChatService : ISuporteChatService
 {
     private readonly AppDbContext _context;
     private readonly ISupportIaService _iaService;
+    private readonly ISupportMessageRouter _supportRouter;
     private readonly ILogger<SuporteChatService> _logger;
     private const int LIMITE_MENSAGENS_IA = 1000; // Temporariamente aumentado para testes
 
     public SuporteChatService(
         AppDbContext context,
         ISupportIaService iaService,
+        ISupportMessageRouter supportRouter,
         ILogger<SuporteChatService> logger)
     {
         _context = context;
         _iaService = iaService;
+        _supportRouter = supportRouter;
         _logger = logger;
     }
 
@@ -134,21 +140,28 @@ public class SuporteChatService : ISuporteChatService
             return resposta;
         }
 
-        // Se não encontrou nada, usar IA para responder com contexto adequado
-        string respostaIa;
-        try
+        // Se não encontrou nada, usar Roteador Inteligente
+        var supportResult = await _supportRouter.ProcessMessageAsync(userId, mensagem, origem);
+        var finalResponse = supportResult.Content;
+
+        if (supportResult.Type == SupportMessageType.AgentActionProposal && !string.IsNullOrEmpty(supportResult.ActionProposed))
         {
-            respostaIa = await _iaService.ProcessarMensagemComContexto(userId, mensagem, origem, conversa.Id);
+             var legacyCmd = supportResult.ActionProposed.ToLower() switch {
+                 "cleanappcache" => "limparcache",
+                 "cleanappdata" => "limpardados",
+                 "restartapp" => "restart",
+                 "logout" => "logout",
+                 "cleanlocaldatabase" => "limpar-data-base",
+                 _ => supportResult.ActionProposed.ToLower()
+             };
+             finalResponse += $"\n\n[COMANDO:{legacyCmd}]";
         }
-        catch (TokenInsufficientException tex)
-        {
-            return $"Saldo insuficiente para IA. Moedas necessárias: {tex.RequiredCoins}.";
-        }
-        await SalvarMensagemConversa(conversa.Id, "ia", respostaIa);
+
+        await SalvarMensagemConversa(conversa.Id, "ia", finalResponse);
         conversa.ContadorMensagens++;
         await _context.SaveChangesAsync();
 
-        return respostaIa;
+        return finalResponse;
     }
 
     public async Task<string> ProcessarMensagemUsuario(Guid userId, string origem, string mensagem, Guid conversaId)
@@ -169,330 +182,33 @@ public class SuporteChatService : ISuporteChatService
             return "Infelizmente meu limite de contexto foi atingido. Deixe uma mensagem explicando detalhes dos erros que está enfrentando para nosso suporte. Assim que um de nossos especialistas ver sua mensagem, você receberá em seu email instruções sobre o que fazer.";
         }
 
-        // Salvar mensagem do usuário
-        await SalvarMensagemConversa(conversaId, "user", mensagem);
-
-        // Verificar se resolveu (apenas se já houve ações executadas anteriormente)
-        var ultimaAcaoResolvido = await _context.SuporteAcoes
-            .Where(a => a.UserId == userId && a.Origem == origem)
-            .OrderByDescending(a => a.CreatedAt)
-            .FirstOrDefaultAsync();
+        // Usar o Roteador Inteligente
+        var supportResult = await _supportRouter.ProcessMessageAsync(userId, mensagem, origem);
         
-        // Só verificar se resolveu se já houve alguma ação executada
-        if (ultimaAcaoResolvido != null)
-        {
-            var resolvido = await VerificarSeResolvido(mensagem);
-            if (resolvido)
-            {
-                // Salvar aprendizado
-                if (!string.IsNullOrEmpty(conversa.ProblemaInicial))
-                {
-                    // Obter ações que foram executadas e funcionaram
-                    var acoesSucesso = await _context.SuporteAcoes
-                        .Where(a => a.UserId == userId && a.Origem == origem && a.Sucesso)
-                        .OrderByDescending(a => a.CreatedAt)
-                        .Take(5)
-                        .ToListAsync();
-
-                    if (acoesSucesso.Any())
-                    {
-                        var solucoes = acoesSucesso.Select(a => $"Executar ação: {a.Acao}").ToList();
-                        await SalvarAprendizado(userId, origem, conversa.ProblemaInicial, solucoes);
-                    }
-                }
-
-                await MarcarConversaConcluida(conversaId, true);
-                
-                // Remover flag de resolução de suporte
-                var resolvendoSuporte = await _context.ResolvendoSuportes
-                    .FirstOrDefaultAsync(r => r.UserId == userId && r.Origem == origem && r.Ativo);
-                if (resolvendoSuporte != null)
-                {
-                    resolvendoSuporte.Ativo = false;
-                    resolvendoSuporte.ResolvidoEm = DateTimeOffset.UtcNow;
-                    await _context.SaveChangesAsync();
-                }
-
-                return "Que ótimo que conseguimos resolver seu problema! Se precisar de mais alguma coisa, é só chamar. Tenha um ótimo dia! 😊";
-            }
-        }
-
-        // Tentar ações diretas se usuário diz que não resolveu (ANTES de verificar aprendizado)
-        var mensagemLower = mensagem.ToLower();
-        if (mensagemLower.Contains("não resolveu") || mensagemLower.Contains("nao resolveu") || mensagemLower.Contains("ainda não") || mensagemLower.Contains("ainda nao"))
-        {
-            // Verificar última ação executada
-            var ultimaAcaoNaoResolveu = await _context.SuporteAcoes
-                .Where(a => a.UserId == userId && a.Origem == origem)
-                .OrderByDescending(a => a.CreatedAt)
-                .FirstOrDefaultAsync();
-
-            if (ultimaAcaoNaoResolveu?.Acao == "limparcache")
-            {
-                // Tentar atualizar dados
-                var resposta = "Vou atualizar os dados agora. Isso pode resolver o problema.\n\n" +
-                              "[COMANDO:atualizardados]";
-                await SalvarMensagemConversa(conversaId, "ia", resposta);
-                conversa.ContadorMensagens++;
-                await _context.SaveChangesAsync();
-                return resposta;
-            }
-            else if (ultimaAcaoNaoResolveu?.Acao == "atualizardados")
-            {
-                // Tentar logout
-                var resolvendoSuporte = await _context.ResolvendoSuportes
-                    .FirstOrDefaultAsync(r => r.UserId == userId && r.Origem == origem && r.Ativo);
-
-                if (resolvendoSuporte == null)
-                {
-                    resolvendoSuporte = new ResolvendoSuporte
-                    {
-                        UserId = userId,
-                        Origem = origem,
-                        Ativo = true,
-                        CreatedAt = DateTimeOffset.UtcNow
-                    };
-                    _context.ResolvendoSuportes.Add(resolvendoSuporte);
-                }
-
-                var resposta = "Vou fazer logout para limpar completamente a sessão. Isso pode resolver problemas com token expirado.\n\n" +
-                              "⚠️ Você será desconectado e precisará fazer login novamente.\n\n" +
-                              "[COMANDO:logout]";
-                await SalvarMensagemConversa(conversaId, "ia", resposta);
-                conversa.ContadorMensagens++;
-                await _context.SaveChangesAsync();
-                return resposta;
-            }
-            else if (ultimaAcaoNaoResolveu?.Acao == "logout")
-            {
-                // Se já tentou tudo, dar sugestões específicas
-                var resposta = "Já tentamos limpar cache, atualizar dados e fazer logout. Vou verificar outras possibilidades:\n\n" +
-                              "1. Verifique se o WebSocket está conectado (veja o status no Dashboard)\n" +
-                              "2. Confirme se você está conectado à internet\n" +
-                              "3. Tente reiniciar o aplicativo completamente\n" +
-                              "4. Verifique se os dispositivos StarkSwitch estão online\n\n" +
-                              "Se ainda não funcionar, vou transferir você para o suporte humano para investigação mais profunda.";
-                await SalvarMensagemConversa(conversaId, "ia", resposta);
-                conversa.ContadorMensagens++;
-                await _context.SaveChangesAsync();
-                return resposta;
-            }
-        }
-
-        // Verificar se usuário está relatando problema com dispositivos starkswitch e comandos de voz
-        if ((mensagemLower.Contains("starkswitch") || mensagemLower.Contains("stark switch")) && 
-            (mensagemLower.Contains("voz") || mensagemLower.Contains("comando") || mensagemLower.Contains("não aciona") || mensagemLower.Contains("nao aciona")))
-        {
-            var ultimaAcaoStark = await _context.SuporteAcoes
-                .Where(a => a.UserId == userId && a.Origem == origem)
-                .OrderByDescending(a => a.CreatedAt)
-                .FirstOrDefaultAsync();
-
-            if (ultimaAcaoStark == null || ultimaAcaoStark.Acao != "atualizardados")
-            {
-                var resposta = "Entendi! Você está com problema para acionar dispositivos StarkSwitch por comandos de voz.\n\n" +
-                              "Isso geralmente é problema de sincronização ou conexão. Vou atualizar os dados para sincronizar com o servidor.\n\n" +
-                              "[COMANDO:atualizardados]";
-                await SalvarMensagemConversa(conversaId, "ia", resposta);
-                conversa.ContadorMensagens++;
-                await _context.SaveChangesAsync();
-                return resposta;
-            }
-            else if (ultimaAcaoStark.Acao == "atualizardados")
-            {
-                var resposta = "Já tentamos atualizar os dados. Vou limpar o cache agora, pois pode haver dados antigos em cache.\n\n" +
-                              "[COMANDO:limparcache]";
-                await SalvarMensagemConversa(conversaId, "ia", resposta);
-                conversa.ContadorMensagens++;
-                await _context.SaveChangesAsync();
-                return resposta;
-            }
-        }
-
-        // Verificar se usuário está relatando problema com ESP/dispositivos ESP
-        if ((mensagemLower.Contains("esp") || mensagemLower.Contains("dispositivo esp")) && 
-            (mensagemLower.Contains("não funciona") || mensagemLower.Contains("nao funciona") || 
-             mensagemLower.Contains("não está funcionando") || mensagemLower.Contains("nao esta funcionando") ||
-             mensagemLower.Contains("não tenho") || mensagemLower.Contains("nao tenho") ||
-             mensagemLower.Contains("não recebo") || mensagemLower.Contains("nao recebo")))
-        {
-            var ultimaAcaoEsp = await _context.SuporteAcoes
-                .Where(a => a.UserId == userId && a.Origem == origem)
-                .OrderByDescending(a => a.CreatedAt)
-                .FirstOrDefaultAsync();
-
-            if (ultimaAcaoEsp == null || ultimaAcaoEsp.Acao != "atualizardados")
-            {
-                var resposta = "Entendi! Você está com problema para enviar comandos para dispositivos ESP e não está recebendo resposta.\n\n" +
-                              "Isso geralmente é problema de sincronização ou conexão UDP. Vou atualizar os dados para sincronizar com o servidor.\n\n" +
-                              "[COMANDO:atualizardados]";
-                await SalvarMensagemConversa(conversaId, "ia", resposta);
-                conversa.ContadorMensagens++;
-                await _context.SaveChangesAsync();
-                return resposta;
-            }
-            else if (ultimaAcaoEsp.Acao == "atualizardados")
-            {
-                var resposta = "Já tentamos atualizar os dados. Vou limpar o cache agora, pois pode haver dados antigos em cache.\n\n" +
-                              "[COMANDO:limparcache]";
-                await SalvarMensagemConversa(conversaId, "ia", resposta);
-                conversa.ContadorMensagens++;
-                await _context.SaveChangesAsync();
-                return resposta;
-            }
-        }
-
-        // Se chegou aqui, nenhum problema específico foi detectado
-        // Processar com IA usando contexto antes de mostrar aprendizado genérico
-        string respostaIaContexto;
-        try
-        {
-            respostaIaContexto = await _iaService.ProcessarMensagemComContexto(userId, mensagem, origem, conversaId);
-        }
-        catch (TokenInsufficientException tex)
-        {
-            return $"Saldo insuficiente para IA. Moedas necessárias: {tex.RequiredCoins}.";
-        }
+        var finalResponse = supportResult.Content;
         
-        // Verificar se a resposta da IA contém um comando - se sim, usar ela
-        if (!string.IsNullOrEmpty(respostaIaContexto) && respostaIaContexto.Contains("[COMANDO:"))
+        // Se houver uma ação solicitada (pós-confirmação), anexar o marcador legado para o Hub processar
+        if (!string.IsNullOrEmpty(supportResult.ActionToExecute))
         {
-            await SalvarMensagemConversa(conversaId, "ia", respostaIaContexto);
-            conversa.ContadorMensagens++;
-            await _context.SaveChangesAsync();
-            return respostaIaContexto;
-        }
-        
-        // Se a IA não gerou comando, verificar aprendizado (apenas se não for "não resolveu")
-        var aprendizadoSimilar = await BuscarAprendizadoSimilar(conversa.ProblemaInicial ?? mensagem, origem);
-        if (aprendizadoSimilar.Count > 0 && 
-            !mensagemLower.Contains("não resolveu") && 
-            !mensagemLower.Contains("nao resolveu") &&
-            conversa.ContadorMensagens > 2) // Só mostrar aprendizado após algumas mensagens
-        {
-            var melhorAprendizado = aprendizadoSimilar.OrderByDescending(a => a.ContadorSucesso).First();
-            var solucoes = JsonSerializer.Deserialize<List<string>>(melhorAprendizado.Solucoes) ?? new List<string>();
+             // Mapear nomes de ações do Router para os comandos internos do legado
+             var legacyCmd = supportResult.ActionToExecute.ToLower() switch {
+                 "cleanappcache" => "limparcache",
+                 "cleanappdata" => "limpardados",
+                 "restartapp" => "restart",
+                 "logout" => "logout",
+                 "cleanlocaldatabase" => "limpar-data-base",
+                 _ => supportResult.ActionToExecute.ToLower()
+             };
 
-            var resposta = "Encontrei uma solução similar que funcionou para outros usuários:\n\n";
-            foreach (var solucao in solucoes)
-            {
-                resposta += $"• {solucao}\n";
-            }
-            resposta += "\nTente as soluções acima. Se não resolver, me avise aqui.";
+             finalResponse += $"\n\n[COMANDO:{legacyCmd}]";
+        }
 
-            await SalvarMensagemConversa(conversaId, "ia", resposta);
-            conversa.ContadorMensagens++;
-            await _context.SaveChangesAsync();
-            return resposta;
-        }
-        
-        // Se não há aprendizado, usar resposta da IA mesmo sem comando
-        if (!string.IsNullOrEmpty(respostaIaContexto))
-        {
-            await SalvarMensagemConversa(conversaId, "ia", respostaIaContexto);
-            conversa.ContadorMensagens++;
-            await _context.SaveChangesAsync();
-            return respostaIaContexto;
-        }
-        
-        // Fallback: retornar mensagem padrão se nada foi processado
-        var respostaFallback = "Desculpe, não consegui processar sua mensagem. Por favor, tente descrever o problema de forma mais detalhada.";
-        await SalvarMensagemConversa(conversaId, "ia", respostaFallback);
+        // Salvar resposta na conversa do banco
+        await SalvarMensagemConversa(conversaId, "ia", finalResponse);
         conversa.ContadorMensagens++;
         await _context.SaveChangesAsync();
-        return respostaFallback;
 
-        // Verificar se usuário está relatando problema com listar comandos/dispositivos
-        var problemaListagem = mensagemLower.Contains("não lista") || mensagemLower.Contains("nao lista") ||
-                              mensagemLower.Contains("não carrega") || mensagemLower.Contains("nao carrega") ||
-                              mensagemLower.Contains("dispositivo") || mensagemLower.Contains("comando");
-
-        if (problemaListagem)
-        {
-            // Etapa 1: Tentar limpar cache
-            var ultimaAcao = await _context.SuporteAcoes
-                .Where(a => a.UserId == userId && a.Origem == origem)
-                .OrderByDescending(a => a.CreatedAt)
-                .FirstOrDefaultAsync();
-
-            if (ultimaAcao == null || ultimaAcao.Acao != "limparcache")
-            {
-                var resposta = "Entendi! Vou limpar o cache agora. Isso pode resolver o problema de dados não aparecerem.\n\n" +
-                              "[COMANDO:limparcache]";
-                await SalvarMensagemConversa(conversaId, "ia", resposta);
-                conversa.ContadorMensagens++;
-                await _context.SaveChangesAsync();
-                return resposta;
-            }
-
-            // Etapa 2: Se cache não resolveu, tentar atualizar dados
-            if (ultimaAcao.Acao == "limparcache")
-            {
-                var acaoAtualizar = await _context.SuporteAcoes
-                    .Where(a => a.UserId == userId && a.Origem == origem && a.Acao == "atualizardados")
-                    .OrderByDescending(a => a.CreatedAt)
-                    .FirstOrDefaultAsync();
-
-                if (acaoAtualizar == null)
-                {
-                    var resposta = "Vou atualizar os dados agora. Isso pode resolver o problema.\n\n" +
-                                  "[COMANDO:atualizardados]";
-                    await SalvarMensagemConversa(conversaId, "ia", resposta);
-                    conversa.ContadorMensagens++;
-                    await _context.SaveChangesAsync();
-                    return resposta;
-                }
-            }
-
-            // Etapa 3: Se nada funcionou, tentar logout
-            if (ultimaAcao.Acao == "atualizardados")
-            {
-                var acaoLogout = await _context.SuporteAcoes
-                    .Where(a => a.UserId == userId && a.Origem == origem && a.Acao == "logout")
-                    .OrderByDescending(a => a.CreatedAt)
-                    .FirstOrDefaultAsync();
-
-                if (acaoLogout == null)
-                {
-                    // Salvar flag de resolução de suporte
-                    var resolvendoSuporte = await _context.ResolvendoSuportes
-                        .FirstOrDefaultAsync(r => r.UserId == userId && r.Origem == origem && r.Ativo);
-
-                    if (resolvendoSuporte == null)
-                    {
-                        resolvendoSuporte = new ResolvendoSuporte
-                        {
-                            UserId = userId,
-                            Origem = origem,
-                            Ativo = true,
-                            CreatedAt = DateTimeOffset.UtcNow
-                        };
-                        _context.ResolvendoSuportes.Add(resolvendoSuporte);
-                    }
-
-                    var resposta = "Vou fazer logout para limpar completamente a sessão. Isso pode resolver problemas com token expirado ou dados em cache.\n\n" +
-                                  "⚠️ Você será desconectado e precisará fazer login novamente.\n\n" +
-                                  "[COMANDO:logout]";
-                    await SalvarMensagemConversa(conversaId, "ia", resposta);
-                    conversa.ContadorMensagens++;
-                    await _context.SaveChangesAsync();
-                    return resposta;
-                }
-            }
-        }
-
-
-        // Verificar limite de mensagens antes de usar IA
-        if (await VerificarLimiteMensagens(conversaId))
-        {
-            conversa.LimiteAtingido = true;
-            conversa.ChatConcluido = true;
-            conversa.TransferidoParaHumano = true;
-            await _context.SaveChangesAsync();
-
-            return "Infelizmente meu limite de contexto foi atingido. Deixe uma mensagem explicando detalhes dos erros que está enfrentando para nosso suporte. Assim que um de nossos especialistas ver sua mensagem, você receberá em seu email instruções sobre o que fazer.";
-        }
-
+        return finalResponse;
     }
 
     public async Task<List<ConsultaErroResponse>> ConsultarErrosDoUsuario(Guid userId, string origem)
