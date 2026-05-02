@@ -326,6 +326,66 @@ public class ManutencaoController : ControllerBase
         return Ok(new { message = "Usuário deslogado do app com sucesso.", userId = request.UserId });
     }
 
+    [HttpPost("app/reiniciar")]
+    public async Task<IActionResult> ReiniciarApp([FromBody] IniciarManutencaoRequest request)
+    {
+        if (request.UserId == Guid.Empty)
+            return BadRequest("UserId é obrigatório.");
+
+        try
+        {
+            await _dispositivoEspHubContext.Clients.Group($"client_{request.UserId}")
+                .SendAsync("SuporteComando", "reiniciarapp");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Erro ao enviar comando de reiniciar app via SignalR: {ex.Message}");
+        }
+
+        return Ok(new { message = "Comando de reinício do app enviado com sucesso.", userId = request.UserId });
+    }
+
+    [HttpPost("app/limpar-banco")]
+    public async Task<IActionResult> LimparBancoApp([FromBody] IniciarManutencaoRequest request)
+    {
+        if (request.UserId == Guid.Empty)
+            return BadRequest("UserId é obrigatório.");
+
+        try
+        {
+            await _dispositivoEspHubContext.Clients.Group($"client_{request.UserId}")
+                .SendAsync("SuporteComando", "limparbanco");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Erro ao enviar comando de limpar banco via SignalR: {ex.Message}");
+        }
+
+        return Ok(new { message = "Comando de limpeza do banco local enviado com sucesso.", userId = request.UserId });
+    }
+
+    [HttpPost("app/enviar-alerta")]
+    public async Task<IActionResult> EnviarAlertaApp([FromBody] EnviarAlertaAppRequest request)
+    {
+        if (request.UserId == Guid.Empty)
+            return BadRequest("UserId é obrigatório.");
+
+        if (string.IsNullOrWhiteSpace(request.Message))
+            return BadRequest("A mensagem do alerta é obrigatória.");
+
+        try
+        {
+            await _dispositivoEspHubContext.Clients.Group($"client_{request.UserId}")
+                .SendAsync("SuporteComando", $"alerta:{request.Message}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Erro ao enviar alerta via SignalR: {ex.Message}");
+        }
+
+        return Ok(new { message = "Alerta enviado com sucesso.", userId = request.UserId });
+    }
+
     [HttpGet("app/ultimos-comandos/{userId}")]
     public async Task<IActionResult> GetUltimosComandosApp(Guid userId)
     {

@@ -193,6 +193,44 @@ namespace StarkAid.Web.Services
             var response = await _http.SendAsync(request);
             return response.IsSuccessStatusCode;
         }
+
+        public async Task<bool> RestartAppAsync(Guid userId, string token, string apiKey)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/manutencao/app/reiniciar");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("Api-Key", apiKey);
+            request.Content = JsonContent.Create(new { UserId = userId });
+
+            var response = await _http.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> DropDatabaseAsync(Guid userId, string token, string apiKey)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/manutencao/app/limpar-banco");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("Api-Key", apiKey);
+            request.Content = JsonContent.Create(new { UserId = userId });
+
+            var response = await _http.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> SendAlertAsync(Guid userId, string message, string token, string apiKey)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/manutencao/app/enviar-alerta");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("Api-Key", apiKey);
+            request.Content = JsonContent.Create(new
+            {
+                UserId = userId,
+                Message = message
+            });
+
+            var response = await _http.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
+
         public async Task<bool> CreateComandoSocialAsync(ComandoSocialDto comando, string token, string apiKey)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/Admin/comandos-sociais");

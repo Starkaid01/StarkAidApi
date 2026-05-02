@@ -1,18 +1,79 @@
 # StarkAid
 
-StarkAid is a product-style automation platform built around a central `ASP.NET Core` backend, a `Blazor` web client, a Windows desktop client, and a `Kotlin` Android application.
+[![CI](https://github.com/Starkaid01/StarkAidApi/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Starkaid01/StarkAidApi/actions/workflows/ci.yml)
 
-This repository is useful as a public engineering sample because it shows more than isolated CRUD code. It demonstrates multi-client product architecture, realtime operator flows, connected-device orchestration, third-party integrations, monetization hooks, and the practical configuration work needed to move a private codebase toward a publishable state.
+`StarkAid` is a multi-client automation platform built around a central `ASP.NET Core` backend, a `Blazor` web surface, a Windows desktop client, and a `Kotlin` Android application.
 
-## Why this repository matters
+This repository is the flagship public sample because it shows a real product problem being solved: device control, support, account flows, scheduling, monetization, and operational tooling across more than one client.
 
-- multi-project solution with backend, web, desktop, and Android clients
-- authentication with `JWT`, refresh tokens, and runtime device credentials
-- realtime communication with `SignalR` and WebSocket-style flows
-- automation and IoT integrations for `ESP32`, `eWeLink`, and `Tuya / Thingclips`
-- support tooling and operator workflows instead of tutorial-only pages
-- payment and plan infrastructure with `Stripe`
-- environment cleanup work to separate public code from private credentials
+![StarkAid live web surface](docs/images/live-home.png)
+
+## What problem this solves
+
+Home automation products usually fragment fast:
+
+- one app controls devices
+- another surface handles support
+- admin and operational flows live somewhere else
+- credentials, billing, and scheduling become separate concerns
+
+`StarkAid` centralizes that into one product stack:
+
+- authenticated user and device management
+- automation commands across connected devices
+- browser admin and support tooling
+- Android and desktop clients connected to the same backend
+- realtime operator and support flows
+- subscriptions, push notifications, and scheduled actions
+
+## Why this repo is worth reviewing
+
+This is not a tutorial repository and not a single CRUD app.
+
+It demonstrates:
+
+- backend architecture with `ASP.NET Core`, `EF Core`, `JWT`, `SignalR`, and SQL-backed state
+- cross-surface delivery with API, web, desktop, and Android clients
+- connected-device orchestration for `ESP32`, `eWeLink`, and `Tuya / Thingclips`
+- support and maintenance workflows that go beyond user-facing CRUD
+- real-world configuration cleanup to separate public code from private credentials
+
+## Proof in under 30 seconds
+
+If you only have a minute, use this order:
+
+1. Open the live surface: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
+2. Watch the short product video: [YouTube demo](https://www.youtube.com/watch?v=rk1JtP94b-E)
+3. Scan the architecture snapshot below
+4. Jump to the API surfaces table to see the breadth of the backend
+
+## What is already working
+
+- public live web surface: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
+- public short demo video: [YouTube](https://www.youtube.com/watch?v=rk1JtP94b-E)
+- multi-project solution with backend, web, desktop, Android, and helper service
+- green solution build from the public codebase
+- public documentation for environment setup and secret boundaries
+
+## Architecture snapshot
+
+```mermaid
+flowchart LR
+    User["User / Operator"] --> Web["Blazor Web Client"]
+    User --> Android["Kotlin Android App"]
+    User --> Desktop["Windows Desktop Client"]
+
+    Web --> Api["ASP.NET Core API"]
+    Android --> Api
+    Desktop --> Api
+
+    Api --> Db["SQL Server / EF Core"]
+    Api --> SignalR["SignalR / WebSockets"]
+    Api --> Devices["ESP32 / MQTT / eWeLink / Tuya"]
+    Api --> Firebase["Firebase Push"]
+    Api --> Stripe["Stripe Billing"]
+    Api --> Ai["AI / NLP / AWS Transcribe"]
+```
 
 ## Repository map
 
@@ -25,49 +86,32 @@ StarkAid/
 └── starkaidautomacao/       # Kotlin Android client
 ```
 
-## What the system does
+## Product surfaces
 
-### `StarkAid.Api`
+| Surface | What it does |
+| --- | --- |
+| `StarkAid.Api` | authentication, device orchestration, schedules, support, subscriptions, telemetry, notifications |
+| `StarkAid.Web` | browser-based admin, support, dashboards, and operator tooling |
+| `StarkAid.WindowsForms` | desktop operational surface within the same product ecosystem |
+| `starkaidautomacao` | Android app for device control, voice-related flows, routines, and support |
+| `StarkAid.AudioResolver` | helper service for audio and media-related flows |
 
-The backend handles:
+## Key API surfaces
 
-- JWT authentication and refresh-token flows
-- user, device, and account management
-- `ESP32` and IoT command orchestration
-- `eWeLink` integration
-- `Tuya / Thingclips` integration
-- routines, scheduling, and remote command execution
-- support and operator messaging
-- payment and subscription flows
-- push notifications through `Firebase`
-- realtime communication with `SignalR`
+These are the backend areas that make the repository useful for technical review:
 
-### `StarkAid.Web`
-
-The web client is built with `Blazor` and focuses on:
-
-- admin and operational screens
-- support flows
-- online tools and product dashboards
-- browser-based interaction with the backend
-
-### `StarkAid.WindowsForms`
-
-The desktop client supports local operational workflows that still matter in the product ecosystem.
-
-### `starkaidautomacao`
-
-The Android app is the mobile surface for:
-
-- device control
-- voice commands
-- automation routines
-- support chat
-- connected-service interactions
-
-### `StarkAid.AudioResolver`
-
-This module acts as a focused helper around audio and media-related flows.
+| Surface | Route group | What it shows |
+| --- | --- | --- |
+| Authentication | `api/v1/Auth` | JWT login, refresh-token flow, user auth lifecycle |
+| Device management | `api/v1/Devices` | user devices, command-driven automation, persisted device model |
+| ESP32 devices | `api/v1/DispositivosEsp` | UDP/ESP device registration, update, and ping flows |
+| Social commands | `api/v1/ComandosSociais` | command-response customization and operator-managed interactions |
+| Maintenance | `api/v1/manutencao` | remote support, cache/data actions, app/software maintenance flows |
+| Support | `api/v1/Suporte` and `/hubs/support-chat` | realtime support chat and operator-facing support routing |
+| Billing | `api/v1/Checkout`, `api/v1/StripeWebhook` | subscriptions and monetization hooks with Stripe |
+| Notifications | `api/v1/Notifications`, `api/v1/Notificacoes` | push and admin notification flows |
+| Scheduling | `api/v1/Agendamentos`, `api/v1/Rotinas` | delayed and recurring automation |
+| Telemetry | `api/v1/Telemetry` | AI/event and operational telemetry surfaces |
 
 ## Main stack
 
@@ -88,13 +132,13 @@ This module acts as a focused helper around audio and media-related flows.
 - `AWS Transcribe`
 - `Stripe`
 
-## What this repository proves technically
+## CI
 
-- product architecture across multiple clients, not just one web app
-- backend integration design for devices and third-party services
-- realtime operator tooling with stateful user flows
-- practical environment management for public publishing
-- public-facing documentation that explains private setup requirements clearly
+This repository now includes a public GitHub Actions workflow that validates the published solution with `restore` + `build`.
+
+Workflow file:
+
+- [.github/workflows/ci.yml](.github/workflows/ci.yml)
 
 ## Local setup order
 
@@ -109,7 +153,7 @@ This module acts as a focused helper around audio and media-related flows.
 - `SQL Server`
 - `Android Studio`
 - `JDK 17`
-- `WebView2 Runtime` for the Windows client
+- `WebView2 Runtime`
 
 ## API configuration
 
@@ -135,6 +179,7 @@ Template file:
 ```powershell
 dotnet restore
 dotnet ef database update --project StarkAid.Api
+dotnet build StarkAid.sln -v minimal
 dotnet run --project StarkAid.Api
 ```
 
@@ -235,26 +280,20 @@ At a high level, local setup expects:
 - backend `REST`, `SignalR`, `WebSocket`, and Spotify callback URLs
 - Spotify application credentials if the flow remains client-side
 
-## Windows client
+## Public references
 
-The Windows client depends on the backend being configured and on `WebView2 Runtime` being installed locally.
-
-## AudioResolver
-
-`StarkAid.AudioResolver` currently has a lightweight configuration surface and mainly relies on logging settings.
-
-## Public deployment reference
-
-- Web and API: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
+- live web and API surface: [starkaidautomacao.runasp.net](https://starkaidautomacao.runasp.net/)
+- short demo video: [YouTube](https://www.youtube.com/watch?v=rk1JtP94b-E)
+- Android repo: [starkaidautomacao](https://github.com/Starkaid01/starkaidautomacao)
 
 ## Repository status
 
-This is real product code, not tutorial code. It has already gone through an initial sanitization pass for public exposure, but the long-term professionalization path still includes:
+This is real product code and has already gone through an initial public sanitization pass. The professionalization path from here is still clear:
 
-- broader credential rotation
-- deeper cleanup of historic artifacts
-- tighter separation between client-safe and server-only configuration
-- clearer deployment automation
+- rotate any historic provider credentials that were ever used privately
+- tighten nullability and warning cleanup across `StarkAid.Web`
+- keep separating client-safe configuration from true backend secrets
+- expand CI beyond build validation once the public test strategy is stable
 
 Additional notes:
 
